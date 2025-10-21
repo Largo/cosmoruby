@@ -182,4 +182,5 @@ o/$(MODE)/examples:						\
 		o/$(MODE)/examples/package			\
 		o/$(MODE)/examples/pylife			\
 		o/$(MODE)/examples/pyapp			\
+		o/$(MODE)/examples/rubyapp			\
 		$(EXAMPLES_BINS)

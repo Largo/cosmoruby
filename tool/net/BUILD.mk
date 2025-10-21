@@ -66,6 +66,7 @@ TOOL_NET_DIRECTDEPS =							\
 	THIRD_PARTY_MUSL						\
 	THIRD_PARTY_MBEDTLS						\
 	THIRD_PARTY_REGEX						\
+	THIRD_PARTY_RUBY						\
 	THIRD_PARTY_SQLITE3						\
 	THIRD_PARTY_TZ							\
 	THIRD_PARTY_ZLIB						\
@@ -121,6 +122,11 @@ o/$(MODE)/tool/net/lsqlite3.o: private					\
 		CFLAGS +=						\
 			-DSQLITE_ENABLE_SESSION				\
 			-DSQLITE_ENABLE_DESERIALIZE
+
+o/$(MODE)/tool/net/redbean.o: private					\
+		CFLAGS +=						\
+			-Ithird_party/ruby/include			\
+			-Wno-unused-but-set-variable
 
 # REDBEAN-DEMO
 #

@@ -345,12 +345,14 @@ include tool/build/lib/BUILD.mk
 include third_party/chibicc/BUILD.mk
 include third_party/chibicc/test/BUILD.mk
 include third_party/python/BUILD.mk
+include third_party/ruby/BUILD.mk
 include tool/build/BUILD.mk
 include tool/curl/BUILD.mk
 include third_party/qemu/BUILD.mk
 include third_party/libcxxabi/test/BUILD.mk
 include examples/BUILD.mk
 include examples/pyapp/BUILD.mk
+include examples/rubyapp/BUILD.mk
 include examples/pylife/BUILD.mk
 include tool/decode/lib/BUILD.mk
 include tool/decode/BUILD.mk

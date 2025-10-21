@@ -118,6 +118,13 @@
 #include "third_party/lua/lrepl.h"
 #include "third_party/lua/lualib.h"
 #include "third_party/lua/lunix.h"
+#ifndef STATIC
+#undef xmalloc
+#undef xcalloc
+#undef xrealloc
+#define _GETOPT_CORE_H  /* Block getopt_long includes */
+#include "third_party/ruby/include/ruby.h"
+#endif
 #include "third_party/mbedtls/ctr_drbg.h"
 #include "third_party/mbedtls/debug.h"
 #include "third_party/mbedtls/iana.h"
@@ -475,6 +482,9 @@ static char *brand;
 static size_t zsize;
 static lua_State *GL;
 static lua_State *YL;
+#ifndef STATIC
+static VALUE rb_mRedbean;  // Ruby Redbean module
+#endif
 static uint8_t *zmap;
 static uint8_t *zcdir;
 static size_t hdrsize;
@@ -3115,6 +3125,43 @@ static char *ServeLua(struct Asset *a, const char *s, size_t n) {
   return ServeError(500, "Internal Server Error");
 }
 
+static char *ServeRuby(struct Asset *a, const char *s, size_t n) {
+#ifndef STATIC
+  char *code;
+  size_t codelen;
+  int state = 0;
+  VALUE result;
+  LockInc(&shared->c.dynamicrequests);
+  effectivepath.p = (void *)s;
+  effectivepath.n = n;
+  if ((code = FreeLater(LoadAsset(a, &codelen)))) {
+    DEBUGF("(ruby) executing %`'.*s (%zu bytes)", (int)n, s, codelen);
+    // Evaluate the Ruby code with error protection
+    result = rb_eval_string_protect(code, &state);
+    if (state == 0) {
+      // Success - for now just return 200 OK
+      // TODO: Implement Ruby API to build HTTP responses
+      char *p = SetStatus(200, "OK");
+      p = AppendContentType(p, "text/plain");
+      appendf(&cpm.outbuf, "Ruby code executed successfully\n");
+      return CommitOutput(p);
+    } else {
+      // Error occurred
+      VALUE exception = rb_errinfo();
+      VALUE message = rb_funcall(exception, rb_intern("message"), 0);
+      const char *error_msg = StringValueCStr(message);
+      ERRORF("(ruby) failed to run Ruby code: %s", error_msg);
+      return ServeErrorWithDetail(
+          500, "Internal Server Error",
+          ShouldServeCrashReportDetails() ? error_msg : NULL);
+    }
+  }
+  return ServeError(500, "Internal Server Error");
+#else
+  return ServeError(501, "Not Implemented");
+#endif
+}
+
 static char *HandleRedirect(struct Redirect *r) {
   int code;
   struct Asset *a;
@@ -5264,6 +5311,16 @@ static void LuaStart(void) {
 #endif
 }
 
+static void RubyStart(void) {
+#ifndef STATIC
+  RUBY_INIT_STACK;
+  ruby_init();
+  // TODO: Initialize Ruby API bindings for redbean
+  // rb_mRedbean = rb_define_module("Redbean");
+  DEBUGF("(ruby) Ruby interpreter initialized");
+#endif
+}
+
 static bool ShouldAutocomplete(const char *s) {
   int c, m, l, r;
   l = 0;
@@ -6031,11 +6088,28 @@ static inline bool IsLua(struct Asset *a) {
          READ32LE(p + n - 4) == ('.' | 'l' << 8 | 'u' << 16 | 'a' << 24);
 }
 
+static inline bool IsRuby(struct Asset *a) {
+  size_t n;
+  const char *p;
+  // Check for .rb extension (4 bytes: '.', 'r', 'b', '\0' or next char)
+  if (a->file && a->file->path.n >= 3 &&
+      a->file->path.s[a->file->path.n - 3] == '.' &&
+      a->file->path.s[a->file->path.n - 2] == 'r' &&
+      a->file->path.s[a->file->path.n - 1] == 'b') {
+    return true;
+  }
+  p = ZIP_CFILE_NAME(zmap + a->cf);
+  n = ZIP_CFILE_NAMESIZE(zmap + a->cf);
+  return n > 3 && p[n - 3] == '.' && p[n - 2] == 'r' && p[n - 1] == 'b';
+}
+
 static char *HandleAsset(struct Asset *a, const char *path, size_t pathlen) {
   char *p;
 #ifndef STATIC
   if (IsLua(a))
     return ServeLua(a, path, pathlen);
+  if (IsRuby(a))
+    return ServeRuby(a, path, pathlen);
 #endif
   if (cpm.msg.method == kHttpGet || cpm.msg.method == kHttpHead) {
     LockInc(&shared->c.staticrequests);
@@ -7229,6 +7303,7 @@ void RedBean(int argc, char *argv[]) {
     WARNF("(srvr) failed to query system network interface addresses: %m");
   }
   LuaStart();
+  RubyStart();
   GetOpts(argc, argv);
 #ifndef STATIC
   if (selfmodifiable) {

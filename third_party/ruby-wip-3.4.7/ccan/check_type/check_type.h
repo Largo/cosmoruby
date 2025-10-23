@@ -51,7 +51,7 @@
 #define ccan_check_types_match(expr1, expr2)		\
 	((typeof(expr1) *)0 != (typeof(expr2) *)0)
 #else
-#include "ccan/build_assert/build_assert.h"
+#include "third_party/ruby/ccan/build_assert/build_assert.h"
 /* Without typeof, we can only test the sizes. */
 #define ccan_check_type(expr, type)					\
 	CCAN_BUILD_ASSERT_OR_ZERO(sizeof(expr) == sizeof(type))

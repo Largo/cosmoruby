@@ -252,4 +252,7 @@ Init_monitor(void)
 
     /* internal methods for MonitorMixin::ConditionVariable */
     rb_define_method(rb_cMonitor, "wait_for_cond", monitor_wait_for_cond, 2);
+
+    /* Mark monitor as already loaded (statically linked) */
+    rb_provide("monitor.so");
 }

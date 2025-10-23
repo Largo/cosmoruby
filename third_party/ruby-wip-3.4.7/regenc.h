@@ -44,7 +44,7 @@
 #else /* RUBY */
 # ifndef PACKAGE
 /* PACKAGE is defined in config.h */
-#  include "config.h"
+#  include "ruby/config.h"
 # endif
 #endif /* RUBY */
 

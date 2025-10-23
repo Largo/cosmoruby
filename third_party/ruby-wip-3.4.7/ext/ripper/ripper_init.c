@@ -623,6 +623,9 @@ Init_ripper(void)
     id_assoc = rb_intern_const("=>");
 
     InitVM(ripper);
+
+    /* Mark ripper as already loaded (statically linked) */
+    rb_provide("ripper.so");
 }
 
 void

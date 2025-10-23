@@ -2,9 +2,9 @@
 #ifndef CCAN_LIST_H
 #define CCAN_LIST_H
 #include <assert.h>
-#include "ccan/str/str.h"
-#include "ccan/container_of/container_of.h"
-#include "ccan/check_type/check_type.h"
+#include "third_party/ruby/ccan/str/str.h"
+#include "third_party/ruby/ccan/container_of/container_of.h"
+#include "third_party/ruby/ccan/check_type/check_type.h"
 
 /**
  * struct ccan_list_node - an entry in a doubly-linked list

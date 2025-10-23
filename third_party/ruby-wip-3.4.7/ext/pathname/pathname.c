@@ -1665,4 +1665,7 @@ InitVM_pathname(void)
     id_writable_real_p = rb_intern("writable_real?");
     id_write = rb_intern("write");
     id_zero_p = rb_intern("zero?");
+
+    /* Mark pathname as already loaded (statically linked) */
+    rb_provide("pathname.so");
 }

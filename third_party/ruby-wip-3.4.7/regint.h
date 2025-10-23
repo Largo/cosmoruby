@@ -119,7 +119,7 @@
 #  undef xfree
 # endif
 #else /* RUBY */
-# include "config.h"
+# include "ruby/config.h"
 # if SIZEOF_LONG_LONG > 0
 #  define LONG_LONG long long
 # endif

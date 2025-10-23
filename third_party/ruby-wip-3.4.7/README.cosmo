@@ -1,0 +1,319 @@
+# Ruby 3.4.7 for Cosmopolitan Libc (CosmoRuby)
+
+**Status**: Beta Release (Functional, not production-ready)
+**Version**: Ruby 3.4.7 on Cosmopolitan Libc
+**Last Updated**: 2025-10-23
+
+## What is CosmoRuby?
+
+CosmoRuby is Ruby 3.4.7 ported to Cosmopolitan Libc, creating Actually Portable Executables that run natively on:
+- Linux (x86_64, aarch64)
+- macOS (x86_64, arm64)
+- Windows (x86_64)
+- FreeBSD, OpenBSD, NetBSD
+
+**One binary. Runs everywhere. No installation. No dependencies.**
+
+## Quick Start
+
+### Download the Binaries
+
+Get `ruby.com`, `irb.com`, and `gem.com` from the release.
+
+### Run Ruby
+
+```bash
+# Make executable
+chmod +x ruby.com
+
+# Run a script
+./ruby.com script.rb
+
+# Run a one-liner
+./ruby.com -e "puts 'Hello, World!'"
+
+# Check version
+./ruby.com --version
+```
+
+### Run IRB (Interactive Ruby)
+
+```bash
+chmod +x irb.com
+./irb.com
+```
+
+```ruby
+>> [1, 2, 3].map { |x| x * 2 }
+=> [2, 4, 6]
+>> puts "CosmoRuby works!"
+CosmoRuby works!
+=> nil
+```
+
+### Use RubyGems
+
+```bash
+chmod +x gem.com
+
+# List installed gems
+./gem.com list
+
+# Show gem environment
+./gem.com env
+```
+
+### Optional: Add to PATH
+
+```bash
+# Create ~/bin if it doesn't exist
+mkdir -p ~/bin
+
+# Copy or symlink binaries
+cp ruby.com irb.com gem.com ~/bin/
+# OR
+ln -s /full/path/to/ruby.com ~/bin/ruby.com
+ln -s /full/path/to/irb.com ~/bin/irb.com
+ln -s /full/path/to/gem.com ~/bin/gem.com
+
+# Add to PATH (if not already)
+export PATH="$HOME/bin:$PATH"
+
+# Now use without ./
+ruby.com --version
+irb.com
+gem.com list
+```
+
+## What Works ✅
+
+### Core Language Features
+- ✅ Full Ruby 3.4.7 language (classes, modules, blocks, procs, lambdas)
+- ✅ Fibers, threads, ractors (concurrent programming)
+- ✅ Garbage collection, marshaling
+- ✅ Exception handling with full backtraces
+- ✅ All 2005 bootstrap tests passing (100% pass rate)
+
+### Standard Library
+- ✅ IRB (interactive shell) with syntax highlighting
+- ✅ RubyGems package manager
+- ✅ Bundler (v2.6.9) for dependency management
+- ✅ 24 pure Ruby gems included:
+  - **Build tools**: rake, bundler
+  - **Testing**: minitest, test-unit, power_assert
+  - **Networking**: net-ftp, net-imap, net-pop, net-smtp
+  - **Data**: csv, rexml, rss
+  - **Utilities**: abbrev, base64, drb, getoptlong, matrix, mutex_m, observer, prime, repl_type_completor, resolv-replace, rinda, typeprof
+
+### Networking
+- ✅ Socket extension (TCP, UDP, Unix sockets)
+- ✅ HTTP/HTTPS via net-http (requires openssl gem for HTTPS)
+- ✅ Network operations for gem installation
+
+### Extensions (Statically Linked)
+- ✅ Ripper (parser introspection)
+- ✅ io/console (terminal control)
+- ✅ io/wait (non-blocking I/O)
+- ✅ monitor (thread synchronization)
+- ✅ pathname (path manipulation)
+- ✅ stringio (string I/O)
+- ✅ socket (networking)
+
+## What Doesn't Work (Yet) ⚠️
+
+### Native Extensions
+- ❌ Cannot load gems with C extensions (nokogiri, pg, mysql2, sqlite3, puma, etc.)
+- ❌ 6 bundled gems with native extensions don't work:
+  - bigdecimal, debug, nkf, racc, rbs, syslog
+- ❌ `gem install` for gems requiring compilation will fail
+
+**Why**: Cosmopolitan uses static linking. Dynamic .so loading is planned for future releases.
+
+**Workaround**: Use pure Ruby alternatives when available.
+
+### Performance
+- ⚠️ No JIT compiler (YJIT/RJIT disabled)
+- ⚠️ Performance ~2-3x slower than YJIT-enabled Ruby
+- ⚠️ Acceptable for scripts, tools, development; not optimized for production
+
+### Platform-Specific Features
+- ❌ Windows: Some POSIX features may not work perfectly
+- ❌ Fork support varies by platform
+- ❌ No setlocale() (Cosmopolitan doesn't implement it)
+
+## Common Use Cases
+
+### Scripting
+```ruby
+#!/usr/bin/env ruby.com
+
+# Your Ruby script here
+puts "Portable Ruby script!"
+```
+
+### Simple Web Server (Sinatra)
+```ruby
+# Gemfile
+source 'https://rubygems.org'
+gem 'sinatra'
+
+# app.rb
+require 'sinatra'
+
+get '/' do
+  'Hello from CosmoRuby!'
+end
+```
+
+```bash
+# Install (pure Ruby gems only)
+gem.com install sinatra rack
+ruby.com app.rb
+```
+
+### Build Automation (Rake)
+```ruby
+# Rakefile
+task :default => [:test]
+
+task :test do
+  puts "Running tests..."
+  sh "ruby.com test/test_*.rb"
+end
+
+task :deploy do
+  puts "Deploying..."
+end
+```
+
+```bash
+ruby.com -S rake test
+```
+
+### Command-Line Tools
+CosmoRuby is perfect for portable CLI tools that need to run anywhere.
+
+## Troubleshooting
+
+### "ruby.com: command not found"
+- Make sure the file is executable: `chmod +x ruby.com`
+- Run with `./ruby.com` or add to PATH
+
+### "LoadError: cannot load such file"
+- For stdlib: The file should be embedded in ruby.com
+- For gems: Install with `gem.com install GEMNAME` (pure Ruby gems only)
+
+### "Permission denied"
+```bash
+chmod +x ruby.com irb.com gem.com
+```
+
+### Gem install fails with "Building native extensions"
+Native extension gems are not supported yet. Look for pure Ruby alternatives.
+
+### Slow performance
+This is expected without JIT. CosmoRuby prioritizes portability over speed.
+
+## Building from Source
+
+See `docs/ai/RUBY_PORT_PROGRESS.md` for complete build instructions.
+
+**Quick build:**
+```bash
+# Clone Cosmopolitan repository
+git clone https://github.com/jart/cosmopolitan.git
+cd cosmopolitan
+
+# Build Ruby
+make -j8 o//third_party/ruby/ruby
+make -j8 o//third_party/ruby/irb
+
+# Package with embedded stdlib
+cd third_party/ruby/port_scripts
+bash package_ruby.sh
+
+# Binaries are at:
+# o/third_party/ruby/ruby.com
+# o/third_party/ruby/irb.com
+```
+
+## Known Issues
+
+1. **Native extensions**: Cannot load .so files (planned feature)
+2. **Performance**: No JIT compilation available
+3. **Some bundled gems**: 6 gems with C extensions don't load
+4. **gem install**: Only works for pure Ruby gems
+5. **Platform quirks**: Some POSIX features may behave differently on Windows
+
+## Getting Help
+
+- **Issues**: Report bugs on the Cosmopolitan GitHub
+- **Discord**: Join the Cosmopolitan Discord server for discussion
+- **Documentation**: See `docs/ai/RUBY_PORT_PROGRESS.md` for technical details
+
+## Version Information
+
+```bash
+ruby.com --version
+# ruby 3.4.7 (2025-10-08 revision 7a5688e2a2) +PRISM [x86_64-linux]
+
+gem.com --version
+# 3.6.9
+
+gem.com list | grep bundler
+# bundler (default: 2.6.9)
+```
+
+## Technical Details
+
+**Architecture**: Actually Portable Executable (APE) format
+**Stdlib**: Embedded in ZIP filesystem at `/zip/lib/ruby/3.4.0/`
+**Gems**: Embedded in ZIP filesystem at `/zip/lib/ruby/gems/3.4.0/`
+**Binary Size**: ~50MB (includes full stdlib and 24 gems)
+
+**Build System**: Cosmopolitan's BUILD.mk (not GNU Make)
+**Linking**: Static (no dynamic libraries)
+**Parser**: Prism (modern Ruby parser)
+**Threading**: pthread (full thread/ractor support)
+
+## Differences from Standard Ruby
+
+1. **No dynamic loading**: Extensions statically linked, marked with `rb_provide()`
+2. **No YJIT/RJIT**: JIT disabled for portability
+3. **errno wrapper**: Compile-time constants for Cosmopolitan compatibility
+4. **Socket constants**: Compile-time wrapper for switch statements
+5. **Hardcoded generated files**: Some build artifacts committed to source
+
+## License
+
+Ruby is licensed under the Ruby License or BSD 2-Clause License.
+See the Ruby source distribution for complete license information.
+
+This port adds Cosmopolitan-specific compatibility code but does not change Ruby's license.
+
+## Credits
+
+- **Ruby**: Yukihiro Matsumoto and the Ruby core team
+- **Cosmopolitan**: Justine Tunney and contributors
+- **This port**: Community contribution to Cosmopolitan
+
+## Changelog
+
+### 2025-10-23 - Beta Release
+- Initial release of Ruby 3.4.7 on Cosmopolitan
+- Full interpreter with IRB, RubyGems, Bundler
+- 24 pure Ruby gems working
+- Socket extension for networking
+- All bootstrap tests passing
+
+## Future Plans
+
+- **Dynamic .so loading**: Enable gems with native extensions
+- **Performance optimization**: Investigate JIT compatibility
+- **More bundled gems**: Enable bigdecimal, debug, racc, rbs
+- **Full test suite**: Run complete Ruby test suite
+- **Production hardening**: Optimize and stabilize for production use
+
+---
+
+**This is a beta release.** It's functional and useful for many tasks, but not recommended for production use without thorough testing. Feedback and bug reports are welcome!

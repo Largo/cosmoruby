@@ -434,4 +434,7 @@ Init_wait(void)
     rb_define_method(rb_cIO, "wait_priority", io_wait_priority, -1);
 #endif
 #endif
+
+    /* Mark io/wait as already loaded (statically linked) */
+    rb_provide("io/wait.so");
 }

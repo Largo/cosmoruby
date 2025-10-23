@@ -1,7 +1,7 @@
 /* CC0 (Public domain) - see ccan/licenses/CC0 file for details */
 #ifndef CCAN_CONTAINER_OF_H
 #define CCAN_CONTAINER_OF_H
-#include "ccan/check_type/check_type.h"
+#include "third_party/ruby/ccan/check_type/check_type.h"
 
 /**
  * ccan_container_of - get pointer to enclosing structure

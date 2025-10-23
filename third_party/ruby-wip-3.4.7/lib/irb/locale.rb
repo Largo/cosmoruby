@@ -16,8 +16,8 @@ module IRB # :nodoc:
     LOCALE_DIR = "/lc/"
 
     LEGACY_ENCODING_ALIAS_MAP = {
-      'ujis' => Encoding::EUC_JP,
-      'euc' => Encoding::EUC_JP
+      'ujis' => Encoding::UTF_8,  # Cosmopolitan: Use UTF-8 instead of EUC-JP
+      'euc' => Encoding::UTF_8    # Cosmopolitan: Use UTF-8 instead of EUC-JP
     }
 
     @@loaded = []

@@ -2012,4 +2012,7 @@ Init_stringio(void)
     }
 
     sym_exception = ID2SYM(rb_intern("exception"));
+
+    /* Mark stringio as already loaded (statically linked) */
+    rb_provide("stringio.so");
 }

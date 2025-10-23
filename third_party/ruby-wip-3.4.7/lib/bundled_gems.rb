@@ -57,7 +57,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
     ARCHDIR = (File.expand_path(rubyarchdir) + "/").freeze
   else
     LIBDIR = (conf["rubylibdir"] + "/").freeze
-    ARCHDIR = (conf["rubyarchdir"] + "/").freeze
+    ARCHDIR = (conf["archdir"] + "/").freeze
   end
   dlext = [conf["DLEXT"], "so"].uniq
   DLEXT = /\.#{Regexp.union(dlext)}\z/

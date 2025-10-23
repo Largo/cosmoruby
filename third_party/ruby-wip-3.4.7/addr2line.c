@@ -76,8 +76,11 @@ void *alloca();
 # define UNREACHABLE_RETURN(_) return (abort(), (_))
 #endif
 
-#ifdef HAVE_DLADDR
+#if defined(HAVE_DLADDR) || defined(HAVE_DLOPEN)
 # include <dlfcn.h>
+# ifdef RUBY_COSMOPOLITAN
+#  include "missing/dladdr.h"
+# endif
 #endif
 
 #ifdef HAVE_MACH_O_LOADER_H

@@ -44,6 +44,8 @@ rb_call_inits(void)
     CALL(Regexp);
     CALL(pack);
     CALL(transcode);
+    // Initialize only the essential transcoder for backtraces
+    CALL(trans_single_byte);
     CALL(marshal);
     CALL(Range);
     CALL(IO);
@@ -75,6 +77,13 @@ rb_call_inits(void)
     CALL(ast);
     CALL(shape);
     CALL(Prism);
+    CALL(ripper);
+    CALL(console);
+    CALL(wait);
+    CALL(pathname);
+    CALL(stringio);
+    CALL(monitor);
+    CALL(socket);
 
     // enable builtin loading
     CALL(builtin);

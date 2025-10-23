@@ -1908,6 +1908,9 @@ Init_console(void)
     id___send__ = rb_intern("__send__");
 #endif
     InitVM(console);
+
+    /* Mark io/console as already loaded (statically linked) */
+    rb_provide("io/console.so");
 }
 
 void

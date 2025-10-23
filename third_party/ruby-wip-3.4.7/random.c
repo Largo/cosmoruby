@@ -1417,7 +1417,9 @@ rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
 static void
 domain_error(void)
 {
-    VALUE error = INT2FIX(EDOM);
+    /* Use constant 33 instead of EDOM macro since Cosmopolitan defines EDOM
+     * as extern const which doesn't work with compile-time constant expressions */
+    VALUE error = INT2FIX(33);  /* EDOM = 33 */
     rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
 }
 

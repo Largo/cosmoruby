@@ -2103,4 +2103,7 @@ Init_socket(void)
 
 #undef rb_intern
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+
+    /* Mark socket as already loaded (statically linked) */
+    rb_provide("socket.so");
 }

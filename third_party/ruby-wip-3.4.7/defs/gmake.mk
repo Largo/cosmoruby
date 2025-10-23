@@ -58,7 +58,7 @@ ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 endif
 
 ifeq ($(HAVE_BASERUBY):$(HAVE_GIT),yes:yes)
-override modified := $(shell $(BASERUBY) -C $(srcdir) tool/file2lastrev.rb --modified='%Y %m %d')
+override modified := $(shell $(BASERUBY) -C $(srcdir) tool/file2lastrev.rb --modified='%Y %m %d' --suppress_not_found)
 override RUBY_RELEASE_YEAR := $(word 1,$(modified))
 override RUBY_RELEASE_MONTH := $(word 2,$(modified))
 override RUBY_RELEASE_DAY := $(word 3,$(modified))

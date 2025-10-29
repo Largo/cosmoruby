@@ -984,6 +984,176 @@ curl http://localhost:8080/error.rb
 # Shows: (ruby) failed to load Rack app: undefined local variable or method `unknown_variable'
 ```
 
+## Initialization and Reload Hooks
+
+Redbean supports Ruby initialization and reload scripts, similar to Lua's `.init.lua` and `.reload.lua`.
+
+### `.init.rb` - Server Startup Hook
+
+The `/.init.rb` file runs once when the Redbean server starts, before any requests are processed. Use this for:
+- Loading configuration
+- Initializing global state
+- Setting up connections or resources
+- Defining helper functions
+
+**Example:**
+```ruby
+# /.init.rb
+puts "🚀 Server starting up!"
+
+# Set global variables accessible to all Ruby scripts
+$app_version = "1.0.0"
+$db_config = {host: "localhost", port: 5432}
+$request_count = 0
+
+# Define helper functions
+def log_request(path)
+  $request_count += 1
+  puts "[#{Time.now}] Request ##{$request_count}: #{path}"
+end
+
+puts "Initialization complete. App version: #{$app_version}"
+```
+
+### `.reload.rb` - Hot Reload Hook
+
+The `/.reload.rb` file runs when the server receives a reload signal (`SIGUSR1` or `SIGHUP` in daemon mode). Use this for:
+- Reloading configuration
+- Clearing caches
+- Reconnecting to services
+- Updating global state
+
+**Example:**
+```ruby
+# /.reload.rb
+puts "🔄 Server reloading!"
+
+$reload_count ||= 0
+$reload_count += 1
+
+# Reload configuration
+$db_config = load_config_from_file()
+
+puts "Reload ##{$reload_count} complete at #{Time.now}"
+```
+
+### Complete Example with Init/Reload
+
+```bash
+# 1. Create app structure
+mkdir -p /tmp/my-app
+
+# 2. Create .init.rb
+cat > /tmp/my-app/.init.rb <<'EOF'
+puts "Initializing Ruby app..."
+$start_time = Time.now
+$request_count = 0
+$reload_count = 0
+EOF
+
+# 3. Create .reload.rb
+cat > /tmp/my-app/.reload.rb <<'EOF'
+puts "Reloading app..."
+$reload_count += 1
+puts "Reload count: #{$reload_count}"
+EOF
+
+# 4. Create main app
+cat > /tmp/my-app/status.rb <<'EOF'
+lambda do |env|
+  $request_count += 1
+  [200,
+   {"Content-Type" => "text/html"},
+   ["<h1>Status</h1>",
+    "<p>Request count: #{$request_count}</p>",
+    "<p>Reload count: #{$reload_count}</p>",
+    "<p>Uptime: #{Time.now - $start_time} seconds</p>"]]
+end
+EOF
+
+# 5. Package with dotfiles included
+cp o/tool/net/redbean /tmp/my-app.com
+cd /tmp/my-app
+# IMPORTANT: Use shopt -s dotglob to include hidden files
+shopt -s dotglob
+zip -q -r ../app.zip *
+shopt -u dotglob
+cd /tmp
+cat app.zip >> my-app.com
+zip -A my-app.com
+
+# 6. Run and test
+/tmp/my-app.com -p 8080 &
+PID=$!
+sleep 2
+
+# Initial request
+curl http://localhost:8080/status.rb
+# Shows: Request count: 1, Reload count: 0
+
+# Trigger reload
+kill -USR1 $PID
+sleep 1
+
+# Request after reload
+curl http://localhost:8080/status.rb
+# Shows: Request count: 2, Reload count: 1
+
+# Clean up
+kill $PID
+```
+
+### Packaging Dotfiles
+
+**IMPORTANT:** Standard `zip` commands don't include hidden files (those starting with `.`) by default. Use one of these methods:
+
+**Method 1: Using shopt (recommended):**
+```bash
+cd /tmp/my-app
+shopt -s dotglob  # Enable dotfile globbing
+zip -q -r ../app.zip *
+shopt -u dotglob  # Disable dotfile globbing
+```
+
+**Method 2: Explicit file list:**
+```bash
+cd /tmp/my-app
+zip -q -r ../app.zip .init.rb .reload.rb *.rb
+```
+
+**Method 3: Find command:**
+```bash
+cd /tmp/my-app
+find . -type f | zip -q -r@ ../app.zip
+```
+
+### Reload Signals
+
+- **SIGUSR1**: Reload signal in normal mode
+  ```bash
+  kill -USR1 <pid>
+  ```
+
+- **SIGHUP**: Reload signal in daemon mode (`-d` flag)
+  ```bash
+  kill -HUP <pid>
+  ```
+
+**Example:**
+```bash
+# Start in daemon mode
+/tmp/my-app.com -d -p 8080
+
+# Get PID
+PID=$(pgrep -f my-app.com)
+
+# Reload with SIGHUP
+kill -HUP $PID
+
+# Check logs
+cat /var/log/redbean.log  # or wherever logs are configured
+```
+
 ## Current Limitations
 
 ### Not Yet Implemented
@@ -1000,11 +1170,7 @@ curl http://localhost:8080/error.rb
    - Need to implement `Rack::Multipart` equivalent
    - Handle `multipart/form-data` requests
 
-4. **.init.rb / .reload.rb** - Auto-run scripts
-   - Similar to Lua's `.init.lua` and `.reload.lua`
-   - Run on server start and hot reload
-
-5. **Native extension gems** - .so loading
+4. **Native extension gems** - .so loading
    - Need dynamic extension loader (see `RUBY_ZIP_EXTENSION_LOADER.md`)
    - Would enable nokogiri, pg, mysql2, etc.
 
@@ -1019,23 +1185,21 @@ curl http://localhost:8080/error.rb
 ### High Priority
 
 1. **Implement rack.input** - Enable POST/PUT requests
-2. **Add .init.rb support** - Initialization scripts
-3. **Add .reload.rb support** - Hot reloading
-4. **Test with Sinatra** - Real-world Rack app
+2. **Test with Sinatra** - Real-world Rack app
 
 ### Medium Priority
 
-5. **Dynamic .so loader** - Native extension support
-6. **Performance benchmarking** - Compare with Puma/Unicorn
-7. **Error page improvements** - Better 500 error pages
-8. **Documentation** - User-facing Ruby API docs
+3. **Dynamic .so loader** - Native extension support
+4. **Performance benchmarking** - Compare with Puma/Unicorn
+5. **Error page improvements** - Better 500 error pages
+6. **Documentation** - User-facing Ruby API docs
 
 ### Low Priority
 
-9. **REPL integration** - Interactive Ruby console in redbean
-10. **Rack middleware examples** - Common middleware patterns
-11. **Rails Metal support** - Minimal Rails integration
-12. **RubyGems in ZIP** - Package gems into APE
+7. **REPL integration** - Interactive Ruby console in redbean
+8. **Rack middleware examples** - Common middleware patterns
+9. **Rails Metal support** - Minimal Rails integration
+10. **RubyGems in ZIP** - Package gems into APE
 
 ## Build System Integration
 

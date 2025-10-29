@@ -5445,6 +5445,53 @@ static void RubyStart(void) {
 #endif
 }
 
+static bool RubyRunAsset(const char *path, bool mandatory) {
+#ifndef STATIC
+  int state = 0;
+  struct Asset *a;
+  const char *code;
+  size_t pathlen, codelen;
+  pathlen = strlen(path);
+  if ((a = GetAsset(path, pathlen))) {
+    if ((code = FreeLater(LoadAsset(a, &codelen)))) {
+      effectivepath.p = (void *)path;
+      effectivepath.n = pathlen;
+      DEBUGF("(ruby) RubyRunAsset(%`'s)", path);
+      rb_eval_string_protect(code, &state);
+      if (state != 0) {
+        VALUE exception = rb_errinfo();
+        VALUE message = rb_funcall(exception, rb_intern("message"), 0);
+        const char *error_msg = StringValueCStr(message);
+        ERRORF("(ruby) error in %s: %s", path, error_msg);
+        if (mandatory)
+          exit(1);
+      }
+    }
+  }
+  return !!a;
+#else
+  return false;
+#endif
+}
+
+static void RubyInit(void) {
+#ifndef STATIC
+  if (!RubyRunAsset("/.init.rb", false)) {
+    DEBUGF("(srvr) no /.init.rb defined");
+  }
+#endif
+}
+
+static void RubyOnServerReload(bool reindex) {
+#ifndef STATIC
+  if (!RubyRunAsset("/.reload.rb", false)) {
+    DEBUGF("(srvr) no /.reload.rb defined");
+  }
+  // TODO: Call Ruby OnServerReload hook if defined
+  // Similar to Lua's: rb_funcall(rb_mKernel, rb_intern("OnServerReload"), 1, reindex ? Qtrue : Qfalse);
+#endif
+}
+
 static bool ShouldAutocomplete(const char *s) {
   int c, m, l, r;
   l = 0;
@@ -5842,7 +5889,9 @@ static void HandleFrag(size_t got) {
 
 static void HandleReload(void) {
   LockInc(&shared->c.reloads);
-  LuaOnServerReload(Reindex());
+  bool reindex = Reindex();
+  LuaOnServerReload(reindex);
+  RubyOnServerReload(reindex);
   invalidated = false;
 }
 
@@ -7438,6 +7487,7 @@ void RedBean(int argc, char *argv[]) {
   }
 #endif
   LuaInit();
+  RubyInit();
   oldloglevel = __log_level;
   if (uniprocess) {
     shared->workers = 1;

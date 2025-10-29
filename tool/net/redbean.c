@@ -119,11 +119,20 @@
 #include "third_party/lua/lualib.h"
 #include "third_party/lua/lunix.h"
 #ifndef STATIC
+/* Undefine Cosmopolitan's memory allocation macros before including Ruby headers to avoid redefinition errors */
 #undef xmalloc
 #undef xcalloc
 #undef xrealloc
 #define _GETOPT_CORE_H  /* Block getopt_long includes */
 #include "third_party/ruby/include/ruby.h"
+/* Undefine Ruby's memory allocation macros and restore Cosmopolitan's allocators for redbean code */
+#undef xmalloc
+#undef xcalloc
+#undef xrealloc
+#undef xfree
+#define xmalloc       __xmalloc
+#define xcalloc       __xcalloc
+#define xrealloc      __xrealloc
 #endif
 #include "third_party/mbedtls/ctr_drbg.h"
 #include "third_party/mbedtls/debug.h"
@@ -482,9 +491,6 @@ static char *brand;
 static size_t zsize;
 static lua_State *GL;
 static lua_State *YL;
-#ifndef STATIC
-static VALUE rb_mRedbean;  // Ruby Redbean module
-#endif
 static uint8_t *zmap;
 static uint8_t *zcdir;
 static size_t hdrsize;
@@ -3127,36 +3133,157 @@ static char *ServeLua(struct Asset *a, const char *s, size_t n) {
 
 static char *ServeRuby(struct Asset *a, const char *s, size_t n) {
 #ifndef STATIC
-  char *code;
-  size_t codelen;
+  char *code, *p, *qs;
+  size_t i, codelen, qslen;
   int state = 0;
-  VALUE result;
+  uint32_t serverip;
+  uint16_t serverport;
+  VALUE env, rack_app, response, status_val, headers_val, body_val, str;
+  int status;
+
   LockInc(&shared->c.dynamicrequests);
   effectivepath.p = (void *)s;
   effectivepath.n = n;
-  if ((code = FreeLater(LoadAsset(a, &codelen)))) {
-    DEBUGF("(ruby) executing %`'.*s (%zu bytes)", (int)n, s, codelen);
-    // Evaluate the Ruby code with error protection
-    result = rb_eval_string_protect(code, &state);
-    if (state == 0) {
-      // Success - for now just return 200 OK
-      // TODO: Implement Ruby API to build HTTP responses
-      char *p = SetStatus(200, "OK");
-      p = AppendContentType(p, "text/plain");
-      appendf(&cpm.outbuf, "Ruby code executed successfully\n");
-      return CommitOutput(p);
-    } else {
-      // Error occurred
-      VALUE exception = rb_errinfo();
-      VALUE message = rb_funcall(exception, rb_intern("message"), 0);
-      const char *error_msg = StringValueCStr(message);
-      ERRORF("(ruby) failed to run Ruby code: %s", error_msg);
-      return ServeErrorWithDetail(
-          500, "Internal Server Error",
-          ShouldServeCrashReportDetails() ? error_msg : NULL);
+
+  if (!(code = FreeLater(LoadAsset(a, &codelen)))) {
+    return ServeError(500, "Internal Server Error");
+  }
+
+  DEBUGF("(ruby) executing Rack app %`'.*s (%zu bytes)", (int)n, s, codelen);
+
+  // Build Rack env hash
+  env = rb_hash_new();
+
+  // Convert HTTP method to string
+  char method[9] = {0};
+  WRITE64LE(method, cpm.msg.method);
+
+  // CGI variables
+  rb_hash_aset(env, rb_str_new2("REQUEST_METHOD"), rb_str_new2(method));
+  rb_hash_aset(env, rb_str_new2("PATH_INFO"), rb_str_new(url.path.p, url.path.n));
+
+  if (url.params.n > 0) {
+    // Build query string from params
+    qs = NULL;
+    qslen = 0;
+    for (i = 0; i < url.params.n; ++i) {
+      if (i > 0) appendd(&qs, "&", 1);
+      appendd(&qs, url.params.p[i].key.p, url.params.p[i].key.n);
+      if (url.params.p[i].val.p) {
+        appendd(&qs, "=", 1);
+        appendd(&qs, url.params.p[i].val.p, url.params.p[i].val.n);
+      }
+    }
+    rb_hash_aset(env, rb_str_new2("QUERY_STRING"), rb_str_new(qs, qslen));
+    free(qs);
+  } else {
+    rb_hash_aset(env, rb_str_new2("QUERY_STRING"), rb_str_new2(""));
+  }
+
+  // Get server address
+  GetServerAddr(&serverip, &serverport);
+  rb_hash_aset(env, rb_str_new2("SERVER_NAME"), rb_str_new2("localhost"));  // TODO: reverse DNS
+  rb_hash_aset(env, rb_str_new2("SERVER_PORT"), rb_str_new2(gc(xasprintf("%d", serverport))));
+  rb_hash_aset(env, rb_str_new2("SERVER_PROTOCOL"), rb_str_new2("HTTP/1.1"));
+
+  // Add HTTP headers as HTTP_*
+  for (i = 0; i < kHttpHeadersMax; ++i) {
+    if (cpm.msg.headers[i].a) {
+      const char *hdr_name = GetHttpHeaderName(i);
+      char *header_name = gc(xasprintf("HTTP_%s", hdr_name));
+      // Convert to uppercase and replace - with _
+      for (char *c = header_name + 5; *c; ++c) {
+        if (*c == '-') *c = '_';
+        else *c = toupper(*c);
+      }
+      rb_hash_aset(env, rb_str_new2(header_name),
+                   rb_str_new(inbuf.p + cpm.msg.headers[i].a, cpm.msg.headers[i].b - cpm.msg.headers[i].a));
     }
   }
-  return ServeError(500, "Internal Server Error");
+
+  // Rack-specific variables
+  rb_hash_aset(env, rb_str_new2("rack.version"), rb_ary_new3(2, INT2NUM(1), INT2NUM(3)));
+  rb_hash_aset(env, rb_str_new2("rack.url_scheme"), rb_str_new2(usingssl ? "https" : "http"));
+  rb_hash_aset(env, rb_str_new2("rack.input"), Qnil);  // TODO: wrap msg.entity
+  rb_hash_aset(env, rb_str_new2("rack.errors"), Qnil); // TODO: wrap stderr
+  rb_hash_aset(env, rb_str_new2("rack.multithread"), Qtrue);
+  rb_hash_aset(env, rb_str_new2("rack.multiprocess"), Qtrue);
+  rb_hash_aset(env, rb_str_new2("rack.run_once"), Qfalse);
+
+  // Load and execute Ruby code to get Rack app
+  rack_app = rb_eval_string_protect(code, &state);
+
+  if (state != 0) {
+    VALUE exception = rb_errinfo();
+    VALUE message = rb_funcall(exception, rb_intern("message"), 0);
+    const char *error_msg = StringValueCStr(message);
+    ERRORF("(ruby) failed to load Rack app: %s", error_msg);
+    return ServeErrorWithDetail(500, "Internal Server Error",
+                                ShouldServeCrashReportDetails() ? error_msg : NULL);
+  }
+
+  // Call the Rack app with env
+  response = rb_funcall(rack_app, rb_intern("call"), 1, env);
+
+  // Extract [status, headers, body] from response
+  if (TYPE(response) != T_ARRAY || RARRAY_LEN(response) != 3) {
+    ERRORF("(ruby) Rack app returned invalid response (expected [status, headers, body])");
+    return ServeError(500, "Internal Server Error");
+  }
+
+  status_val = rb_ary_entry(response, 0);
+  headers_val = rb_ary_entry(response, 1);
+  body_val = rb_ary_entry(response, 2);
+
+  status = NUM2INT(status_val);
+  p = SetStatus(status, GetHttpReason(status));
+
+  // Process headers hash
+  if (TYPE(headers_val) == T_HASH) {
+    VALUE keys = rb_funcall(headers_val, rb_intern("keys"), 0);
+    long hdr_count = RARRAY_LEN(keys);
+    for (long j = 0; j < hdr_count; ++j) {
+      VALUE key = rb_ary_entry(keys, j);
+      VALUE val = rb_hash_aref(headers_val, key);
+      const char *key_str = StringValueCStr(key);
+      const char *val_str = StringValueCStr(val);
+
+      if (strcasecmp(key_str, "Content-Type") == 0) {
+        p = AppendContentType(p, val_str);
+      } else {
+        p = AppendHeader(p, key_str, val_str);
+      }
+    }
+  }
+
+  // Process body - Rack body must respond to #each
+  if (TYPE(body_val) == T_ARRAY) {
+    // Body is an array, concatenate directly
+    long body_count = RARRAY_LEN(body_val);
+    for (long j = 0; j < body_count; ++j) {
+      str = rb_ary_entry(body_val, j);
+      const char *chunk = StringValuePtr(str);
+      size_t chunk_len = RSTRING_LEN(str);
+      appendd(&cpm.outbuf, chunk, chunk_len);
+    }
+  } else {
+    // Call each to get body chunks
+    VALUE body_array = rb_funcall(body_val, rb_intern("to_a"), 0);
+    long body_count = RARRAY_LEN(body_array);
+    for (long j = 0; j < body_count; ++j) {
+      str = rb_ary_entry(body_array, j);
+      const char *chunk = StringValuePtr(str);
+      size_t chunk_len = RSTRING_LEN(str);
+      appendd(&cpm.outbuf, chunk, chunk_len);
+    }
+  }
+
+  // Call close on body if it responds to it
+  if (rb_respond_to(body_val, rb_intern("close"))) {
+    rb_funcall(body_val, rb_intern("close"), 0);
+  }
+
+  return CommitOutput(p);
 #else
   return ServeError(501, "Not Implemented");
 #endif
@@ -5313,11 +5440,8 @@ static void LuaStart(void) {
 
 static void RubyStart(void) {
 #ifndef STATIC
-  RUBY_INIT_STACK;
   ruby_init();
-  // TODO: Initialize Ruby API bindings for redbean
-  // rb_mRedbean = rb_define_module("Redbean");
-  DEBUGF("(ruby) Ruby interpreter initialized");
+  DEBUGF("(ruby) Ruby interpreter initialized with Rack support");
 #endif
 }
 
@@ -7303,6 +7427,9 @@ void RedBean(int argc, char *argv[]) {
     WARNF("(srvr) failed to query system network interface addresses: %m");
   }
   LuaStart();
+#ifndef STATIC
+  RUBY_INIT_STACK;
+#endif
   RubyStart();
   GetOpts(argc, argv);
 #ifndef STATIC

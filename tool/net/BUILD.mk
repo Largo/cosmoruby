@@ -128,6 +128,16 @@ o/$(MODE)/tool/net/redbean.o: private					\
 			-Ithird_party/ruby/include			\
 			-Wno-unused-but-set-variable
 
+o/$(MODE)/tool/net/redbean-unsecure.o: private				\
+		CFLAGS +=						\
+			-Ithird_party/ruby/include			\
+			-Wno-unused-but-set-variable
+
+o/$(MODE)/tool/net/redbean-original.o: private				\
+		CFLAGS +=						\
+			-Ithird_party/ruby/include			\
+			-Wno-unused-but-set-variable
+
 # REDBEAN-DEMO
 #
 # This redbean-demo program is the same as redbean except it

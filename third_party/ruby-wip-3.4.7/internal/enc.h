@@ -16,4 +16,10 @@ extern rb_encoding OnigEncodingUS_ASCII;
 /* utf_8.c */
 extern rb_encoding OnigEncodingUTF_8;
 
+/* utf_16be.c - Cosmopolitan: compiled-in for static build */
+extern rb_encoding OnigEncodingUTF_16BE;
+
+/* utf_16le.c - Cosmopolitan: compiled-in for static build */
+extern rb_encoding OnigEncodingUTF_16LE;
+
 #endif /* INTERNAL_ENC_H */

@@ -241,6 +241,13 @@ module Gem
   # Enables automatic installation into user directory
 
   def self.default_user_install # :nodoc:
+    # Special case for Cosmopolitan Ruby APE with embedded ZIP filesystem
+    # The /zip directory reports as writable but actually isn't, so we check explicitly
+    if ruby_engine == "ruby.com" && default_dir.start_with?("/zip")
+      Gem.ui.say "Defaulting to user installation because running from Cosmopolitan APE with embedded /zip filesystem."
+      return true
+    end
+
     if !ENV.key?("GEM_HOME") && File.exist?(Gem.dir) && !File.writable?(Gem.dir)
       Gem.ui.say "Defaulting to user installation because default installation directory (#{Gem.dir}) is not writable."
       return true

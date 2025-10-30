@@ -268,6 +268,7 @@ include libc/thread/BUILD.mk			# │
 include third_party/zlib/BUILD.mk		# │
 include third_party/haclstar/BUILD.mk		# │
 include libc/stdio/BUILD.mk			# │
+include third_party/libyaml/BUILD.mk		# │
 include tool/hello/BUILD.mk			# │
 include third_party/tz/BUILD.mk			# │
 include net/BUILD.mk				# │

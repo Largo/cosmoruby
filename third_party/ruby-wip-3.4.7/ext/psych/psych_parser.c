@@ -105,6 +105,7 @@ static VALUE transcode_string(VALUE src, int * parser_encoding)
     int utf8    = rb_utf8_encindex();
     int utf16le = rb_enc_find_index("UTF-16LE");
     int utf16be = rb_enc_find_index("UTF-16BE");
+    int ascii8bit = rb_ascii8bit_encindex();
     int source_encoding = rb_enc_get_index(src);
 
     if (source_encoding == utf8) {
@@ -112,12 +113,15 @@ static VALUE transcode_string(VALUE src, int * parser_encoding)
         return src;
     }
 
-    if (source_encoding == utf16le) {
+    /* BUG FIX: Only match UTF-16LE if the encoding actually loaded.
+     * If UTF-16LE codec is missing, rb_enc_find_index returns ASCII-8BIT,
+     * causing false matches with ASCII-8BIT input. */
+    if (utf16le >= 0 && utf16le != ascii8bit && source_encoding == utf16le) {
         *parser_encoding = YAML_UTF16LE_ENCODING;
         return src;
     }
 
-    if (source_encoding == utf16be) {
+    if (utf16be >= 0 && utf16be != ascii8bit && source_encoding == utf16be) {
         *parser_encoding = YAML_UTF16BE_ENCODING;
         return src;
     }
@@ -154,14 +158,21 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
         return src;
     }
 
-    if (io_external_enc_index == rb_enc_find_index("UTF-16LE")) {
-        *parser_encoding = YAML_UTF16LE_ENCODING;
-        return src;
-    }
+    /* BUG FIX: Same as transcode_string - check encoding actually loaded */
+    {
+        int utf16le = rb_enc_find_index("UTF-16LE");
+        int utf16be = rb_enc_find_index("UTF-16BE");
+        int ascii8bit = rb_ascii8bit_encindex();
 
-    if (io_external_enc_index == rb_enc_find_index("UTF-16BE")) {
-        *parser_encoding = YAML_UTF16BE_ENCODING;
-        return src;
+        if (utf16le >= 0 && utf16le != ascii8bit && io_external_enc_index == utf16le) {
+            *parser_encoding = YAML_UTF16LE_ENCODING;
+            return src;
+        }
+
+        if (utf16be >= 0 && utf16be != ascii8bit && io_external_enc_index == utf16be) {
+            *parser_encoding = YAML_UTF16BE_ENCODING;
+            return src;
+        }
     }
 
     /* Just guess on ASCII-8BIT */

@@ -1,0 +1,81 @@
+# Ruby Extensions Currently Built-In
+
+This file documents which Ruby C extensions are currently compiled into ruby.com.
+
+## Active Extensions (in ext/extinit.c)
+
+These extensions are statically linked and registered via ruby_init_ext():
+
+- **date_core** - Date/DateTime/Time parsing and formatting
+  - Files: ext/date/*.c (4 files)
+  - Lib files: ext/date/lib/date.rb
+  - Required by: psych (for YAML timestamp support)
+
+- **monitor** - Thread synchronization primitive
+  - Files: ext/monitor/monitor.c
+  - Required by: Ruby stdlib threading
+
+- **pathname** - Filesystem path manipulation
+  - Files: ext/pathname/pathname.c
+  - Required by: Common Ruby stdlib usage
+
+- **psych** - YAML parser/emitter (wraps libyaml)
+  - Files: ext/psych/*.c (5 files)
+  - Lib files: ext/psych/lib/psych.rb + ext/psych/lib/psych/
+  - Dependencies: libyaml (third_party/libyaml)
+  - Required by: RubyGems (for checksums.yaml.gz parsing)
+
+- **socket** - TCP/UDP/Unix socket support
+  - Files: ext/socket/*.c (14 files)
+  - Lib files: ext/socket/lib/socket.rb
+  - Required by: Network operations
+
+- **stringio** - In-memory string I/O
+  - Files: ext/stringio/stringio.c
+  - Required by: Common Ruby stdlib usage
+
+- **zlib** - Compression/decompression (gzip, deflate)
+  - Files: ext/zlib/zlib.c
+  - Dependencies: third_party/zlib
+  - Required by: RubyGems (for .gem file decompression)
+
+## Built-in Extensions (always included in core)
+
+These are compiled directly into ruby.a, not via extinit.c:
+
+- **ripper** - Ruby parser (for introspection)
+  - Files: ext/ripper/*.c (4 files)
+
+- **io/console** - Terminal/console I/O
+  - Files: ext/io/console/console.c
+
+- **io/wait** - Non-blocking I/O primitives
+  - Files: ext/io/wait/wait.c
+
+## To Add a New Extension:
+
+1. Create `third_party/ruby/ext/YOUR_EXT/BUILD.mk`
+2. Add `include third_party/ruby/ext/YOUR_EXT/BUILD.mk` to main BUILD.mk
+3. Add `init(Init_YOUR_EXT, "YOUR_EXT");` to ext/extinit.c
+4. If extension has lib files, add copy command to third_party/ruby/package_ruby.sh
+5. Rebuild: `make -j24 o//third_party/ruby/ruby`
+
+## To Remove an Extension:
+
+1. Comment out the `include` line in main BUILD.mk
+2. Remove the `init()` line from ext/extinit.c
+3. Remove lib file copy from third_party/ruby/package_ruby.sh (if applicable)
+4. Rebuild (only that extension will be skipped)
+
+## Extension Dependencies:
+
+- psych → libyaml (third_party/libyaml)
+- psych → date (for timestamp support)
+- zlib → third_party/zlib
+
+## Packaging Notes:
+
+Extensions with Ruby library files (in ext/*/lib/) need special handling in third_party/ruby/package_ruby.sh:
+- date: ext/date/lib/date.rb
+- psych: ext/psych/lib/psych.rb + ext/psych/lib/psych/*
+- socket: ext/socket/lib/socket.rb (optional, works without it)

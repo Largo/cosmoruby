@@ -114,6 +114,9 @@ class Gem::RemoteFetcher
     cache_dir =
       if Dir.pwd == install_dir # see fetch_command
         install_dir
+      # Special case for Cosmopolitan APE: /zip reports as writable but isn't
+      elsif install_dir.start_with?("/zip")
+        File.join Gem.user_dir, "cache"
       elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && !File.exist?(install_cache_dir))
         install_cache_dir
       else

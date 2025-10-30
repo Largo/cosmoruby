@@ -717,14 +717,18 @@ rb_enc_init(struct enc_table *enc_table)
     ENC_REGISTER(ASCII_8BIT);
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
+    /* Cosmopolitan: Register UTF-16 encodings as built-in, not autoload */
+    ENC_REGISTER(UTF_16BE);
+    ENC_REGISTER(UTF_16LE);
     global_enc_ascii = enc_table->list[ENCINDEX_ASCII_8BIT].enc;
     global_enc_utf_8 = enc_table->list[ENCINDEX_UTF_8].enc;
     global_enc_us_ascii = enc_table->list[ENCINDEX_US_ASCII].enc;
 #undef ENC_REGISTER
 #undef OnigEncodingASCII_8BIT
 #define ENCDB_REGISTER(name, enc) enc_register_at(enc_table, ENCINDEX_##enc, name, NULL)
-    ENCDB_REGISTER("UTF-16BE", UTF_16BE);
-    ENCDB_REGISTER("UTF-16LE", UTF_16LE);
+    /* Cosmopolitan: UTF-16BE/LE now registered above as built-in */
+    // ENCDB_REGISTER("UTF-16BE", UTF_16BE);
+    // ENCDB_REGISTER("UTF-16LE", UTF_16LE);
     ENCDB_REGISTER("UTF-32BE", UTF_32BE);
     ENCDB_REGISTER("UTF-32LE", UTF_32LE);
     ENCDB_REGISTER("UTF-16", UTF_16);

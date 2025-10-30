@@ -1710,6 +1710,12 @@ uint32_t crc32_z(uint32_t crc, const void *buf, size_t len);
 uLong crc32_combine(uLong crc1, uLong crc2, int64_t len2);
 
 /**
+ * Return a pointer to the CRC-32 table used for CRC calculations.
+ * The table is 256 entries of z_crc_t values.
+ */
+const z_crc_t * get_crc_table(void);
+
+/**
  * gzgetc() macro and its supporting function and exposed data
  * structure. Note that the real internal state is much larger than the
  * exposed structure. This abbreviated structure exposes just enough for

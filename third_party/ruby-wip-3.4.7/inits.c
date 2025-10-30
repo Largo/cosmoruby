@@ -80,10 +80,6 @@ rb_call_inits(void)
     CALL(ripper);
     CALL(console);
     CALL(wait);
-    CALL(pathname);
-    CALL(stringio);
-    CALL(monitor);
-    CALL(socket);
 
     // enable builtin loading
     CALL(builtin);

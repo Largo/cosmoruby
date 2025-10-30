@@ -234,7 +234,7 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/debug.c					\
     third_party/ruby/debug_counter.c				\
     third_party/ruby/dir.c					\
-    third_party/ruby/dmyext.c					\
+    third_party/ruby/ext/extinit.c				\
     third_party/ruby/dln.c					\
     third_party/ruby/encinit.c					\
     third_party/ruby/dln_find.c					\
@@ -380,7 +380,8 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/ext/socket/tcpsocket.c			\
     third_party/ruby/ext/socket/udpsocket.c			\
     third_party/ruby/ext/socket/unixserver.c			\
-    third_party/ruby/ext/socket/unixsocket.c
+    third_party/ruby/ext/socket/unixsocket.c			\
+    third_party/ruby/ext/zlib/zlib.c
 
 # Assembly files
 THIRD_PARTY_RUBY_A_SRCS_S =					\
@@ -504,6 +505,12 @@ o/$(MODE)/third_party/ruby/coroutine/amd64/Context.o: private	\
 o/$(MODE)/third_party/ruby/ext/socket/%.o: private		\
     CPPFLAGS +=							\
             -DRUBY_EXTCONF_H=\"ext/socket/extconf.h\"
+
+# zlib extension: Include zlib headers from third_party/zlib
+o/$(MODE)/third_party/ruby/ext/zlib/%.o: private		\
+    CFLAGS +=							\
+            -Ithird_party/zlib					\
+            -DHAVE_TYPE_Z_CRC_T
 
 # Main entry point files need Ruby includes
 o/$(MODE)/third_party/ruby/ruby.main.o				\

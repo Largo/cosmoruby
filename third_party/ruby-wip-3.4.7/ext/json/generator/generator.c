@@ -1561,17 +1561,26 @@ void Init_generator(void)
 #endif
 
 #undef rb_intern
-    rb_require("json/common");
+    // rb_require("json/common"); // Commented out for static linking - json/common loaded before this
 
     mJSON = rb_define_module("JSON");
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
+    // Define error classes if they don't exist (json/common will override these)
     rb_global_variable(&eGeneratorError);
-    eGeneratorError = rb_path2class("JSON::GeneratorError");
+    if (!rb_const_defined(mJSON, rb_intern("GeneratorError"))) {
+        eGeneratorError = rb_define_class_under(mJSON, "GeneratorError", rb_eStandardError);
+    } else {
+        eGeneratorError = rb_const_get(mJSON, rb_intern("GeneratorError"));
+    }
 
     rb_global_variable(&eNestingError);
-    eNestingError = rb_path2class("JSON::NestingError");
+    if (!rb_const_defined(mJSON, rb_intern("NestingError"))) {
+        eNestingError = rb_define_class_under(mJSON, "NestingError", rb_eStandardError);
+    } else {
+        eNestingError = rb_const_get(mJSON, rb_intern("NestingError"));
+    }
 
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);
@@ -1687,5 +1696,5 @@ void Init_generator(void)
     utf8_encindex = rb_utf8_encindex();
     binary_encindex = rb_ascii8bit_encindex();
 
-    rb_require("json/ext/generator/state");
+    // rb_require("json/ext/generator/state"); // Commented out for static linking - loaded by our stub
 }

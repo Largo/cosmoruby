@@ -3173,11 +3173,17 @@ void Init_parser(void)
 #endif
 
 #undef rb_intern
-    rb_require("json/common");
+    // rb_require("json/common"); // Commented out for static linking - json/common loaded before this
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
-    eNestingError = rb_path2class("JSON::NestingError");
+
+    // Define error classes if they don't exist (json/common will override these)
+    if (!rb_const_defined(mJSON, rb_intern("NestingError"))) {
+        eNestingError = rb_define_class_under(mJSON, "NestingError", rb_eStandardError);
+    } else {
+        eNestingError = rb_const_get(mJSON, rb_intern("NestingError"));
+    }
     rb_gc_register_mark_object(eNestingError);
     rb_define_alloc_func(cParser, cJSON_parser_s_allocate);
     rb_define_method(cParser, "initialize", cParser_initialize, -1);
@@ -3186,14 +3192,21 @@ void Init_parser(void)
 
     rb_define_singleton_method(cParser, "parse", cParser_m_parse, 2);
 
-    CNaN = rb_const_get(mJSON, rb_intern("NaN"));
-    rb_gc_register_mark_object(CNaN);
+    // These constants will be set by json/common when it loads
+    if (rb_const_defined(mJSON, rb_intern("NaN"))) {
+        CNaN = rb_const_get(mJSON, rb_intern("NaN"));
+        rb_gc_register_mark_object(CNaN);
+    }
 
-    CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
-    rb_gc_register_mark_object(CInfinity);
+    if (rb_const_defined(mJSON, rb_intern("Infinity"))) {
+        CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
+        rb_gc_register_mark_object(CInfinity);
+    }
 
-    CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
-    rb_gc_register_mark_object(CMinusInfinity);
+    if (rb_const_defined(mJSON, rb_intern("MinusInfinity"))) {
+        CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
+        rb_gc_register_mark_object(CMinusInfinity);
+    }
 
     rb_global_variable(&Encoding_UTF_8);
     Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));

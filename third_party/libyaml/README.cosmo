@@ -1,0 +1,24 @@
+DESCRIPTION
+
+  libyaml is a YAML 1.1 parser and emitter written in C.
+
+SOURCE
+
+  https://github.com/yaml/libyaml/archive/refs/tags/0.2.5.tar.gz
+
+VERSION
+
+  0.2.5
+
+LICENSE
+
+  MIT
+
+PURPOSE
+
+  YAML parser for Ruby's psych extension, required by RubyGems for
+  parsing checksums.yaml.gz files inside gem archives.
+
+LOCAL CHANGES
+
+  None yet. Using upstream source as-is.

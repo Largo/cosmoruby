@@ -18,6 +18,7 @@ THIRD_PARTY_MEXICAN_TOASTER_DIRECTDEPS =		\
 	THIRD_PARTY_AWK					\
 	THIRD_PARTY_CURL				\
 	THIRD_PARTY_GETOPT				\
+	THIRD_PARTY_LINENOISE				\
 	THIRD_PARTY_MUSL				\
 	THIRD_PARTY_SED					\
 	THIRD_PARTY_TR
@@ -35,6 +36,7 @@ THIRD_PARTY_MEXICAN_TOASTER_RUBYBEAN_DEPS :=		\
 # mtsh - Mexican Toaster Shell (enhanced command interpreter)
 o/$(MODE)/third_party/mexican_toaster/mtsh.o:		\
 		third_party/mexican_toaster/mtsh.c		\
+		third_party/mexican_toaster/mtsh_version.h	\
 		third_party/mexican_toaster/mtsh/util.inc	\
 		third_party/mexican_toaster/mtsh/tokenize.inc	\
 		third_party/mexican_toaster/mtsh/entry.inc
@@ -70,6 +72,7 @@ o/$(MODE)/third_party/mexican_toaster/caboose.o:	\
 		third_party/mexican_toaster/examples/caboose/toast_piz.inc	\
 		third_party/mexican_toaster/examples/caboose/zip_tools.inc	\
 		third_party/mexican_toaster/examples/caboose/main.inc
+	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) -c $< -o $@
 
 o/$(MODE)/third_party/mexican_toaster/mtsh_embed.o:	\
 		third_party/mexican_toaster/mtsh_embed.c	\

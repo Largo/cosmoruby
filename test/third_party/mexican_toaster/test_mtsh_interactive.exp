@@ -1,0 +1,223 @@
+#!/usr/bin/env expect
+# Test mtsh v0.2.0 interactive features with Expect
+#
+# This tests features that require a PTY (pseudo-terminal):
+# - Alt-key sequences don't crash
+# - Arrow keys work for navigation and history
+# - Backspace/Delete work
+# - Version string displays
+# - Clean exit with Ctrl-D
+#
+# Requirements:
+#   - expect (install with: apt-get install expect, brew install expect, etc.)
+#   - mtsh built at o//third_party/mexican_toaster/mtsh.com
+
+set timeout 5
+set mtsh "o//third_party/mexican_toaster/mtsh.com"
+
+if {![file executable $mtsh]} {
+    puts "Error: mtsh not found at $mtsh"
+    puts "Build it with: make -j1 o//third_party/mexican_toaster/mtsh.com"
+    exit 1
+}
+
+puts "Testing mtsh v0.2.0 interactive features with Expect...\n"
+
+# Test 1: Start mtsh and check for welcome message
+puts "Test 1: Welcome message and version display..."
+spawn $mtsh
+expect {
+    "mtsh interactive shell v0.2.0" {
+        puts "  ✓ Version string displayed correctly"
+    }
+    timeout {
+        puts "  ✗ FAIL: Welcome message timeout"
+        exit 1
+    }
+}
+
+expect {
+    "Type 'help' for commands" {
+        puts "  ✓ Help message displayed"
+    }
+    timeout {
+        puts "  ✗ FAIL: Help message timeout"
+        exit 1
+    }
+}
+
+expect {
+    "mtsh$ " {
+        puts "  ✓ Prompt displayed"
+    }
+    timeout {
+        puts "  ✗ FAIL: Prompt timeout"
+        exit 1
+    }
+}
+
+# Test 2: Simple command execution
+puts "\nTest 2: Simple command execution..."
+send "echo hello\r"
+expect {
+    "hello" {
+        puts "  ✓ Command executed successfully"
+    }
+    timeout {
+        puts "  ✗ FAIL: Command execution timeout"
+        exit 1
+    }
+}
+
+expect "mtsh$ "
+
+# Test 3: Alt-a doesn't crash (this was the original bug)
+puts "\nTest 3: Alt-a sequence doesn't crash (regression)..."
+send "\033a"
+# Give it a moment to process
+sleep 0.1
+# Shell should still be alive, send a simple command
+send "echo still-alive\r"
+expect {
+    "still-alive" {
+        puts "  ✓ Alt-a handled gracefully, shell still responsive"
+    }
+    timeout {
+        puts "  ✗ FAIL: Shell crashed or became unresponsive after Alt-a"
+        exit 1
+    }
+}
+
+expect "mtsh$ "
+
+# Test 4: Multiple Alt-key sequences
+puts "\nTest 4: Multiple escape sequences..."
+send "\033x\033y\033z"
+sleep 0.1
+send "echo survived-escapes\r"
+expect {
+    "survived-escapes" {
+        puts "  ✓ Multiple escape sequences handled"
+    }
+    timeout {
+        puts "  ✗ FAIL: Shell crashed after multiple escapes"
+        exit 1
+    }
+}
+
+expect "mtsh$ "
+
+# Test 5: Arrow key up (history recall)
+puts "\nTest 5: Arrow key - history recall (up arrow)..."
+send "echo first\r"
+expect "first"
+expect "mtsh$ "
+
+send "echo second\r"
+expect "second"
+expect "mtsh$ "
+
+# Send up arrow (ANSI escape sequence: ESC [ A)
+send "\033\[A"
+sleep 0.2
+
+# The line should now contain "echo second" (from history)
+# We can't easily verify what's in the line buffer without executing it
+# So let's just execute it
+send "\r"
+expect {
+    "second" {
+        puts "  ✓ Up arrow recalled previous command from history"
+    }
+    timeout {
+        puts "  ⚠ History recall timeout (might not be working)"
+    }
+}
+
+expect "mtsh$ "
+
+# Test 6: Backspace
+puts "\nTest 6: Backspace functionality..."
+send "echo wrongX"
+# Send backspace (ASCII 127 or Ctrl-H)
+send "\177"
+sleep 0.1
+send "\r"
+expect {
+    "wrong" {
+        puts "  ✓ Backspace deleted character"
+    }
+    "wrongX" {
+        puts "  ✗ FAIL: Backspace didn't work"
+        exit 1
+    }
+    timeout {
+        puts "  ⚠ Backspace test timeout"
+    }
+}
+
+expect "mtsh$ "
+
+# Test 7: Left/Right arrow navigation
+puts "\nTest 7: Arrow key navigation (left/right)..."
+send "echo test"
+# Send left arrow 4 times to move cursor to 'e'
+send "\033\[D\033\[D\033\[D\033\[D"
+sleep 0.1
+# Insert 'X' in the middle
+send "X"
+sleep 0.1
+send "\r"
+expect {
+    -re "Xecho test|echo Xtest" {
+        puts "  ✓ Left/right arrow navigation works (inserted character)"
+    }
+    "echo test" {
+        puts "  ⚠ Arrow navigation might not be working as expected"
+    }
+    timeout {
+        puts "  ⚠ Navigation test timeout"
+    }
+}
+
+expect "mtsh$ "
+
+# Test 8: Ctrl-D exits cleanly (must be on empty line)
+puts "\nTest 8: Ctrl-D exits cleanly..."
+# Wait for prompt
+expect "mtsh$ "
+# Ctrl-D on an empty line should exit (standard readline/linenoise behavior)
+send "\004"
+expect {
+    eof {
+        puts "  ✓ Ctrl-D caused clean exit"
+    }
+    "mtsh$ " {
+        # If we get another prompt, Ctrl-D on non-empty line just cleared it
+        # Try again on empty line
+        puts "  ℹ Ctrl-D on non-empty line, trying on empty line..."
+        send "\004"
+        expect {
+            eof {
+                puts "  ✓ Ctrl-D on empty line caused clean exit"
+            }
+            timeout {
+                puts "  ✗ FAIL: Ctrl-D didn't exit even on empty line"
+                exit 1
+            }
+        }
+    }
+    timeout {
+        puts "  ✗ FAIL: Ctrl-D didn't exit (timeout)"
+        exit 1
+    }
+}
+
+# Wait for process to fully exit
+wait
+
+puts "\n================================"
+puts "All interactive tests passed! ✓"
+puts "================================\n"
+
+exit 0

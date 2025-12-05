@@ -148,60 +148,77 @@ int _mtsh(int argc, char **argv, char **envp) {
 }
 
 static int InteractiveShell(char **envp) {
-  char line[ARG_MAX];
+  char *line;
   char *interactive_argv[3];
   int rc = 0;
   const char *prompt = g_mtsh_config.mode == kMtshModeToast ? "toast$ " : "mtsh$ ";
+  const char *history_name = g_mtsh_config.mode == kMtshModeToast ? "mtsh-toast" : "mtsh";
 
   interactive_argv[0] = (char *)prog;
   interactive_argv[1] = "-c";
 
-  // Print welcome message if on a tty
+  // Print welcome message and version if on a tty
   if (isatty(0)) {
-    tinyprint(1, "mtsh interactive shell\n", NULL);
+    tinyprint(1, "mtsh interactive shell v", MTSH_VERSION_STRING, "\n", NULL);
     tinyprint(1, "Type 'help' for commands, 'exit' or ^D to quit\n", NULL);
   }
 
-  while (1) {
-    // Print prompt if on a tty
+  // Use linenoise for professional line editing if on a tty
+  // Otherwise fall back to simple line reading (for pipes/redirection)
+  if (isatty(0)) {
+    // linenoise interactive mode
+    while ((line = linenoiseWithHistory(prompt, history_name))) {
+      // Skip empty lines
+      if (!*line) {
+        free(line);
+        continue;
+      }
+
+      // Execute the line
+      interactive_argv[2] = line;
+      rc = _mtsh(3, interactive_argv, envp);
+      free(line);
+    }
+    // ^D pressed, clean exit
     if (isatty(0)) {
-      Write(1, prompt);
+      Write(1, "\n");
     }
-
-    // Read a line
-    ssize_t i = 0;
-    char c;
-    while (i < sizeof(line) - 1) {
-      ssize_t n = read(0, &c, 1);
-      if (n == 0) {
-        // EOF (^D)
-        if (i == 0) {
-          if (isatty(0)) {
-            Write(1, "\n");
+    return rc;
+  } else {
+    // Non-tty mode: simple line reading for pipes/redirects
+    char linebuf[ARG_MAX];
+    while (1) {
+      ssize_t i = 0;
+      char c;
+      while (i < sizeof(linebuf) - 1) {
+        ssize_t n = read(0, &c, 1);
+        if (n == 0) {
+          // EOF
+          if (i == 0) {
+            return rc;
           }
-          return rc;
+          break;
         }
-        break;
+        if (n < 0) {
+          perror("read");
+          return 1;
+        }
+        if (c == '\n') {
+          break;
+        }
+        linebuf[i++] = c;
       }
-      if (n < 0) {
-        perror("read");
-        return 1;
-      }
-      if (c == '\n') {
-        break;
-      }
-      line[i++] = c;
-    }
-    line[i] = 0;
+      linebuf[i] = 0;
 
-    // Skip empty lines
-    if (i == 0) {
-      continue;
-    }
+      // Skip empty lines
+      if (i == 0) {
+        continue;
+      }
 
-    // Execute the line
-    interactive_argv[2] = line;
-    rc = _mtsh(3, interactive_argv, envp);
+      // Execute the line
+      interactive_argv[2] = linebuf;
+      rc = _mtsh(3, interactive_argv, envp);
+    }
   }
 }
 

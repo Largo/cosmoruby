@@ -39,11 +39,13 @@
 #include "libc/sysv/consts/prot.h"
 #include "libc/sysv/consts/s.h"
 #include "third_party/getopt/getopt.internal.h"
+#include "third_party/mexican_toaster/mtdeps_version.h"
 #include "tool/build/lib/getargs.h"
 
-#define VERSION                     \
-  "cosmopolitan mkdeps v3.0\n"      \
-  "copyright 2023 justine tunney\n" \
+#define VERSION                                                   \
+  "mtdeps (Mexican Toaster) v" MTDEPS_VERSION_STRING "\n"        \
+  "based on cosmopolitan mkdeps v3.0\n"                           \
+  "copyright 2023 justine tunney\n"                               \
   "https://github.com/jart/cosmopolitan\n"
 
 #define MANUAL                                                               \

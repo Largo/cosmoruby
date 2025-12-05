@@ -46,13 +46,15 @@
 #include "libc/temp.h"
 #include "third_party/awk/cmd.h"
 #include "third_party/getopt/getopt.internal.h"
+#include "third_party/linenoise/linenoise.h"
+#include "third_party/mexican_toaster/mtsh_version.h"
 #include "third_party/musl/glob.h"
 #include "third_party/sed/cmd.h"
 #include "third_party/tr/cmd.h"
 #include "tool/curl/cmd.h"
 
 /**
- * @fileoverview Mexican Toaster Shell (mtsh)
+ * @fileoverview Mexican Toaster Shell (mtsh) v0.2.0
  *
  * Enhanced command interpreter used by Mexican Toaster and the Ruby build.
  * Based on cocmd but with additional features:
@@ -61,6 +63,7 @@
  *   - 'command -v' for finding executables in PATH
  *   - ':' null command builtin
  *   - Enhanced comment handling
+ *   - Line editing in interactive mode (linenoise)
  */
 
 #define STATE_CMD        0

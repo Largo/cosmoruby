@@ -17,7 +17,7 @@ fi
 
 # Clean up any existing cosmo-ruby directory and ruby-stdlib.zip file
 rm -rf cosmo-ruby
-rm ruby-stdlib.zip
+rm -f ruby-stdlib.zip
 
 mkdir -p cosmo-ruby/bin
 
@@ -88,14 +88,14 @@ cp -r /home/groobiest/Code/jart/cosmopolitan/usr/share/terminfo/* cosmo-ruby/usr
 
 cd cosmo-ruby
 
-# in o/cosmo-ruby
-
+# in o/cosmo-ruby !!
 # Extract the existing ZIP fs stuff into the current directory
 RUBYLIB=../../third_party/ruby/lib ../third_party/ruby/ruby ../../third_party/ruby/extract_zip.rb /zip/
 touch .cosmo
 
 # Create the ZIP file
-zip -r ../ruby-stdlib.zip *
+zip -q -r -dd ../ruby-stdlib.zip *
+echo Zip creation complete
 
 cd ..
 
@@ -104,6 +104,8 @@ cd ..
 # Prepare the Ruby binary for packaging
 cp third_party/ruby/ruby third_party/ruby/ruby.com
 cp third_party/ruby/irb third_party/ruby/irb.com
+cp third_party/ruby/miniruby third_party/ruby/miniruby.com
 # Use zipcopy to embed the stdlib ZIP into the Ruby binary
 ../.cosmocc/current/bin/zipcopy ruby-stdlib.zip third_party/ruby/ruby.com
 ../.cosmocc/current/bin/zipcopy ruby-stdlib.zip third_party/ruby/irb.com
+../.cosmocc/current/bin/zipcopy ruby-stdlib.zip third_party/ruby/miniruby.com

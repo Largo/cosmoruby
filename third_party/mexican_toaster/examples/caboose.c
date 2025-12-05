@@ -1,0 +1,46 @@
+/*-*- mode:c;indent-tabs-mode:nil;c-basic-offset:2;tab-width:8;coding:utf-8 -*-│
+│ vi: set et ft=c ts=2 sts=2 sw=2 fenc=utf-8                               :vi │
+╞══════════════════════════════════════════════════════════════════════════════╡
+│ Caboose - Mexican Toaster App Proof of Concept                              │
+│ Demonstrates "getting toasted" - entering an interactive shell inside       │
+│ the APE's embedded ZIP filesystem                                           │
+╚─────────────────────────────────────────────────────────────────────────────*/
+#include "libc/calls/calls.h"
+#include "libc/calls/mount.h"
+#include "libc/calls/struct/stat.h"
+#include "libc/calls/struct/dirent.h"
+#include "libc/calls/weirdtypes.h"
+#include "libc/dce.h"
+#include "libc/errno.h"
+#include "libc/limits.h"
+#include "libc/runtime/runtime.h"
+#include "libc/stdio/stdio.h"
+#include "libc/fmt/conv.h"
+#include "libc/stdbool.h"
+#include "libc/stdlib.h"
+#include "libc/dlopen/dlfcn.h"
+#include "libc/str/str.h"
+#include "libc/sysv/consts/ok.h"
+#include "libc/sysv/consts/dt.h"
+#include "libc/sysv/consts/ex.h"
+#include "libc/sysv/consts/exit.h"
+#include "libc/sysv/consts/mount.h"
+#include "libc/sysv/consts/o.h"
+#include "libc/sysv/consts/s.h"
+#include "libc/sysv/consts/clone.h"
+#include "libc/temp.h"
+#include "libc/time.h"
+#include "libc/x/x.h"
+
+#include "third_party/mexican_toaster/examples/caboose/usage.inc"
+#include "third_party/mexican_toaster/examples/caboose/overlay_backend.inc"
+#include "third_party/mexican_toaster/examples/caboose/paths.inc"
+#include "third_party/mexican_toaster/examples/caboose/zip_check.inc"
+#include "third_party/mexican_toaster/examples/caboose/env_probe.inc"
+#include "third_party/mexican_toaster/examples/caboose/namespace_setup.inc"
+#include "third_party/mexican_toaster/examples/caboose/recursive_copy.inc"
+#include "third_party/mexican_toaster/examples/caboose/piz_setup.inc"
+#include "third_party/mexican_toaster/examples/caboose/overlay_cmd.inc"
+#include "third_party/mexican_toaster/examples/caboose/toast_piz.inc"
+#include "third_party/mexican_toaster/examples/caboose/zip_tools.inc"
+#include "third_party/mexican_toaster/examples/caboose/main.inc"

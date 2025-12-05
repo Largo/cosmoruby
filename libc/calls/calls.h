@@ -114,6 +114,7 @@ int mincore(void *, size_t, unsigned char *) libcesque __read_only(1) __write_on
 int mkdir(const char *, unsigned) libcesque __read_only(1);
 int mkdirat(int, const char *, unsigned) libcesque __read_only(2);
 int mknod(const char *, unsigned, uint64_t) libcesque __read_only(1);
+int mount(const char *, const char *, const char *, unsigned long, const void *) libcesque;
 int nice(int) libcesque;
 int open(const char *, int, ...) libcesque __read_only(1);
 int openat(int, const char *, int, ...) libcesque __read_only(2);
@@ -154,6 +155,7 @@ int truncate(const char *, int64_t) libcesque __read_only(1);
 int ttyname_r(int, char *, size_t) libcesque __write_only(2, 3);
 int unlink(const char *) libcesque __read_only(1);
 int unlinkat(int, const char *, int) libcesque __read_only(2);
+int unshare(int) libcesque;
 int usleep(uint64_t) libcesque;
 int vfork(void) dontthrow returnstwice;
 int wait(int *) libcesque __write_only(1);

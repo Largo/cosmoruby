@@ -1,6 +1,23 @@
 #-*-mode:makefile-gmake;indent-tabs-mode:t;tab-width:8;coding:utf-8-*-┐
 #── vi: set noet ft=make ts=8 sw=8 fenc=utf-8 :vi ────────────────────┘
 
+################################################################################
+# COSMOPOLITAN BUILD CONSTRAINTS
+#
+# Hermetic Build:
+#   - Cosmopolitan downloads its own toolchain to .cosmocc/
+#   - Cannot rely on system Ruby or tools during build
+#   - Use HOST_RUBY or COSMO_RUBY variables for Ruby interpreter
+#   - All build artifacts go to o/$(MODE)/ directory tree
+#
+# cocmd Shell Limitations:
+#   - Make recipes use cocmd (Cosmopolitan's embedded shell)
+#   - Supported: ':', '#' comments, subshells '()', cmd substitution '$()'
+#   - Limited: Complex '&& ||' chains with redirects may fail
+#   - Workaround: Break into multiple rules or simplify command logic
+################################################################################
+
+o/$(MODE)/third_party/ruby/ruby.dbg: | ruby.codegen
 
 o/$(MODE)/third_party/ruby/ruby.dbg:				\
         $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
@@ -13,6 +30,30 @@ o/$(MODE)/third_party/ruby/ruby.dbg:				\
 
 # Force linker to extract all extension object files from archives (weak symbols don't trigger extraction)
 o/$(MODE)/third_party/ruby/ruby.dbg: private			\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+		--no-whole-archive
+
+################################################################################
+# ruby.zipless
+
+o/$(MODE)/third_party/ruby/ruby.zipless.pkg:			\
+    o/$(MODE)/third_party/ruby/ruby.main.zipless.o		\
+    $(foreach x,$(THIRD_PARTY_RUBY_RUBY_DIRECTDEPS),$($(x)_A).pkg)
+
+o/$(MODE)/third_party/ruby/ruby.zipless.dbg: | ruby.codegen
+
+o/$(MODE)/third_party/ruby/ruby.zipless.dbg:			\
+        $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
+        o/$(MODE)/third_party/ruby/ruby.zipless.pkg		\
+        o/$(MODE)/third_party/ruby/ruby.main.zipless.o		\
+        $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+        $(CRT)							\
+        $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/ruby.zipless.dbg: private		\
 	LDFLAGS +=						\
 		--whole-archive				\
 		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
@@ -40,6 +81,8 @@ o/$(MODE)/third_party/ruby/irb.pkg:				\
     o/$(MODE)/third_party/ruby/irb.main.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_IRB_DIRECTDEPS),$($(x)_A).pkg)
 
+o/$(MODE)/third_party/ruby/irb.dbg: | ruby.codegen
+
 o/$(MODE)/third_party/ruby/irb.dbg:				\
     $(THIRD_PARTY_RUBY_IRB_DEPS)				\
     o/$(MODE)/third_party/ruby/irb.pkg				\
@@ -51,6 +94,30 @@ o/$(MODE)/third_party/ruby/irb.dbg:				\
 
 # Force linker to extract all extension object files from archives (weak symbols don't trigger extraction)
 o/$(MODE)/third_party/ruby/irb.dbg: private			\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+		--no-whole-archive
+
+################################################################################
+# irb.zipless
+
+o/$(MODE)/third_party/ruby/irb.zipless.pkg:			\
+    o/$(MODE)/third_party/ruby/irb.main.zipless.o		\
+    $(foreach x,$(THIRD_PARTY_RUBY_IRB_DIRECTDEPS),$($(x)_A).pkg)
+
+o/$(MODE)/third_party/ruby/irb.zipless.dbg: | ruby.codegen
+
+o/$(MODE)/third_party/ruby/irb.zipless.dbg:			\
+    $(THIRD_PARTY_RUBY_IRB_DEPS)				\
+    o/$(MODE)/third_party/ruby/irb.zipless.pkg			\
+    o/$(MODE)/third_party/ruby/irb.main.zipless.o		\
+    $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+    $(CRT)							\
+    $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/irb.zipless.dbg: private		\
 	LDFLAGS +=						\
 		--whole-archive				\
 		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
@@ -76,17 +143,49 @@ THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS =				\
 THIRD_PARTY_RUBY_MINIRUBY_DEPS :=				\
     $(call uniq,$(foreach x,$(THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS),$($(x))))
 
+# miniruby.zipless - filesystem paths only
+o/$(MODE)/third_party/ruby/miniruby.zipless.pkg:		\
+    o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    $(foreach x,$(THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS),$($(x)_A).pkg)
+
+o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: | ruby.codegen
+
+o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
+    $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
+    $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
+    o/$(MODE)/third_party/ruby/miniruby.zipless.pkg		\
+    o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    $(CRT)							\
+    $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: private	\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(THIRD_PARTY_RUBY_EXT_MONITOR_A)	\
+		--no-whole-archive
+
+# miniruby - ZIP paths only
 o/$(MODE)/third_party/ruby/miniruby.pkg:			\
     o/$(MODE)/third_party/ruby/miniruby.main.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS),$($(x)_A).pkg)
 
+o/$(MODE)/third_party/ruby/miniruby.dbg: | ruby.codegen
+
 o/$(MODE)/third_party/ruby/miniruby.dbg:			\
     $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
+    $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
     o/$(MODE)/third_party/ruby/miniruby.pkg			\
     o/$(MODE)/third_party/ruby/miniruby.main.o			\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)
 	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/miniruby.dbg: private			\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(THIRD_PARTY_RUBY_EXT_MONITOR_A)	\
+		--no-whole-archive
 
 ################################################################################
 
@@ -104,6 +203,7 @@ $(THIRD_PARTY_RUBY_OBJS): third_party/ruby/BUILD.mk
 
 .PHONY: o/$(MODE)/third_party/ruby
 o/$(MODE)/third_party/ruby:					\
+    ruby.codegen						\
     $(THIRD_PARTY_RUBY_LIBS)					\
     $(THIRD_PARTY_RUBY_BINS)					\
     $(THIRD_PARTY_RUBY_CHECKS)

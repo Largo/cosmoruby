@@ -20,7 +20,7 @@ Dir.glob("#{zip_prefix}/**/*", File::FNM_DOTMATCH).each do |path|
 
   # Copy the file
   FileUtils.cp(path, relative_path)
-  puts "Extracted: #{relative_path}"
+  # puts "Extracted: #{relative_path}"
 end
 
 puts "ZIP extraction complete"

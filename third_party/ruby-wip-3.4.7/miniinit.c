@@ -14,7 +14,10 @@
 
 /* loadpath.c */
 const char ruby_exec_prefix[] = "";
-const char ruby_initial_load_paths[] = "";
+const char ruby_initial_load_paths[] =
+    RUBY_MINI_LIBDIR "\0"
+    RUBY_MINI_MONITOR_LIBDIR "\0"
+    "";
 
 /* localeinit.c */
 VALUE
@@ -46,12 +49,6 @@ Init_enc(void)
     rb_encdb_declare("UTF-8");
     rb_encdb_alias("BINARY", "ASCII-8BIT");
     rb_encdb_alias("ASCII", "US-ASCII");
-}
-
-/* miniruby does not support dynamic loading. */
-void
-Init_ext(void)
-{
 }
 
 static void builtin_loaded(const char *feature_name, VALUE iseq);

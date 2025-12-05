@@ -12,6 +12,11 @@
 #include "verconf.h"
 #include "ruby/ruby.h"
 
+#ifdef RUBY_COSMO_LOADPATH_PREFIX
+#undef RUBY_EXEC_PREFIX
+#define RUBY_EXEC_PREFIX RUBY_COSMO_LOADPATH_PREFIX
+#endif
+
 /* Define RUBY_REVISION to avoid revision.h inclusion via version.h. */
 #define RUBY_REVISION 0
 #include "version.h"
@@ -87,5 +92,11 @@ const char ruby_initial_load_paths[] =
     RUBY_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
 #endif
     RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
+#ifdef RUBY_COSMO_DEV_LIB
+    RUBY_COSMO_DEV_LIB "\0"
+#endif
+#ifdef RUBY_COSMO_DEV_MONITOR
+    RUBY_COSMO_DEV_MONITOR "\0"
+#endif
 #endif
     "";

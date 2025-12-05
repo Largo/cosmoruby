@@ -1,7 +1,7 @@
 /*-*- mode:c;indent-tabs-mode:nil;c-basic-offset:2;tab-width:8;coding:utf-8 -*-│
 │ vi: set et ft=c ts=2 sts=2 sw=2 fenc=utf-8                               :vi │
 ╞══════════════════════════════════════════════════════════════════════════════╡
-│ Copyright 2021 Justine Alexandra Roberts Tunney                              │
+│ Copyright 2025 Justine Alexandra Roberts Tunney                              │
 │                                                                              │
 │ Permission to use, copy, modify, and/or distribute this software for         │
 │ any purpose with or without fee is hereby granted, provided that the         │
@@ -17,85 +17,37 @@
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/calls/mount.h"
-#include "libc/dce.h"
-#include "libc/str/str.h"
-#include "libc/sysv/errfuns.h"
-
-int32_t sys_mount_linux(const char *source, const char *target,
-                        const char *filesystemtype, uint64_t mountflags,
-                        const void *data) asm("sys_mount");
-int32_t sys_mount_bsd(const char *type, const char *dir, int32_t flags,
-                      const void *data) asm("sys_mount");
+#include "libc/calls/syscall-sysv.internal.h"
+#include "libc/intrin/strace.h"
 
 /**
- * Mounts file system.
+ * Mounts filesystem.
  *
- * The following flags may be specified:
+ * This system call is used to attach a filesystem to the directory tree.
+ * On Linux, it can mount various filesystem types including overlay
+ * filesystems for containerization.
  *
- * - `MS_RDONLY` (mount read-only)
- * - `MS_NOSUID` (don't honor S_ISUID bit)
- * - `MS_NODEV` (disallow special files)
- * - `MS_NOEXEC` (disallow program execution)
- * - `MS_SYNCHRONOUS` (writes are synced at once)
- * - `MS_NOATIME` (do not update access times)
- * - `MS_REMOUNT` (tune existing mounting)
- *
- * The following flags may also be used, but could be set to zero at
- * runtime if the underlying kernel doesn't support them.
- *
- * - `MNT_ASYNC` (xnu, freebsd, openbsd, netbsd)
- * - `MNT_RELOAD` (xnu, freebsd, openbsd, netbsd)
- * - `MS_STRICTATIME` (linux, xnu)
- * - `MS_RELATIME` (linux, netbsd)
- * - `MNT_SNAPSHOT` (xnu, freebsd)
- * - `MS_MANDLOCK` (linux)
- * - `MS_DIRSYNC` (linux)
- * - `MS_NODIRATIME` (linux)
- * - `MS_BIND` (linux)
- * - `MS_MOVE` (linux)
- * - `MS_REC` (linux)
- * - `MS_SILENT` (linux)
- * - `MS_POSIXACL` (linux)
- * - `MS_UNBINDABLE` (linux)
- * - `MS_PRIVATE` (linux)
- * - `MS_SLAVE` (linux)
- * - `MS_SHARED` (linux)
- * - `MS_KERNMOUNT` (linux)
- * - `MS_I_VERSION` (linux)
- * - `MS_LAZYTIME` (linux)
- * - `MS_ACTIVE` (linux)
- * - `MS_NOUSER` (linux)
- * - `MS_RMT`_MASK (linux)
- * - `MNT_SUIDDIR` (freebsd)
- * - `MNT_NOCLUSTERR` (freebsd)
- * - `MNT_NOCLUSTERW` (freebsd)
- *
- * Some example values for the `type` parameter:
- *
- * - `"nfs"`
- * - `"vfat"`
- * - `"tmpfs"`
- * - `"iso8601"`
- *
+ * @param source is the device or filesystem source
+ * @param target is the mount point directory path
+ * @param filesystemtype is the filesystem type (e.g., "ext4", "overlay")
+ * @param mountflags are flags like MS_RDONLY, MS_NOEXEC, etc.
+ * @param data is filesystem-specific options string
+ * @return 0 on success, or -1 w/ errno
+ * @raise EACCES if permission denied
+ * @raise EBUSY if target is busy
+ * @raise EINVAL if invalid parameters
+ * @raise ENODEV if filesystem type not configured in kernel
+ * @raise ENOENT if target path doesn't exist
+ * @raise ENOMEM if insufficient memory
+ * @raise ENOTBLK if source is not a block device (when required)
+ * @raise ENOTDIR if target is not a directory
+ * @raise EPERM if caller lacks CAP_SYS_ADMIN capability
  */
-int mount(const char *source, const char *target, const char *type,
-          unsigned long flags, const void *data) {
-  if (!IsWindows()) {
-    if (!IsBsd()) {
-      return sys_mount_linux(source, target, type, flags, data);
-    } else {
-      if (!strcmp(type, "iso9660"))
-        type = "cd9660";
-      if (!strcmp(type, "vfat")) {
-        if (IsOpenbsd() || IsNetbsd()) {
-          type = "msdos";
-        } else {
-          type = "msdosfs";
-        }
-      }
-      return sys_mount_bsd(type, target, flags, data);
-    }
-  } else {
-    return enosys();
-  }
+int mount(const char *source, const char *target, const char *filesystemtype,
+          unsigned long mountflags, const void *data) {
+  int rc;
+  rc = sys_mount(source, target, filesystemtype, mountflags, data);
+  STRACE("mount(%#s, %#s, %#s, %#lx, %p) → %d% m", source, target,
+         filesystemtype, mountflags, data, rc);
+  return rc;
 }

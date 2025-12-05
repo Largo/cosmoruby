@@ -1,6 +1,21 @@
 #-*-mode:makefile-gmake;indent-tabs-mode:t;tab-width:8;coding:utf-8-*-┐
 #── vi: set noet ft=make ts=8 sw=8 fenc=utf-8 :vi ────────────────────┘
 
+################################################################################
+# COSMOPOLITAN BUILD CONSTRAINTS
+#
+# Hermetic Build:
+#   - Cosmopolitan downloads its own toolchain to .cosmocc/
+#   - Cannot rely on system Ruby or tools during build
+#   - Use HOST_RUBY or COSMO_RUBY variables for Ruby interpreter
+#   - All build artifacts go to o/$(MODE)/ directory tree
+#
+# cocmd Shell Limitations:
+#   - Make recipes use cocmd (Cosmopolitan's embedded shell)
+#   - Supported: ':', '#' comments, subshells '()', cmd substitution '$()'
+#   - Limited: Complex '&& ||' chains with redirects may fail
+#   - Workaround: Break into multiple rules or simplify command logic
+################################################################################
 
 # Common CFLAGS for all Ruby files
 # -DRUBY_SEARCH_PATH=\"/zip/lib/ruby/3.4.0\"
@@ -72,11 +87,78 @@ o/$(MODE)/third_party/ruby/coroutine/amd64/Context.o: private	\
 
 # Main entry point files need Ruby includes
 o/$(MODE)/third_party/ruby/ruby.main.o				\
+o/$(MODE)/third_party/ruby/ruby.main.zipless.o			\
 o/$(MODE)/third_party/ruby/irb.main.o				\
-o/$(MODE)/third_party/ruby/miniruby.main.o: private		\
+o/$(MODE)/third_party/ruby/irb.main.zipless.o			\
+o/$(MODE)/third_party/ruby/miniruby.main.o			\
+o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\
     CFLAGS +=							\
             -Ithird_party/ruby/include				\
             -Ithird_party/ruby
+
+o/$(MODE)/third_party/ruby/loadpath.o: private			\
+    CFLAGS +=							\
+            -DRUBY_COSMO_LOADPATH_PREFIX=\"/zip\"		\
+            -DRUBY_COSMO_DEV_LIB=\"$(abspath third_party/ruby/lib)\" \
+            -DRUBY_COSMO_DEV_MONITOR=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+
+# miniruby.zipless - uses filesystem paths only
+o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: third_party/ruby/miniruby.main.c
+	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) $(OUTPUT_OPTION) $<
+	@$(COMPILE) -AFIXUPOBJ -wT$@ $(FIXUPOBJ) $@
+
+o/$(MODE)/third_party/ruby/ruby.main.zipless.o: third_party/ruby/ruby.main.c
+	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) $(OUTPUT_OPTION) $<
+	@$(COMPILE) -AFIXUPOBJ -wT$@ $(FIXUPOBJ) $@
+
+o/$(MODE)/third_party/ruby/irb.main.zipless.o: third_party/ruby/irb.main.c
+	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) $(OUTPUT_OPTION) $<
+	@$(COMPILE) -AFIXUPOBJ -wT$@ $(FIXUPOBJ) $@
+
+# zipless entry points share filesystem load path definitions
+o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\
+    CFLAGS +=							\
+            -DRUBY_COSMO_RESET_LOAD_PATH			\
+            -DRUBY_COSMO_LOAD_PATH0=\"$(abspath third_party/ruby/lib)\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\" \
+            -DRUBY_MINI_LIBDIR=\"$(abspath third_party/ruby/lib)\" \
+            -DRUBY_MINI_MONITOR_LIBDIR=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+
+# miniruby - uses ZIP paths only
+o/$(MODE)/third_party/ruby/miniruby.main.o: private		\
+    CFLAGS +=							\
+            -DRUBY_COSMO_RESET_LOAD_PATH			\
+            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/3.4.0\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\" \
+            -DRUBY_MINI_LIBDIR=\"/zip/lib/ruby/3.4.0\" \
+            -DRUBY_MINI_MONITOR_LIBDIR=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\"
+
+# ruby - filesystem paths (zipless)
+o/$(MODE)/third_party/ruby/ruby.main.zipless.o: private		\
+    CFLAGS +=							\
+            -DRUBY_COSMO_RESET_LOAD_PATH			\
+            -DRUBY_COSMO_LOAD_PATH0=\"$(abspath third_party/ruby/lib)\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+
+# irb - filesystem paths (zipless)
+o/$(MODE)/third_party/ruby/irb.main.zipless.o: private		\
+    CFLAGS +=							\
+            -DRUBY_COSMO_RESET_LOAD_PATH			\
+            -DRUBY_COSMO_LOAD_PATH0=\"$(abspath third_party/ruby/lib)\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+
+# ruby/irb/miniruby - ZIP paths
+o/$(MODE)/third_party/ruby/ruby.main.o: private			\
+    CFLAGS +=							\
+            -DRUBY_COSMO_RESET_LOAD_PATH			\
+            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/3.4.0\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\"
+
+o/$(MODE)/third_party/ruby/irb.main.o: private			\
+    CFLAGS +=							\
+            -DRUBY_COSMO_RESET_LOAD_PATH			\
+            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/3.4.0\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\"
 
 ################################################################################
 # ruby
@@ -101,4 +183,3 @@ THIRD_PARTY_RUBY_RUBY_DEPS :=					\
 o/$(MODE)/third_party/ruby/ruby.pkg:				\
     o/$(MODE)/third_party/ruby/ruby.main.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_RUBY_DIRECTDEPS),$($(x)_A).pkg)
-

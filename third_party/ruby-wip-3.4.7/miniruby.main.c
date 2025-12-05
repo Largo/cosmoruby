@@ -1,18 +1,15 @@
-/*
- * miniruby.main.c - Minimal Ruby entry point for Cosmopolitan
- *
- * This is a lean Ruby interpreter for basic scripting and testing.
- * Unlike the full ruby binary, this skips some initialization
- * to provide a faster startup time.
- */
+/* miniruby.main.c - Lean Ruby entry point for Cosmopolitan */
 
-#include "ruby.h"
+#include "ruby_cosmo_main.h"
+
+static int
+rb_main(int argc, char **argv)
+{
+    return rb_main_run(argc, argv);
+}
 
 int
 main(int argc, char **argv)
 {
-    ruby_sysinit(&argc, &argv);
-    RUBY_INIT_STACK;
-    ruby_init();
-    return ruby_run_node(ruby_options(argc, argv));
+    return rb_cosmo_main(argc, argv, rb_main);
 }

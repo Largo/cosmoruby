@@ -268,7 +268,6 @@ include libc/thread/BUILD.mk			# │
 include third_party/zlib/BUILD.mk		# │
 include third_party/haclstar/BUILD.mk		# │
 include libc/stdio/BUILD.mk			# │
-include third_party/libyaml/BUILD.mk		# │
 include tool/hello/BUILD.mk			# │
 include third_party/tz/BUILD.mk			# │
 include net/BUILD.mk				# │
@@ -346,14 +345,12 @@ include tool/build/lib/BUILD.mk
 include third_party/chibicc/BUILD.mk
 include third_party/chibicc/test/BUILD.mk
 include third_party/python/BUILD.mk
-include third_party/ruby/BUILD.mk
 include tool/build/BUILD.mk
 include tool/curl/BUILD.mk
 include third_party/qemu/BUILD.mk
 include third_party/libcxxabi/test/BUILD.mk
 include examples/BUILD.mk
 include examples/pyapp/BUILD.mk
-include examples/rubyapp/BUILD.mk
 include examples/pylife/BUILD.mk
 include tool/decode/lib/BUILD.mk
 include tool/decode/BUILD.mk
@@ -665,3 +662,6 @@ $(INCS):
 	$(RM) o/$(MODE)/depend
 
 -include o/$(MODE)/depend
+
+# Local project customizations (add includes to local-includes.mk)
+-include local-includes.mk

@@ -1154,7 +1154,7 @@ int main(int argc, char *argv[]) {
     /* Save original count for stage1 log (need all entries for create_shims.sh) */
     size_t original_entries_n = entries_n;
 
-    /* For per-header and monolithic modes, deduplicate INCS entries for deps.mk
+    /* For per-header mode, deduplicate INCS entries for deps.mk
      * (multiple includers may generate same entry_path) */
     if (g_shim_strategy != SHIM_STRATEGY_PER_INCLUDER) {
       size_t deduped_n = 0;

@@ -123,9 +123,6 @@ o/$(MODE)/third_party/ruby/irb.zipless.dbg: private		\
 		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
 		--no-whole-archive
 
-################################################################################
-# miniruby (lean Ruby without extensions for faster builds/testing)
-
 THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS =				\
     LIBC_CALLS							\
     LIBC_FMT							\
@@ -153,6 +150,8 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: | ruby.codegen
 o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
     $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
     $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
+    $(THIRD_PARTY_RUBY_EXT_STRINGIO_A)				\
+    $(THIRD_PARTY_RUBY_EXT_PATHNAME_A)				\
     o/$(MODE)/third_party/ruby/miniruby.zipless.pkg		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
     $(CRT)							\
@@ -163,6 +162,8 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: private	\
 	LDFLAGS +=						\
 		--whole-archive				\
 		$(THIRD_PARTY_RUBY_EXT_MONITOR_A)	\
+		$(THIRD_PARTY_RUBY_EXT_STRINGIO_A)	\
+		$(THIRD_PARTY_RUBY_EXT_PATHNAME_A)	\
 		--no-whole-archive
 
 # miniruby - ZIP paths only
@@ -175,6 +176,8 @@ o/$(MODE)/third_party/ruby/miniruby.dbg: | ruby.codegen
 o/$(MODE)/third_party/ruby/miniruby.dbg:			\
     $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
     $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
+    $(THIRD_PARTY_RUBY_EXT_STRINGIO_A)				\
+    $(THIRD_PARTY_RUBY_EXT_PATHNAME_A)				\
     o/$(MODE)/third_party/ruby/miniruby.pkg			\
     o/$(MODE)/third_party/ruby/miniruby.main.o			\
     $(CRT)							\
@@ -185,7 +188,44 @@ o/$(MODE)/third_party/ruby/miniruby.dbg: private			\
 	LDFLAGS +=						\
 		--whole-archive				\
 		$(THIRD_PARTY_RUBY_EXT_MONITOR_A)	\
+		$(THIRD_PARTY_RUBY_EXT_STRINGIO_A)	\
+		$(THIRD_PARTY_RUBY_EXT_PATHNAME_A)	\
 		--no-whole-archive
+
+################################################################################
+# automate_mkdeps (C replacement for bin/automate_mkdeps.sh)
+
+THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DIRECTDEPS =			\
+    LIBC_CALLS							\
+    LIBC_FMT							\
+    LIBC_INTRIN							\
+    LIBC_LOG							\
+    LIBC_MEM							\
+    LIBC_RUNTIME						\
+    LIBC_STDIO							\
+    LIBC_STR							\
+    LIBC_SYSTEM						\
+    LIBC_X
+
+THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DEPS :=				\
+    $(call uniq,$(foreach x,$(THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DIRECTDEPS),$($(x))))
+
+o/$(MODE)/third_party/ruby/automate_mkdeps.o:			\
+    third_party/ruby/automate_mkdeps.c
+
+o/$(MODE)/third_party/ruby/automate_mkdeps.dbg:			\
+    $(THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DEPS)			\
+    $(foreach x,$(THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DIRECTDEPS),$($(x)_A).pkg)	\
+    o/$(MODE)/third_party/ruby/automate_mkdeps.o		\
+    $(CRT)							\
+    $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/automate_mkdeps:			\
+    o/$(MODE)/third_party/ruby/automate_mkdeps.dbg		\
+    $(APE)
+	@$(OBJCOPY) -S -O binary $< $@
+	@$(ZIPCOPY) $< $@
 
 ################################################################################
 

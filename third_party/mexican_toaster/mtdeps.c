@@ -95,6 +95,13 @@
 #define Read32(s) (s[3] << 24 | s[2] << 16 | s[1] << 8 | s[0])
 #define EXT(s)    Read32(s "\0\0")
 
+enum ShimStrategy {
+  SHIM_STRATEGY_PER_INCLUDER,  /* shims/internal+array.h@third_party+ruby+array.c */
+  SHIM_STRATEGY_PER_HEADER,    /* shims/internal+array.h (flat, no @includer) */
+};
+
+static enum ShimStrategy g_shim_strategy = SHIM_STRATEGY_PER_INCLUDER;
+
 struct Source {
   unsigned hash;
   unsigned name;
@@ -216,21 +223,31 @@ static bool BuildContextEntry(char buf[hasatleast PATH_MAX],
   char *end = buf + PATH_MAX - 1;
   if (!source || !include)
     return false;
+
+  /* Build "shims/" prefix */
   const char prefix[] = "shims/";
   size_t n = sizeof(prefix) - 1;
   if (p + n > end)
     return false;
   memcpy(p, prefix, n);
   p += n;
+
+  /* Append sanitized include path */
   char *segment = p;
   if (!AppendSanitizedComponent(&p, end, include) || segment == p)
     return false;
-  if (p == end)
-    return false;
-  *p++ = '@';
-  segment = p;
-  if (!AppendSanitizedComponent(&p, end, source) || segment == p)
-    return false;
+
+  /* Per-includer mode: append "@SANITIZED_SOURCE" */
+  if (g_shim_strategy == SHIM_STRATEGY_PER_INCLUDER) {
+    if (p == end)
+      return false;
+    *p++ = '@';
+    segment = p;
+    if (!AppendSanitizedComponent(&p, end, source) || segment == p)
+      return false;
+  }
+
+  /* Per-header mode: just sanitized include, no @SOURCE */
   *p = '\0';
   return true;
 }
@@ -550,7 +567,8 @@ static void LoadRelationships(int argc, char *argv[]) {
                       ": system header not specified by the HDRS/SRCS/INCS "
                       "make variables defined by the hermetic mono repo\n",
                       NULL);
-            exit(1);
+            p = pathend + 1;
+            continue;
           }
         } else {
           // handle double quote includes
@@ -565,21 +583,36 @@ static void LoadRelationships(int argc, char *argv[]) {
           if (dependency == -1) {
             if (startswith(final, genroot)) {
               dependency = CreateSourceId(src);
-            } else if (BuildContextEntry(juf, src, incpath)) {
-              if ((dependency = GetSourceId(juf)) == -1) {
-                tinyprint(
-                    2, incpath,
-                    ": path not specified by HDRS/SRCS/INCS make variables "
-                    "(it was included by ",
-                    src, ")\n", NULL);
-                exit(1);
-              }
             } else {
-              tinyprint(2, incpath,
-                        ": path not specified by HDRS/SRCS/INCS make variables "
-                        "(it was included by ",
-                        src, ")\n", NULL);
-              exit(1);
+              /* Try shim strategies in order: per-header, per-includer */
+              bool found = false;
+
+              /* 1. Try per-header: shims/SANITIZED_INCLUDE */
+              g_shim_strategy = SHIM_STRATEGY_PER_HEADER;
+              if (BuildContextEntry(juf, src, incpath)) {
+                if ((dependency = GetSourceId(juf)) != -1) {
+                  found = true;
+                }
+              }
+
+              /* 2. Try per-includer: shims/SANITIZED_INCLUDE@SANITIZED_SOURCE */
+              if (!found) {
+                g_shim_strategy = SHIM_STRATEGY_PER_INCLUDER;
+                if (BuildContextEntry(juf, src, incpath)) {
+                  if ((dependency = GetSourceId(juf)) != -1) {
+                    found = true;
+                  }
+                }
+              }
+
+              if (!found) {
+                tinyprint(2, incpath,
+                          ": path not specified by HDRS/SRCS/INCS make variables "
+                          "(it was included by ",
+                          src, ")\n", NULL);
+                p = pathend + 1;
+                continue;
+              }
             }
           }
           AppendEdge(&edges, dependency, srcid);

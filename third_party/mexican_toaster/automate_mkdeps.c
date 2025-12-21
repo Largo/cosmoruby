@@ -20,8 +20,11 @@
 #include "libc/calls/calls.h"
 #include "libc/calls/struct/stat.h"
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "libc/log/check.h"
 #include "libc/mem/mem.h"
@@ -48,19 +51,20 @@ enum ShimStrategy {
   SHIM_STRATEGY_PER_HEADER,    /* One shim per unique header */
 };
 
+struct Config {
+  const char *module_name;        /* e.g., "ruby" */
+  const char *deps_mk_path;       /* e.g., "third_party/ruby/ruby.deps.mk" */
+  const char *hdrs_var_name;      /* e.g., "THIRD_PARTY_RUBY_A_HDRS" */
+  const char *incs_var_name;      /* e.g., "THIRD_PARTY_RUBY_A_INCS" */
+  const char *search_dir;         /* e.g., "third_party/ruby" */
+  char **include_paths;           /* Array of include paths */
+  size_t include_paths_count;
+  enum ShimStrategy shim_strategy;
+};
+
 static enum ShimStrategy g_shim_strategy = SHIM_STRATEGY_PER_HEADER;
 
-static const char *kIncludePaths[] = {
-    ".",
-    "third_party/ruby/include",
-    "third_party/ruby",
-    "third_party/ruby/prism",
-    "third_party/ruby/enc/unicode/15.0.0",
-    "third_party/zlib",
-    "third_party/ruby/ext/ripper",
-    "third_party/ruby/include/ruby",
-    "third_party/ruby/enc",
-};
+static void LoadIncludePathsFromPkgConfig(struct Config *cfg, const char *pc_file);
 
 static char *ReadWholeFile(const char *path, size_t *out_size) {
   FILE *f = fopen(path, "r");
@@ -97,6 +101,42 @@ static char *Join(const char *a, const char *b) {
   s[na] = '/';
   memcpy(s + na + 1, b, nb + 1);
   return s;
+}
+
+/* Recursively remove a directory and all its contents */
+static int RemoveDirectoryRecursive(const char *path) {
+  DIR *dir = opendir(path);
+  if (!dir) {
+    /* If directory doesn't exist, that's fine */
+    if (errno == ENOENT) return 0;
+    return -1;
+  }
+
+  struct dirent *entry;
+  int ret = 0;
+  while ((entry = readdir(dir)) != NULL) {
+    /* Skip . and .. */
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+      continue;
+
+    char *full_path = Join(path, entry->d_name);
+    struct stat st;
+    if (lstat(full_path, &st) == 0) {
+      if (S_ISDIR(st.st_mode)) {
+        ret = RemoveDirectoryRecursive(full_path);
+      } else {
+        ret = unlink(full_path);
+      }
+    }
+    free(full_path);
+    if (ret != 0) break;
+  }
+  closedir(dir);
+
+  if (ret == 0) {
+    ret = rmdir(path);
+  }
+  return ret;
 }
 
 static char *SanitizeComponent(const char *s) {
@@ -302,7 +342,9 @@ static long long GetTimeMillis(void) {
 
 /* Batch-append multiple entries to deps.mk (read once, write once) */
 static bool BatchAppendEntries(const char *deps_path,
-                               struct EntryToAdd *entries, size_t entries_n) {
+                               struct EntryToAdd *entries, size_t entries_n,
+                               const char *hdrs_var_name,
+                               const char *incs_var_name) {
   if (!entries_n) return false;
 
   size_t sz = 0;
@@ -332,20 +374,22 @@ static bool BatchAppendEntries(const char *deps_path,
   }
 
   /* Find HDRS and INCS blocks */
+  size_t hdrs_var_len = strlen(hdrs_var_name);
+  size_t incs_var_len = strlen(incs_var_name);
   size_t hdrs_header = (size_t)-1;
   size_t incs_header = (size_t)-1;
   for (size_t i = 0; i < lines_n; ++i) {
-    if (!strncmp(lines[i], "THIRD_PARTY_RUBY_A_HDRS", 23) && strstr(lines[i], "=")) {
+    if (!strncmp(lines[i], hdrs_var_name, hdrs_var_len) && strstr(lines[i], "=")) {
       hdrs_header = i;
     }
-    if (!strncmp(lines[i], "THIRD_PARTY_RUBY_A_INCS", 23) && strstr(lines[i], "=")) {
+    if (!strncmp(lines[i], incs_var_name, incs_var_len) && strstr(lines[i], "=")) {
       incs_header = i;
     }
   }
 
   /* Process each block */
   for (int block = 0; block < 2; ++block) {
-    const char *block_name = (block == 0) ? "THIRD_PARTY_RUBY_A_HDRS" : "THIRD_PARTY_RUBY_A_INCS";
+    const char *block_name = (block == 0) ? hdrs_var_name : incs_var_name;
     size_t header = (block == 0) ? hdrs_header : incs_header;
 
     if (header == (size_t)-1) continue;
@@ -565,7 +609,7 @@ fail:
 }
 
 static char *RunMakeCapture(const char *mode, const char *mkdeps, const char *o,
-                            const char *outpath) {
+                            const char *outpath, const char *shim_prefix) {
   char cmd[4096];
 
   // First ensure txt files exist (make generates them from Makefile variables)
@@ -576,9 +620,15 @@ static char *RunMakeCapture(const char *mode, const char *mkdeps, const char *o,
 
   // Invoke mtdeps directly (bypasses make's caching of o//depend)
   // This ensures we always get fresh dependency errors, even if o//depend exists
-  snprintf(cmd, sizeof(cmd),
-           "%s -o o/%sdepend -s -r o/%s @o/%ssrcs.txt @o/%shdrs.txt @o/%sincs.txt >%s 2>&1",
-           mkdeps, o, o, o, o, o, outpath);
+  if (shim_prefix) {
+    snprintf(cmd, sizeof(cmd),
+             "%s -P %s -o o/%sdepend -s -r o/%s @o/%ssrcs.txt @o/%shdrs.txt @o/%sincs.txt >%s 2>&1",
+             mkdeps, shim_prefix, o, o, o, o, o, outpath);
+  } else {
+    snprintf(cmd, sizeof(cmd),
+             "%s -o o/%sdepend -s -r o/%s @o/%ssrcs.txt @o/%shdrs.txt @o/%sincs.txt >%s 2>&1",
+             mkdeps, o, o, o, o, o, outpath);
+  }
   int rc = system(cmd);
   (void)rc;
   size_t sz = 0;
@@ -613,10 +663,21 @@ static char *NormalizePath(const char *path) {
 
 /* Generate entry path based on shim strategy */
 static char *GenerateEntryPath(const char *filename, const char *includer,
-                                const char *found, bool is_real_header) {
+                                const char *found, bool is_real_header,
+                                const char *module_name) {
   if (is_real_header) {
-    /* Real header file - always normalize to remove ./ prefix for HDRS list */
-    return NormalizePath(found);
+    /* Real header file - use filename as it appears in #include directive
+     * This matches shell script behavior: ENTRY_PATH="$FILENAME"
+     * mkdeps hash table lookup requires exact match with include string */
+    return strdup(filename);
+  }
+
+  /* Build shim prefix: third_party/<module>/shims/ */
+  char shim_prefix[PATH_MAX];
+  if (module_name) {
+    snprintf(shim_prefix, sizeof(shim_prefix), "%s_shims/", module_name);
+  } else {
+    strcpy(shim_prefix, "shims/");
   }
 
   /* Shim file - strategy determines path */
@@ -625,9 +686,9 @@ static char *GenerateEntryPath(const char *filename, const char *includer,
       /* One shim per (header, includer) pair */
       char *sf = SanitizeComponent(filename);
       char *si = SanitizeComponent(includer);
-      char *path = malloc(strlen("shims/") + strlen(sf) + 1 + strlen(si) + 1);
+      char *path = malloc(strlen(shim_prefix) + strlen(sf) + 1 + strlen(si) + 1);
       CHECK(path);
-      sprintf(path, "shims/%s@%s", sf, si);
+      sprintf(path, "%s%s@%s", shim_prefix, sf, si);
       free(sf);
       free(si);
       return path;
@@ -635,9 +696,9 @@ static char *GenerateEntryPath(const char *filename, const char *includer,
     case SHIM_STRATEGY_PER_HEADER: {
       /* One shim per unique header - flat sanitized name without @includer */
       char *sf = SanitizeComponent(filename);
-      char *path = malloc(strlen("shims/") + strlen(sf) + 1);
+      char *path = malloc(strlen(shim_prefix) + strlen(sf) + 1);
       CHECK(path);
-      sprintf(path, "shims/%s", sf);
+      sprintf(path, "%s%s", shim_prefix, sf);
       free(sf);
       return path;
     }
@@ -715,7 +776,261 @@ static void AppendStage1Log(const char *path, const char *line) {
   }
 }
 
+static char *FindRepoRoot(void) {
+  char cwd[PATH_MAX];
+  if (!getcwd(cwd, sizeof(cwd))) {
+    return NULL;
+  }
+
+  char test_path[PATH_MAX];
+  char *current = strdup(cwd);
+  CHECK(current);
+
+  while (current && *current) {
+    /* Check for Makefile (primary indicator) */
+    snprintf(test_path, sizeof(test_path), "%s/Makefile", current);
+    if (FileExists(test_path)) {
+      return current;
+    }
+
+    /* Check for .git directory */
+    snprintf(test_path, sizeof(test_path), "%s/.git", current);
+    if (FileExists(test_path)) {
+      return current;
+    }
+
+    /* Move up one directory */
+    char *slash = strrchr(current, '/');
+    if (slash && slash != current) {
+      *slash = '\0';
+    } else {
+      /* Reached root, not found */
+      free(current);
+      return NULL;
+    }
+  }
+
+  free(current);
+  return NULL;
+}
+
+static void ShowHelp(const char *prog) {
+  printf("automate_mkdeps: repair mkdeps missing-header errors for third-party modules\n\n");
+  printf("Usage:\n");
+  printf("  %s --module=NAME [OPTIONS]\n", prog);
+  printf("  %s --deps-mk=PATH --hdrs-var=VAR --incs-var=VAR [OPTIONS]\n\n", prog);
+  printf("Quick mode (with smart defaults):\n");
+  printf("  --module=NAME              Module name (e.g., ruby, python, lua)\n");
+  printf("                             Infers paths following third_party/ conventions\n\n");
+  printf("Manual mode (full control):\n");
+  printf("  --deps-mk=PATH             Path to .deps.mk file\n");
+  printf("  --hdrs-var=VAR             Make variable name for HDRS\n");
+  printf("  --incs-var=VAR             Make variable name for INCS (shims)\n");
+  printf("  --search-dir=PATH          Directory to search for missing files\n");
+  printf("  --include-path=PATH        Add include search path (repeat for multiple)\n\n");
+  printf("Shim strategy:\n");
+  printf("  --per-includer             One shim per (header, includer) pair\n");
+  printf("  --per-header               One shim per unique header (default)\n\n");
+  printf("Other options:\n");
+  printf("  --count                    Print counts and exit\n");
+  printf("  --truncate                 Clear HDRS/INCS sections and exit\n");
+  printf("  --info                     Print statistics and exit\n");
+  printf("  --help, -h                 Show this help\n\n");
+  printf("Environment variables:\n");
+  printf("  MODE                       Build mode (affects output paths)\n");
+  printf("  MKDEPS                     Path to mkdeps binary\n\n");
+  printf("Examples:\n");
+  printf("  %s --module=ruby\n", prog);
+  printf("  %s --module=python --include-path=third_party/python/include\n", prog);
+}
+
+static void ApplyModuleDefaults(struct Config *cfg, const char *module) {
+  cfg->module_name = module;
+
+  /* Generate: third_party/<module>/<module>.deps.mk */
+  char *deps_mk = malloc(256);
+  snprintf(deps_mk, 256, "third_party/%s/%s.deps.mk", module, module);
+  cfg->deps_mk_path = deps_mk;
+
+  /* Generate: THIRD_PARTY_<MODULE>_A_HDRS */
+  char *upper = strdup(module);
+  for (char *p = upper; *p; ++p) *p = toupper(*p);
+
+  char *hdrs_var = malloc(256);
+  snprintf(hdrs_var, 256, "THIRD_PARTY_%s_A_HDRS", upper);
+  cfg->hdrs_var_name = hdrs_var;
+
+  char *incs_var = malloc(256);
+  snprintf(incs_var, 256, "THIRD_PARTY_%s_A_INCS", upper);
+  cfg->incs_var_name = incs_var;
+
+  free(upper);
+
+  /* Generate: third_party/<module> */
+  char *search = malloc(256);
+  snprintf(search, 256, "third_party/%s", module);
+  cfg->search_dir = search;
+
+  /* Load include paths from pkg-config */
+  char pc_file[512];
+  snprintf(pc_file, sizeof(pc_file), "third_party/%s/%s.pc", module, module);
+
+  cfg->include_paths = NULL;
+  cfg->include_paths_count = 0;
+
+  if (FileExists(pc_file)) {
+    LoadIncludePathsFromPkgConfig(cfg, pc_file);
+  }
+
+  /* Fallback: if no paths loaded, use defaults */
+  if (cfg->include_paths_count == 0) {
+    cfg->include_paths = malloc(sizeof(char *) * 2);
+    cfg->include_paths[0] = strdup(".");
+    char *module_path = malloc(256);
+    snprintf(module_path, 256, "third_party/%s", module);
+    cfg->include_paths[1] = module_path;
+    cfg->include_paths_count = 2;
+  }
+
+  cfg->shim_strategy = SHIM_STRATEGY_PER_HEADER;
+}
+
+static void AddIncludePath(struct Config *cfg, const char *path) {
+  cfg->include_paths = realloc(cfg->include_paths,
+                               sizeof(char *) * (cfg->include_paths_count + 1));
+  cfg->include_paths[cfg->include_paths_count] = strdup(path);
+  cfg->include_paths_count++;
+}
+
+/* Load include paths from pkg-config file using the pkg-config tool */
+static void LoadIncludePathsFromPkgConfig(struct Config *cfg, const char *pc_file) {
+  /* Build command: PKG_CONFIG_PATH=<dir> pkg-config --cflags <module> */
+  char cmd[1024];
+  char *dir = PathDirname(pc_file);
+  snprintf(cmd, sizeof(cmd), "PKG_CONFIG_PATH=%s pkg-config --cflags %s 2>/dev/null",
+           dir, cfg->module_name);
+  free(dir);
+
+  FILE *fp = popen(cmd, "r");
+  if (!fp) {
+    fprintf(stderr, "Warning: pkg-config command failed, using defaults\n");
+    return;
+  }
+
+  char line[4096];
+  if (fgets(line, sizeof(line), fp)) {
+    /* Parse -I flags from output */
+    char *p = line;
+    while (*p) {
+      if (p[0] == '-' && p[1] == 'I') {
+        p += 2;
+        char *start = p;
+        while (*p && *p != ' ' && *p != '\t' && *p != '\n') p++;
+        size_t len = p - start;
+        char *path = malloc(len + 1);
+        memcpy(path, start, len);
+        path[len] = '\0';
+        AddIncludePath(cfg, path);
+        free(path);
+      } else {
+        p++;
+      }
+    }
+  }
+  pclose(fp);
+}
+
+static bool ParseFlags(int argc, char *argv[], struct Config *cfg) {
+  bool has_module = false;
+  bool has_manual_config = false;
+
+  for (int i = 1; i < argc; ++i) {
+    if (strncmp(argv[i], "--module=", 9) == 0) {
+      const char *module = argv[i] + 9;
+      ApplyModuleDefaults(cfg, module);
+      has_module = true;
+    } else if (strncmp(argv[i], "--deps-mk=", 10) == 0) {
+      cfg->deps_mk_path = strdup(argv[i] + 10);
+      has_manual_config = true;
+    } else if (strncmp(argv[i], "--hdrs-var=", 11) == 0) {
+      cfg->hdrs_var_name = strdup(argv[i] + 11);
+      has_manual_config = true;
+    } else if (strncmp(argv[i], "--incs-var=", 11) == 0) {
+      cfg->incs_var_name = strdup(argv[i] + 11);
+      has_manual_config = true;
+    } else if (strncmp(argv[i], "--search-dir=", 13) == 0) {
+      cfg->search_dir = strdup(argv[i] + 13);
+      has_manual_config = true;
+    } else if (strncmp(argv[i], "--include-path=", 15) == 0) {
+      if (cfg->include_paths_count == 0) {
+        cfg->include_paths = malloc(sizeof(char *));
+        cfg->include_paths_count = 0;
+      }
+      AddIncludePath(cfg, argv[i] + 15);
+    } else if (!strcmp(argv[i], "--per-includer")) {
+      cfg->shim_strategy = SHIM_STRATEGY_PER_INCLUDER;
+    } else if (!strcmp(argv[i], "--per-header")) {
+      cfg->shim_strategy = SHIM_STRATEGY_PER_HEADER;
+    } else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
+      ShowHelp(argv[0]);
+      exit(0);
+    } else if (!strcmp(argv[i], "--count") || !strcmp(argv[i], "--truncate") ||
+               !strcmp(argv[i], "--info")) {
+      /* These are handled in main after config is set up */
+      continue;
+    } else if (argv[i][0] == '-') {
+      fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
+      fprintf(stderr, "Use --help for usage information\n");
+      return false;
+    }
+  }
+
+  /* Validation */
+  if (!has_module && !has_manual_config) {
+    fprintf(stderr, "Error: Must specify --module=NAME or provide manual configuration\n");
+    fprintf(stderr, "Use --help for usage information\n");
+    return false;
+  }
+
+  if (has_manual_config && !cfg->deps_mk_path) {
+    fprintf(stderr, "Error: Manual mode requires --deps-mk\n");
+    return false;
+  }
+  if (has_manual_config && !cfg->hdrs_var_name) {
+    fprintf(stderr, "Error: Manual mode requires --hdrs-var\n");
+    return false;
+  }
+  if (has_manual_config && !cfg->incs_var_name) {
+    fprintf(stderr, "Error: Manual mode requires --incs-var\n");
+    return false;
+  }
+
+  return true;
+}
+
 int main(int argc, char *argv[]) {
+  /* Initialize config */
+  struct Config cfg = {0};
+
+  /* Parse command-line flags */
+  if (!ParseFlags(argc, argv, &cfg)) {
+    return 1;
+  }
+
+  /* Find repository root and chdir to it */
+  char *repo_root = FindRepoRoot();
+  if (!repo_root) {
+    fprintf(stderr, "ERROR: Could not find repository root (no Makefile or .git found)\n");
+    return 1;
+  }
+  if (chdir(repo_root) != 0) {
+    fprintf(stderr, "ERROR: Could not change to repository root: %s\n", repo_root);
+    free(repo_root);
+    return 1;
+  }
+  free(repo_root);
+
+  /* Check for utility flags */
   bool flag_count = false;
   bool flag_truncate = false;
   bool flag_info = false;
@@ -726,30 +1041,11 @@ int main(int argc, char *argv[]) {
       flag_truncate = true;
     } else if (!strcmp(argv[i], "--info")) {
       flag_info = true;
-    } else if (!strcmp(argv[i], "--per-includer")) {
-      g_shim_strategy = SHIM_STRATEGY_PER_INCLUDER;
-    } else if (!strcmp(argv[i], "--per-header")) {
-      g_shim_strategy = SHIM_STRATEGY_PER_HEADER;
-    } else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
-      printf("automate_mkdeps: repair Ruby mkdeps missing-header errors\n");
-      printf("Usage: %s [OPTIONS]\n", argv[0]);
-      printf("\nShim Strategy Options:\n");
-      printf("  --per-includer   One shim per (header, includer) pair (most files)\n");
-      printf("  --per-header     One shim per unique header with includer comments (default)\n");
-      printf("\nOther Options:\n");
-      printf("  --count          Print counts of THIRD_PARTY_RUBY_A_HDRS and _INCS entries and exit\n");
-      printf("  --truncate       Clear THIRD_PARTY_RUBY_A_HDRS and _INCS sections in ruby.deps.mk and exit\n");
-      printf("  --info           Print statistics about current state and exit\n");
-      printf("\nThe default mode mirrors bin/automate_mkdeps.sh: cleans txts, runs mkdeps,\n");
-      printf("parses missing-header errors, resolves paths using the Ruby include order,\n");
-      printf("and appends shim entries to _INCS or real headers to _HDRS.\n");
-      return 0;
-    } else if (argv[i][0] == '-') {
-      fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
-      fprintf(stderr, "Use --help for usage information\n");
-      return 1;
     }
   }
+
+  /* Set global shim strategy from config */
+  g_shim_strategy = cfg.shim_strategy;
 
   const char *mode = getenv("MODE");
   if (!mode) mode = "";
@@ -767,29 +1063,28 @@ int main(int argc, char *argv[]) {
     strcpy(orel, "/");
   }
 
-  char mkdeps_default[128];
-  snprintf(mkdeps_default, sizeof(mkdeps_default),
-           "o/%sthird_party/mexican_toaster/mtdeps", orel);
   const char *mkdeps = getenv("MKDEPS");
-  if (!mkdeps || !*mkdeps) mkdeps = mkdeps_default;
+  if (!mkdeps || !*mkdeps) {
+    mkdeps = "build/bootstrap/mtdeps";
+  }
 
-  char deps_mk[] = "third_party/ruby/ruby.deps.mk";
+  const char *deps_mk = cfg.deps_mk_path;
   char mkdeps_log[128];
   snprintf(mkdeps_log, sizeof(mkdeps_log), "o/%smkdeps_output.log", orel);
   char stage1_log[160];
-  snprintf(stage1_log, sizeof(stage1_log), "o/%sautomate_mkdeps_stage1.log",
-           orel);
+  snprintf(stage1_log, sizeof(stage1_log), "o/%sautomate_mkdeps_%s_stage1.log",
+           orel, cfg.module_name);
 
   if (flag_count || flag_truncate) {
-    int hdrs_count = CountBlockEntries(deps_mk, "THIRD_PARTY_RUBY_A_HDRS");
-    int incs_count = CountBlockEntries(deps_mk, "THIRD_PARTY_RUBY_A_INCS");
+    int hdrs_count = CountBlockEntries(deps_mk, cfg.hdrs_var_name);
+    int incs_count = CountBlockEntries(deps_mk, cfg.incs_var_name);
     if (hdrs_count < 0 || incs_count < 0) {
       fprintf(stderr, "Failed to read %s\n", deps_mk);
       return 1;
     }
     if (flag_truncate) {
-      if (!TruncateBlock(deps_mk, "THIRD_PARTY_RUBY_A_HDRS") ||
-          !TruncateBlock(deps_mk, "THIRD_PARTY_RUBY_A_INCS")) {
+      if (!TruncateBlock(deps_mk, cfg.hdrs_var_name) ||
+          !TruncateBlock(deps_mk, cfg.incs_var_name)) {
         fprintf(stderr, "Failed to truncate sections\n");
         return 1;
       }
@@ -842,6 +1137,15 @@ int main(int argc, char *argv[]) {
       snprintf(pathbuf, sizeof(pathbuf), "o/%sincs.txt", orel);
       unlink(pathbuf);
 
+      // Remove module-specific shims directory
+      if (cfg.module_name) {
+        char shims_dir[PATH_MAX];
+        snprintf(shims_dir, sizeof(shims_dir), "%s_shims", cfg.module_name);
+        if (RemoveDirectoryRecursive(shims_dir) == 0) {
+          printf("Removed shims directory: %s\n", shims_dir);
+        }
+      }
+
       printf("Truncated HDRS (%d entries) and INCS (%d entries)\n", hdrs_count,
              incs_count);
       printf("Truncated stage1 log (kept header lines)\n");
@@ -855,8 +1159,8 @@ int main(int argc, char *argv[]) {
 
   if (flag_info) {
     // Count HDRS and INCS entries
-    int hdrs_count = CountBlockEntries(deps_mk, "THIRD_PARTY_RUBY_A_HDRS");
-    int incs_count = CountBlockEntries(deps_mk, "THIRD_PARTY_RUBY_A_INCS");
+    int hdrs_count = CountBlockEntries(deps_mk, cfg.hdrs_var_name);
+    int incs_count = CountBlockEntries(deps_mk, cfg.incs_var_name);
     if (hdrs_count < 0 || incs_count < 0) {
       fprintf(stderr, "Failed to read %s\n", deps_mk);
       return 1;
@@ -883,10 +1187,16 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // Count shim files under shims/
-    char shims_count_cmd[256];
+    // Count shim files under module-specific shims directory
+    char shims_dir[PATH_MAX];
+    if (cfg.module_name) {
+      snprintf(shims_dir, sizeof(shims_dir), "%s_shims/", cfg.module_name);
+    } else {
+      strcpy(shims_dir, "shims/");
+    }
+    char shims_count_cmd[PATH_MAX + 64];
     snprintf(shims_count_cmd, sizeof(shims_count_cmd),
-             "find shims/ -name '*.h' -o -name '*.c' 2>/dev/null | wc -l");
+             "find %s -name '*.h' -o -name '*.c' 2>/dev/null | wc -l", shims_dir);
     FILE *fp = popen(shims_count_cmd, "r");
     int shims_count = 0;
     if (fp) {
@@ -894,11 +1204,11 @@ int main(int argc, char *argv[]) {
       pclose(fp);
     }
 
-    printf("Ruby dependency automation status:\n");
-    printf("  THIRD_PARTY_RUBY_A_HDRS entries: %d\n", hdrs_count);
-    printf("  THIRD_PARTY_RUBY_A_INCS entries: %d\n", incs_count);
+    printf("%s dependency automation status:\n", cfg.module_name);
+    printf("  %s entries: %d\n", cfg.hdrs_var_name, hdrs_count);
+    printf("  %s entries: %d\n", cfg.incs_var_name, incs_count);
     printf("  Stage1 log lines (%s): %d\n", stage1_log, stage1_lines);
-    printf("  Shim files (shims/): %d\n", shims_count);
+    printf("  Shim files (%s): %d\n", shims_dir, shims_count);
     return 0;
   }
 
@@ -912,16 +1222,19 @@ int main(int argc, char *argv[]) {
   snprintf(pathbuf, sizeof(pathbuf), "o/%sincs.txt", orel);
   unlink(pathbuf);
 
-  /* Ensure mtdeps is built */
+  /* Ensure mtdeps is present (similar to bin/run_mkdeps_and_shims.sh check) */
   if (!FileExists(mkdeps)) {
-    printf("Building mtdeps (required for dependency analysis)...\n");
-    char build_cmd[512];
-    snprintf(build_cmd, sizeof(build_cmd), "make MODE=%s -j8 %s", mode, mkdeps);
-    int rc = system(build_cmd);
-    if (rc != 0) {
-      fprintf(stderr, "ERROR: Failed to build mtdeps\n");
-      return 1;
-    }
+    fprintf(stderr, "ERROR: mtdeps not found at %s\n", mkdeps);
+    fprintf(stderr, "       run third_party/ruby/cosmo_configure.sh --bootstrap to install it\n");
+    return 1;
+  }
+
+  /* Build shim prefix for mtdeps */
+  char shim_prefix[PATH_MAX];
+  const char *shim_prefix_arg = NULL;
+  if (cfg.module_name) {
+    snprintf(shim_prefix, sizeof(shim_prefix), "%s_shims/", cfg.module_name);
+    shim_prefix_arg = shim_prefix;
   }
 
   /* Run make/mkdeps */
@@ -929,7 +1242,7 @@ int main(int argc, char *argv[]) {
   Mkdirp("o");
   Mkdirp("o/tmp");
   Mkdirp("o/");
-  char *output = RunMakeCapture(mode, mkdeps, orel, mkdeps_log);
+  char *output = RunMakeCapture(mode, mkdeps, orel, mkdeps_log, shim_prefix_arg);
   if (!output) {
     fprintf(stderr, "failed to run make\n");
     return 1;
@@ -1011,14 +1324,14 @@ int main(int argc, char *argv[]) {
       free(output_copy);
       fprintf(stderr, "\n");
 
-      fprintf(stderr, "Searching for %s in third_party/ruby/:\n",
-              stage2_filename);
+      fprintf(stderr, "Searching for %s in %s:\n",
+              stage2_filename, cfg.search_dir);
       char find_cmd[512];
       const char *basename_start = strrchr(stage2_filename, '/');
       const char *basename = basename_start ? basename_start + 1 : stage2_filename;
       snprintf(find_cmd, sizeof(find_cmd),
-               "find third_party/ruby/ -name '%s' -type f 2>/dev/null | head -10",
-               basename);
+               "find %s -name '%s' -type f 2>/dev/null | head -10",
+               cfg.search_dir, basename);
       system(find_cmd);
       fprintf(stderr, "\n");
 
@@ -1035,9 +1348,9 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "\n");
     }
 
-    fprintf(stderr, "Include paths from ruby.compile.mk:\n");
-    for (size_t i = 0; i < sizeof(kIncludePaths) / sizeof(kIncludePaths[0]); ++i) {
-      fprintf(stderr, "  %s\n", kIncludePaths[i]);
+    fprintf(stderr, "Include paths:\n");
+    for (size_t i = 0; i < cfg.include_paths_count; ++i) {
+      fprintf(stderr, "  %s\n", cfg.include_paths[i]);
     }
     fprintf(stderr, "\n");
 
@@ -1088,12 +1401,11 @@ int main(int argc, char *argv[]) {
       printf("  Found in source directory: %s\n", found);
     } else {
       free(cand);
-      for (size_t k = 0; k < sizeof(kIncludePaths) / sizeof(kIncludePaths[0]);
-           ++k) {
-        char *cand2 = Join(kIncludePaths[k], filename);
+      for (size_t k = 0; k < cfg.include_paths_count; ++k) {
+        char *cand2 = Join(cfg.include_paths[k], filename);
         if (FileExists(cand2)) {
           found = cand2;
-          printf("  Found in -I path %s: %s\n", kIncludePaths[k], found);
+          printf("  Found in -I path %s: %s\n", cfg.include_paths[k], found);
           break;
         }
         free(cand2);
@@ -1104,9 +1416,8 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "  Searched:\n");
       fprintf(stderr, "    1. Source directory: %s/%s\n",
               incdir, filename);
-      for (size_t k = 0; k < sizeof(kIncludePaths) / sizeof(kIncludePaths[0]);
-           ++k) {
-        fprintf(stderr, "    2. -I %s/%s\n", kIncludePaths[k], filename);
+      for (size_t k = 0; k < cfg.include_paths_count; ++k) {
+        fprintf(stderr, "    2. -I %s/%s\n", cfg.include_paths[k], filename);
       }
       fprintf(stderr, "\n");
       free(incdir);
@@ -1114,12 +1425,16 @@ int main(int argc, char *argv[]) {
     }
     free(incdir);
 
-    bool is_real_header = StartsWith(includer, "shims/");
-    char *entry_path = GenerateEntryPath(filename, includer, found, is_real_header);
+    /* Check if includer is already a shim (from any module) */
+    /* Check for both /shims/ and _shims/ patterns */
+    bool is_real_header = (strstr(includer, "/shims/") != NULL || strstr(includer, "_shims/") != NULL);
+    char *entry_path = GenerateEntryPath(filename, includer, found, is_real_header, cfg.module_name);
 
+    /* Determine target variable based on whether entry is a shim */
+    /* Check for both /shims/ and _shims/ patterns */
     const char *target =
-        StartsWith(entry_path, "shims/") ? "THIRD_PARTY_RUBY_A_INCS"
-                                         : "THIRD_PARTY_RUBY_A_HDRS";
+        (strstr(entry_path, "/shims/") || strstr(entry_path, "_shims/")) ? cfg.incs_var_name
+                                                                          : cfg.hdrs_var_name;
 
     printf("  Will add to %s: %s\n", target, entry_path);
 
@@ -1160,14 +1475,14 @@ int main(int argc, char *argv[]) {
       size_t deduped_n = 0;
       for (size_t i = 0; i < entries_n; ++i) {
         /* Keep all HDRS entries, deduplicate INCS entries */
-        if (strcmp(entries[i].target, "THIRD_PARTY_RUBY_A_HDRS") == 0) {
+        if (strcmp(entries[i].target, cfg.hdrs_var_name) == 0) {
           entries[deduped_n++] = entries[i];
           continue;
         }
         /* Check if this INCS entry_path already exists in earlier entries */
         bool duplicate = false;
         for (size_t j = 0; j < deduped_n; ++j) {
-          if (strcmp(entries[j].target, "THIRD_PARTY_RUBY_A_INCS") == 0 &&
+          if (strcmp(entries[j].target, cfg.incs_var_name) == 0 &&
               strcmp(entries[j].entry_path, entries[i].entry_path) == 0) {
             duplicate = true;
             /* Don't free logline yet - we need it for stage1 log! */
@@ -1192,7 +1507,7 @@ int main(int argc, char *argv[]) {
     /* Ensure stage1 log has header before appending entries */
     EnsureStage1LogHeader(stage1_log);
 
-    if (BatchAppendEntries(deps_mk, entries, entries_n)) {
+    if (BatchAppendEntries(deps_mk, entries, entries_n, cfg.hdrs_var_name, cfg.incs_var_name)) {
       any_added = true;
       /* Write ALL original entries to stage1 log (create_shims.sh needs them all) */
       for (size_t i = 0; i < original_entries_n; ++i) {

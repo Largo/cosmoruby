@@ -18,7 +18,15 @@
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/calls/mount.h"
 #include "libc/calls/syscall-sysv.internal.h"
+#include "libc/dce.h"
 #include "libc/intrin/strace.h"
+#include "libc/str/str.h"
+#include "libc/sysv/errfuns.h"
+
+int32_t sys_mount_linux(const char *, const char *, const char *, uint64_t,
+                        const void *) asm("sys_mount");
+int32_t sys_mount_bsd(const char *, const char *, int32_t,
+                      const void *) asm("sys_mount");
 
 /**
  * Mounts filesystem.
@@ -46,7 +54,23 @@
 int mount(const char *source, const char *target, const char *filesystemtype,
           unsigned long mountflags, const void *data) {
   int rc;
-  rc = sys_mount(source, target, filesystemtype, mountflags, data);
+  if (!IsWindows()) {
+    if (!IsBsd()) {
+      rc = sys_mount_linux(source, target, filesystemtype, mountflags, data);
+    } else {
+      if (!strcmp(filesystemtype, "iso9660")) filesystemtype = "cd9660";
+      if (!strcmp(filesystemtype, "vfat")) {
+        if (IsOpenbsd() || IsNetbsd()) {
+          filesystemtype = "msdos";
+        } else {
+          filesystemtype = "msdosfs";
+        }
+      }
+      rc = sys_mount_bsd(filesystemtype, target, mountflags, data);
+    }
+  } else {
+    rc = enosys();
+  }
   STRACE("mount(%#s, %#s, %#s, %#lx, %p) → %d% m", source, target,
          filesystemtype, mountflags, data, rc);
   return rc;

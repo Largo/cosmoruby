@@ -1,555 +1,206 @@
-# Ruby Extensions Roadmap for Cosmopolitan
+# Ruby Extensions Status for Cosmopolitan
 
-## Current State (as of 2025-10-30)
+**Last Updated:** 2025-12-07
+**Status:** SSL/TLS WORKING ✅ | HTTPS gem downloads WORKING ✅
 
-### ✅ Working Extensions
-- **zlib** - Fully functional, enables gem decompression
-  - Added `get_crc_table()` declaration to third_party/zlib/zlib.h
-  - Integrated into Ruby build via ext/extinit.c
-  - Testing: `ruby.com -e "require 'zlib'; puts Zlib::VERSION"` → 3.2.1
+## Executive Summary
 
-- **socket** - TCP/UDP networking
-- **stringio** - In-memory string I/O
-- **pathname** - Filesystem path manipulation
-- **monitor** - Thread synchronization
+CosmoRuby now has **full SSL/TLS support** via a native MbedTLS extension with OpenSSL compatibility layer. HTTPS gem downloads from rubygems.org are working. Most critical extensions are statically linked and operational.
 
-### ❌ Blocked Extensions
+## ✅ Working Extensions
 
-#### 1. psych (YAML parser)
-**Status:** Blocked - requires libyaml
+### Core Extensions (Statically Linked)
 
-**Why it's needed:**
-RubyGems stores checksums in `checksums.yaml.gz` files inside .gem archives. The `Gem::Package#read_checksums` method calls `Gem.load_yaml` which requires psych.
+1. **mbedtls** - SSL/TLS support ✅ **NEW!**
+   - Native C extension wrapping Cosmopolitan's mbedtls library
+   - Location: `third_party/ruby-wip-3.4.7/ext/mbedtls/`
+   - Certificate verification via `GetSslRoots()` from `net/https/https.h`
+   - SNI (Server Name Indication) support
+   - Testing: `ruby.com third_party/ruby/ext/mbedtls/test_mbedtls.rb`
 
-**Error when missing:**
-```
-cannot load such file -- psych (LoadError)
-  from /zip/lib/ruby/3.4.0/rubygems/package.rb:555:in 'Gem::Package#read_checksums'
-```
+2. **openssl** - OpenSSL compatibility shim ✅ **NEW!**
+   - Pure Ruby compatibility layer over MbedTLS
+   - Location: `third_party/ruby-wip-3.4.7/lib/openssl.rb`
+   - Implements: `OpenSSL::SSL::SSLSocket`, `OpenSSL::SSL::SSLContext`
+   - Implements: `OpenSSL::Digest` (delegates to Ruby's native Digest)
+   - Stub implementations: `OpenSSL::X509::Store`, `OpenSSL::PKey::RSA`
+   - **Enables Net::HTTP SSL and RubyGems HTTPS downloads**
+   - Testing: `ruby.com third_party/ruby/ext/mbedtls/test_openssl_compat.rb`
 
-**Current workaround:**
-None - gem install fails completely without psych.
+3. **zlib** - Compression/decompression
+   - Enables gem decompression
+   - Added `get_crc_table()` declaration to `third_party/zlib/zlib.h`
+   - Testing: `ruby.com -e "require 'zlib'; puts Zlib::VERSION"` → 3.2.1
 
-#### 2. openssl (SSL/TLS for HTTPS)
-**Status:** Blocked - requires OpenSSL API compatibility
+4. **socket** - TCP/UDP networking
+   - 15 C source files
+   - Full socket operations including shutdown, setsockopt, etc.
+   - Required for gem networking
 
-**Why it's needed:**
-HTTPS gem downloads from rubygems.org require SSL/TLS support.
+5. **stringio** - In-memory string I/O
+6. **pathname** - Filesystem path manipulation
+7. **monitor** - Thread synchronization
+8. **ripper** - Ruby parser introspection
+9. **io/console** - Terminal control (raw mode, cursor positioning)
+10. **io/wait** - Non-blocking I/O support
+11. **io/nonblock** - Non-blocking I/O mode
 
-**Error when missing:**
-```
-ERROR: While executing gem ... (Gem::Exception)
-    OpenSSL is not available. Install OpenSSL and rebuild Ruby or use non-HTTPS sources
-```
+### Encoding Transcoders
 
-**Current workaround:**
-- Use HTTP sources (insecure): `gem install --source http://...`
-- Use local gem files: `gem install /path/to/file.gem --local`
+All statically compiled for backtrace support:
+- `trans_single_byte` - US-ASCII ↔ UTF-8 (essential for error messages)
+- Additional transcoders: big5, chinese, ebcdic, emoji, escape, gb18030, gbk, iso2022, japanese, korean, utf_16_32, utf8_mac
 
----
+## 🎯 Verified Working Use Cases
 
-## Path Forward: Adding libyaml
-
-### What is libyaml?
-
-libyaml is the canonical C library for parsing and emitting YAML. Ruby's psych extension is a thin wrapper around libyaml. Current stable version: 0.2.5
-
-**Repository:** https://github.com/yaml/libyaml
-**Size:** ~20 C files, ~13,000 lines of code
-**License:** MIT
-**Dependencies:** None (standalone C library)
-
-### Implementation Steps
-
-#### Step 1: Obtain and integrate libyaml source
-
+### ✅ HTTPS Gem Downloads
 ```bash
-# Download libyaml 0.2.5
-cd /tmp
-curl -L https://github.com/yaml/libyaml/archive/refs/tags/0.2.5.tar.gz -o libyaml-0.2.5.tar.gz
-tar xzf libyaml-0.2.5.tar.gz
-
-# Copy to Cosmopolitan
-cd ~/Code/jart/cosmopolitan
-mkdir -p third_party/libyaml
-cp -r /tmp/libyaml-0.2.5/src/* third_party/libyaml/
-cp -r /tmp/libyaml-0.2.5/include/* third_party/libyaml/include/
+$ gem.com update rack
+Updating rack
+Fetching rack-3.2.4.gem  # ← Downloaded over HTTPS!
+Successfully installed rack-3.2.4
+Gems updated: rack
 ```
 
-**Create README.cosmo:**
-```
-third_party/libyaml/README.cosmo
-Source: https://github.com/yaml/libyaml/archive/refs/tags/0.2.5.tar.gz
-Version: 0.2.5
-License: MIT
-Purpose: YAML parser for Ruby's psych extension
-```
-
-#### Step 2: Create BUILD.mk for libyaml
-
-Create `third_party/libyaml/BUILD.mk`:
-
-```makefile
-#-*-mode:makefile-gmake;indent-tabs-mode:t;tab-width:8;coding:utf-8-*-┐
-#── vi: set noet ft=make ts=8 sw=8 fenc=utf-8 :vi ────────────────────┘
-
-PKGS += THIRD_PARTY_LIBYAML
-
-THIRD_PARTY_LIBYAML_A = o/$(MODE)/third_party/libyaml/libyaml.a
-THIRD_PARTY_LIBYAML = $(THIRD_PARTY_LIBYAML_A_DEPS) $(THIRD_PARTY_LIBYAML_A)
-THIRD_PARTY_LIBYAML_A_FILES := $(wildcard third_party/libyaml/*)
-THIRD_PARTY_LIBYAML_A_HDRS = $(filter %.h,$(THIRD_PARTY_LIBYAML_A_FILES))
-THIRD_PARTY_LIBYAML_A_SRCS = $(filter %.c,$(THIRD_PARTY_LIBYAML_A_FILES))
-
-THIRD_PARTY_LIBYAML_A_OBJS =					\\
-	$(THIRD_PARTY_LIBYAML_A_SRCS:%.c=o/$(MODE)/%.o)
-
-THIRD_PARTY_LIBYAML_A_DIRECTDEPS =				\\
-	LIBC_CALLS							\\
-	LIBC_FMT							\\
-	LIBC_INTRIN							\\
-	LIBC_MEM							\\
-	LIBC_NEXGEN32E						\\
-	LIBC_RUNTIME						\\
-	LIBC_STDIO							\\
-	LIBC_STR							\\
-	LIBC_SYSV
-
-THIRD_PARTY_LIBYAML_A_DEPS :=					\\
-	$(call uniq,$(foreach x,$(THIRD_PARTY_LIBYAML_A_DIRECTDEPS),$($(x))))
-
-$(THIRD_PARTY_LIBYAML_A):					\\
-		third_party/libyaml/					\\
-		$(THIRD_PARTY_LIBYAML_A).pkg			\\
-		$(THIRD_PARTY_LIBYAML_A_OBJS)
-
-$(THIRD_PARTY_LIBYAML_A).pkg:					\\
-		$(THIRD_PARTY_LIBYAML_A_OBJS)			\\
-		$(foreach x,$(THIRD_PARTY_LIBYAML_A_DIRECTDEPS),$($(x)_A).pkg)
-
-# Compiler flags for libyaml
-o/$(MODE)/third_party/libyaml/%.o: private			\\
-	CFLAGS +=							\\
-		-Ithird_party/libyaml/include			\\
-		-DHAVE_CONFIG_H
-
-THIRD_PARTY_LIBYAML_LIBS = $(foreach x,$(THIRD_PARTY_LIBYAML_ARTIFACTS),$($(x)))
-THIRD_PARTY_LIBYAML_SRCS = $(foreach x,$(THIRD_PARTY_LIBYAML_ARTIFACTS),$($(x)_SRCS))
-THIRD_PARTY_LIBYAML_HDRS = $(foreach x,$(THIRD_PARTY_LIBYAML_ARTIFACTS),$($(x)_HDRS))
-THIRD_PARTY_LIBYAML_CHECKS = $(foreach x,$(THIRD_PARTY_LIBYAML_ARTIFACTS),$($(x)_CHECKS))
-THIRD_PARTY_LIBYAML_OBJS = $(foreach x,$(THIRD_PARTY_LIBYAML_ARTIFACTS),$($(x)_OBJS))
-$(THIRD_PARTY_LIBYAML_OBJS): third_party/libyaml/BUILD.mk
-
-.PHONY: o/$(MODE)/third_party/libyaml
-o/$(MODE)/third_party/libyaml: $(THIRD_PARTY_LIBYAML_CHECKS)
-```
-
-**Register in main Makefile** - Add to package includes section.
-
-#### Step 3: Add psych extension to Ruby build
-
-Edit `third_party/ruby-wip-3.4.7/BUILD.mk`:
-
-```makefile
-# Add psych source files to Ruby build
-THIRD_PARTY_RUBY_A_SRCS_C =					\\
-    # ... existing files ...
-    third_party/ruby/ext/zlib/zlib.c				\\
-    third_party/ruby/ext/psych/psych.c			\\
-    third_party/ruby/ext/psych/psych_emitter.c		\\
-    third_party/ruby/ext/psych/psych_parser.c		\\
-    third_party/ruby/ext/psych/psych_to_ruby.c		\\
-    third_party/ruby/ext/psych/psych_yaml_tree.c
-
-# Add libyaml to Ruby dependencies
-THIRD_PARTY_RUBY_A_DIRECTDEPS =				\\
-    # ... existing deps ...
-    THIRD_PARTY_LIBYAML					\\
-    THIRD_PARTY_ZLIB
-
-# Compiler flags for psych extension
-o/$(MODE)/third_party/ruby/ext/psych/%.o: private		\\
-    CFLAGS +=							\\
-            -Ithird_party/libyaml/include			\\
-            -DHAVE_LIBYAML
-```
-
-#### Step 4: Register psych in ext/extinit.c
-
-Edit `third_party/ruby-wip-3.4.7/ext/extinit.c`:
-
-```c
-void Init_ext(void)
-{
-    init(Init_monitor, "monitor");
-    init(Init_pathname, "pathname");
-    init(Init_psych, "psych");      // Add this line
-    init(Init_socket, "socket");
-    init(Init_stringio, "stringio");
-    init(Init_zlib, "zlib");
-}
-```
-
-#### Step 5: Build and test
-
+### ✅ Remote Gem Queries
 ```bash
-# Build Ruby with psych
-make -j24 o//third_party/ruby/ruby
-
-# Package
-cd o/scripts && bash package_ruby.sh
-
-# Test
-ruby.com -e "require 'psych'; puts Psych::VERSION"
-ruby.com -e "require 'yaml'; puts YAML.dump({foo: 'bar'})"
-
-# Test gem install
-gem.com install rack --no-document
+$ gem.com outdated
+base64 (0.2.0 < 0.3.0)
+bundler (2.6.9 < 4.0.0)
+# ... 18 gems checked via HTTPS API
 ```
 
-### Estimated Complexity
+### ✅ User Gem Installation
+```bash
+$ gem.com env
+USER INSTALLATION DIRECTORY: /home/groobiest/.gem/ruby.com/3.4.0
+REMOTE SOURCES:
+  - https://rubygems.org/  # ← HTTPS by default!
+```
 
-**Difficulty:** Medium
-**Time estimate:** 1-2 hours (assuming no major issues)
-**Risk level:** Low-Medium
+## ⏳ Extensions Not Yet Integrated
 
-**Potential issues:**
-1. libyaml may have POSIX-specific code that needs patching
-2. Header paths may need adjustment
-3. Config.h may need to be generated/stubbed
-4. Namespace collisions unlikely (yaml_ prefix is unique)
+### Bundled Gems with Native Extensions
 
-**Success indicators:**
-- ✅ libyaml compiles without errors
-- ✅ psych extension loads: `ruby.com -e "require 'psych'"`
-- ✅ YAML parsing works: `YAML.load("foo: bar")`
-- ✅ gem install succeeds with local gems
+These gems ship with Ruby but are not yet compiled/loadable:
+- **bigdecimal** - Arbitrary precision decimal arithmetic
+- **debug** - Ruby debugger
+- **nkf** - Network Kanji Filter (Japanese encoding)
+- **racc** - Parser generator
+- **rbs** - Ruby type signatures
+- **syslog** - System logger
 
----
+**Status:** Need to be either:
+1. Statically linked (add to BUILD.mk, inits.c)
+2. Compiled as .so and loaded dynamically from ZIP (see RUBY_ZIP_EXTENSION_LOADER.md)
 
-## Path Forward: Adding OpenSSL (NOT RECOMMENDED)
+### Optional Extensions
 
-### The Challenge
+#### psych (YAML parser)
+**Status:** Not yet integrated - requires libyaml
 
-Ruby's openssl extension expects the **OpenSSL C API** (headers like `openssl/ssl.h`, `openssl/x509.h`, functions like `SSL_new()`, `X509_verify()`, etc.).
+**Current situation:**
+- RubyGems appears to work WITHOUT psych (gem install/update working)
+- May be optional or have fallback behavior
+- **TODO:** Test if any gems actually require YAML parsing
 
-Cosmopolitan uses **mbedtls**, which has a **completely different API** with different:
-- Header structure
-- Function names
-- Type definitions
-- Error handling
-- State management
-- Feature sets
+**If needed, implementation steps:**
+1. Add libyaml to `third_party/` (MIT license, ~20 files, 13k LOC)
+2. Create `third_party/libyaml/BUILD.mk`
+3. Add psych extension sources to Ruby BUILD.mk
+4. Register in `ext/extinit.c`
 
-### Option 1: Port OpenSSL itself
+See archived planning docs in `docs/ai/historical/RUBY_EXTENSIONS_ROADMAP_ORIGINAL.md` for detailed libyaml integration plan.
 
-**What's involved:**
-1. Download OpenSSL 3.x source (~500,000 lines of C code)
-2. Extract to `third_party/openssl/`
-3. Port OpenSSL's configure/build system to Cosmopolitan's BUILD.mk
-4. Resolve conflicts with existing mbedtls
-5. Handle platform-specific assembly optimizations
-6. Deal with OpenSSL's complex build-time code generation
+## 📊 Extension Architecture
 
-**Estimated complexity:** Very High
-**Time estimate:** Days to weeks
-**Risk level:** High
+### Static Linking Pattern (Current Approach)
 
-**Why this is hard:**
-- OpenSSL has a complex perl-based build system (Configure script)
-- Heavy platform detection and conditional compilation
-- Assembly language optimizations for multiple platforms
-- Would duplicate TLS functionality (both OpenSSL and mbedtls in binary)
-- Binary size impact: +2-3 MB
-- Two different SSL/TLS implementations to maintain
+For each extension:
 
-### Option 2: Create OpenSSL compatibility shim over mbedtls
-
-**What's involved:**
-
-1. **Create stub headers** (openssl/*.h):
-   ```c
-   // third_party/openssl-compat/openssl/ssl.h
-   #include <mbedtls/ssl.h>
-
-   typedef mbedtls_ssl_context SSL;
-   typedef mbedtls_ssl_config SSL_CTX;
-   // ... hundreds more type mappings
+1. **Add sources to BUILD.mk:**
+   ```makefile
+   THIRD_PARTY_RUBY_A_SRCS_C = \
+       third_party/ruby/ext/EXTENSION/file.c
    ```
 
-2. **Implement wrapper functions**:
+2. **Register in ext/extinit.c:**
    ```c
-   // Map OpenSSL API to mbedtls
-   SSL* SSL_new(SSL_CTX* ctx) {
-       // Translate OpenSSL call to mbedtls equivalent
-       // Different initialization sequences
-       // Different error handling
-       // Return type mapping
+   init(Init_extension_name, "extension_name");
+   ```
+
+3. **Mark as loaded in extension Init function:**
+   ```c
+   void Init_extension_name(void) {
+       // ... initialization ...
+       rb_provide("extension_name.so");  // Critical!
    }
-
-   int SSL_connect(SSL* ssl) {
-       // Map connection logic
-       // Different state machines
-       // Different return codes
-   }
-
-   // ... hundreds more functions
    ```
 
-3. **Handle API incompatibilities**:
-   - OpenSSL uses callbacks, mbedtls uses different pattern
-   - Certificate handling completely different
-   - Error codes don't map 1:1
-   - Memory management differs
-   - Threading models differ
-
-**Estimated complexity:** Very High
-**Time estimate:** Weeks of work
-**Risk level:** Very High
-
-**Why this is hard:**
-- OpenSSL has 300+ public API functions
-- Many functions have complex behavior that doesn't map cleanly
-- Ruby's openssl extension uses advanced OpenSSL features
-- Subtle bugs will occur from API mismatches
-- Ongoing maintenance burden as Ruby evolves
-- Debugging TLS issues through translation layer is extremely difficult
-
-### Option 3: Write Ruby mbedtls extension
-
-**What's involved:**
-
-Instead of wrapping OpenSSL's API, write a new Ruby extension that directly wraps Cosmopolitan's existing mbedtls library. This would provide SSL/TLS functionality through a Ruby-native interface.
-
-**Approach:**
-
-1. **Create new extension** `ext/mbedtls_ssl/`:
-   ```c
-   // Minimal Ruby interface to mbedtls
-   // Focus on what RubyGems actually needs
-
-   module MbedTLS
-     class SSLContext
-       # Initialize mbedtls_ssl_context
-     end
-
-     class SSLSocket < IO
-       # Wrap socket with SSL
-       # Forward read/write to mbedtls_ssl_read/write
-     end
-   end
+4. **Add special CFLAGS if needed:**
+   ```makefile
+   o/$(MODE)/third_party/ruby/ext/NAME/file.o: private \
+       CFLAGS += -DSPECIAL_FLAG
    ```
 
-2. **Monkey-patch Net::HTTP** to use MbedTLS instead of OpenSSL:
-   ```ruby
-   # lib/rubygems/mbedtls_compat.rb
-   module Net
-     class HTTP
-       def connect
-         # Use MbedTLS::SSLSocket instead of OpenSSL::SSL::SSLSocket
-       end
-     end
-   end
-   ```
+### Dynamic Loading from ZIP (Future Option)
 
-3. **Scope to RubyGems needs only**:
-   - SSL/TLS socket wrapper
-   - Basic certificate verification
-   - HTTPS connections
-   - SHA256 digests (already in mbedtls)
-   - HMAC (for S3 signing)
+See `RUBY_ZIP_EXTENSION_LOADER.md` for detailed design of on-demand .so loading from embedded ZIP filesystem. This would enable:
+- Installing gems with native extensions via `gem install`
+- Smaller core Ruby binary (extensions loaded on-demand)
+- Easier development (rebuild single extension)
 
-**What's NOT needed:**
-- Full X.509 certificate generation (only validation)
-- All the crypto primitives (DSA, EC key generation, etc.)
-- Compatibility with openssl gem API
-- Support for all Ruby programs (just RubyGems)
+## 🔍 Testing Extensions
 
-**Estimated complexity:** High
-**Time estimate:** 1-2 weeks
-**Risk level:** Medium-High
-
-**Advantages:**
-- Uses Cosmopolitan's existing mbedtls (no new dependencies)
-- No binary size increase (already have mbedtls)
-- Scoped to specific use case (RubyGems HTTPS)
-- Clean architecture (native to platform)
-- Could be reusable for other Ruby apps
-
-**Challenges:**
-- Still significant C extension work
-- Need to understand mbedtls API deeply
-- Monkey-patching Net::HTTP is fragile (breaks on Ruby updates)
-- May not cover all edge cases RubyGems uses
-- Debugging SSL/TLS issues is complex
-- Would need ongoing maintenance
-
-**Prerequisites:**
-- Study what RubyGems actually needs from OpenSSL
-- Audit all `OpenSSL::` usage in lib/rubygems/**/*.rb
-- Map those needs to mbedtls equivalents
-- Design minimal Ruby API that satisfies those needs
-
-**Success criteria:**
-- ✅ `gem install` works over HTTPS
-- ✅ Certificate verification works
-- ✅ Can download from rubygems.org
-- ✅ HMAC signing works (for S3 sources)
-- ✅ No crashes or SSL errors
-
-**Verdict:** Viable medium-term solution if HTTPS becomes critical. More work than libyaml, but tractable. Could potentially be upstreamed to help other Cosmopolitan Ruby users.
-
-### Option 4: Skip OpenSSL (RECOMMENDED)
-
-**Workarounds available:**
-
-1. **Use HTTP sources** (insecure but functional):
-   ```bash
-   gem install rack --source http://rubygems.org
-   ```
-
-2. **Use local gem files**:
-   ```bash
-   # Download on another machine with SSL support
-   gem fetch rack
-
-   # Transfer .gem file to Cosmopolitan environment
-   gem install rack-3.0.8.gem --local
-   ```
-
-3. **Use bundler with vendored gems**:
-   ```bash
-   # On development machine with SSL
-   bundle install --path vendor/bundle
-
-   # Transfer entire vendor/ directory
-   # Ruby app works without network access
-   ```
-
-4. **Document clearly** in README:
-   ```
-   ## Known Limitations
-
-   - HTTPS gem downloads not supported (use HTTP sources or local gems)
-   - Workaround: gem install --source http://rubygems.org
-   - For production: vendor gems with bundler
-   ```
-
-**Why this is the right approach:**
-- Focuses effort on Ruby functionality, not TLS plumbing
-- Cosmopolitan already has mbedtls for network tools
-- Workarounds are well-established in Ruby ecosystem
-- Can revisit if OpenSSL shim becomes critical
-- Avoids massive engineering effort for marginal benefit
-
----
-
-## Recommendation: Prioritized Roadmap
-
-### Phase 1: Essential (Do Now)
-1. ✅ **zlib extension** - DONE
-2. 🔄 **libyaml + psych** - IN PROGRESS (this document)
-   - Enables gem install to work properly
-   - Clean, tractable solution
-   - Low risk, medium complexity
-   - Estimated: 1-2 hours
-
-### Phase 2: Validation (Next)
-3. **Run Ruby test suite** (`make test-all`)
-   - Validate core Ruby functionality
-   - Identify remaining issues
-   - Measure compatibility
-
-4. **Test real-world apps**
-   - Sinatra web framework
-   - Rack applications
-   - Rails routing (subset)
-   - Pure Ruby gems
-
-### Phase 3: Nice-to-Have (Future)
-5. **OpenSSL/HTTPS support** - MULTIPLE OPTIONS
-   - **Option A (Recommended for now):** Skip it, use workarounds (HTTP sources, local gems)
-   - **Option B (If HTTPS becomes critical):** Write Ruby mbedtls extension (1-2 weeks)
-   - **Option C (Not recommended):** Port OpenSSL or create compatibility shim (weeks/months)
-   - Document current limitations and workarounds clearly
-
-6. **Native extension support** (.so loading)
-   - Dynamic loading of compiled gems
-   - Requires DLL infrastructure
-   - Low priority (most useful gems are pure Ruby)
-
-### Phase 4: Polish (Later)
-7. **Fix mkdeps for Ruby**
-   - Non-blocker, development tool issue
-   - Long finger task
-
----
-
-## Testing Strategy
-
-### After adding libyaml/psych:
-
+### Test MbedTLS Extension
 ```bash
-# Unit tests
-ruby.com -e "require 'psych'; puts Psych::VERSION"
-ruby.com -e "require 'yaml'; data = YAML.load('foo: bar'); puts data['foo']"
-
-# Integration tests
-gem.com install rack --no-document
-ruby.com -e "require 'rack'; puts Rack::VERSION"
-
-# Real-world test
-cat > test_rack.rb <<'EOF'
-require 'rack'
-
-app = lambda do |env|
-  [200, {"Content-Type" => "text/plain"}, ["Hello from Rack!"]]
-end
-
-Rack::Handler::WEBrick.run app, Port: 9292
-EOF
-
-ruby.com test_rack.rb &
-curl http://localhost:9292
+ruby.com third_party/ruby-wip-3.4.7/ext/mbedtls/test_mbedtls.rb
 ```
 
----
+### Test OpenSSL Compatibility
+```bash
+ruby.com third_party/ruby-wip-3.4.7/ext/mbedtls/test_openssl_compat.rb
+```
 
-## Reference: Key Files
+### Test Gem Installation
+```bash
+# Over HTTPS
+gem.com install rack
 
-- `third_party/zlib/zlib.h` - Added get_crc_table() declaration
-- `third_party/ruby-wip-3.4.7/BUILD.mk` - Ruby build configuration
-- `third_party/ruby-wip-3.4.7/ext/extinit.c` - Extension registration
-- `third_party/ruby-wip-3.4.7/inits.c` - Core initialization (NOT for extensions)
-- `third_party/ruby-wip-3.4.7/lib/rubygems/package.rb` - Where YAML is required
+# Check what's available
+gem.com list
 
-## Reference: Extension Architecture
+# Query remote repository
+gem.com outdated
+```
 
-**How Ruby loads statically-linked extensions:**
+## 📚 Related Documentation
 
-1. `rb_call_inits()` in `inits.c` - Initializes core Ruby classes (Array, Hash, etc.)
-2. `Init_ext()` in `ext/extinit.c` - Initializes statically-linked extensions
-   - Calls `ruby_init_ext("zlib.so", Init_zlib)` etc.
-   - Registers extensions in `$LOADED_FEATURES` as if dynamically loaded
-3. When `require 'zlib'` is called:
-   - Ruby checks `$LOADED_FEATURES`
-   - Finds "zlib.so" already loaded
-   - Returns immediately (extension already initialized)
+- `RUBY_SSL_TLS.md` - Detailed SSL/TLS implementation documentation
+- `RUBY_PORT_PROGRESS.md` - Overall Ruby porting progress
+- `RUBY_ZIP_EXTENSION_LOADER.md` - Dynamic extension loading design
+- `docs/ai/historical/RUBY_EXTENSIONS_ROADMAP_ORIGINAL.md` - Original planning document (archived)
 
-**Why we had double-initialization:**
-- Extensions were called in both `rb_call_inits()` AND `Init_ext()`
-- Caused "already initialized constant" warnings
-- Fixed by removing extension calls from `rb_call_inits()`
+## 🎉 Success Metrics
 
----
+- ✅ **SSL/TLS working** - MbedTLS extension + OpenSSL compatibility layer
+- ✅ **HTTPS gem downloads** - `gem.com install/update` over HTTPS
+- ✅ **Certificate verification** - Trusted root CAs from Cosmopolitan
+- ✅ **Net::HTTP SSL** - Standard Ruby HTTPS client working
+- ✅ **RubyGems API access** - Can query rubygems.org for versions
+- ✅ **User gem installation** - Gems install to `~/.gem/ruby.com/3.4.0/`
+- ✅ **Pure Ruby gems work** - 23+ bundled gems + installed gems functional
 
-## Conclusion
+## 🔜 Next Steps
 
-**Immediate action:** Add libyaml to enable psych/YAML support. This unblocks gem install and is a tractable 1-2 hour task.
+1. **Test psych requirement** - Determine if any gems actually need YAML
+2. **Test native extension compilation** - Try `gem install nokogiri` (has C extensions)
+3. **Consider bundled gem extensions** - Decide: static linking vs ZIP dynamic loading
+4. **Benchmark extension loading** - Measure static vs dynamic performance
+5. **Document gem installation workflow** - Guide for users installing gems
 
-**HTTPS/SSL options (in priority order):**
-1. **Defer for now** - Use workarounds (HTTP sources, local gems). Document limitations clearly.
-2. **If HTTPS becomes critical** - Write Ruby mbedtls extension (~1-2 weeks, viable medium-term solution)
-3. **Avoid** - Porting OpenSSL or creating compatibility shim (weeks/months, high risk)
+## Historical Notes
 
-**Focus:** Get Ruby working well for local development and pure Ruby applications. This is the 80/20 win. The mbedtls extension option provides a clear path forward if HTTPS support becomes essential later.
+**Previous Status (2025-10-30):** OpenSSL was documented as "NOT RECOMMENDED" and HTTPS was blocked. This was incorrect - the mbedtls extension and OpenSSL compatibility layer were already implemented and working, just not documented.
+
+**Discovery (2025-12-07):** User testing revealed `gem.com update rack` successfully downloads over HTTPS, proving SSL/TLS support is fully functional.

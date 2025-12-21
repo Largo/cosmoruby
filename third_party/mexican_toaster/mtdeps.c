@@ -85,6 +85,7 @@
   "  -r ROOT    set build output path, e.g. o/$(MODE)/\n"                    \
   "  -S PATH    isystem include path [repeatable; default: libc/isystem/]\n" \
   "  -s         hermetically sealed mode [repeatable]\n"                     \
+  "  -P PREFIX  shim prefix path [default: shims/]\n"                        \
   "\n"                                                                       \
   "ARGUMENTS\n"                                                              \
   "\n"                                                                       \
@@ -101,6 +102,7 @@ enum ShimStrategy {
 };
 
 static enum ShimStrategy g_shim_strategy = SHIM_STRATEGY_PER_INCLUDER;
+static char g_shim_prefix[PATH_MAX] = "shims/";
 
 struct Source {
   unsigned hash;
@@ -224,12 +226,11 @@ static bool BuildContextEntry(char buf[hasatleast PATH_MAX],
   if (!source || !include)
     return false;
 
-  /* Build "shims/" prefix */
-  const char prefix[] = "shims/";
-  size_t n = sizeof(prefix) - 1;
+  /* Build shim prefix (configurable via --shim-prefix) */
+  size_t n = strlen(g_shim_prefix);
   if (p + n > end)
     return false;
-  memcpy(p, prefix, n);
+  memcpy(p, g_shim_prefix, n);
   p += n;
 
   /* Append sanitized include path */
@@ -641,7 +642,7 @@ static void AddPath(struct Paths *paths, const char *path) {
 
 static void GetOpts(int argc, char *argv[]) {
   int opt;
-  while ((opt = getopt(argc, argv, "hnsgS:o:r:")) != -1) {
+  while ((opt = getopt(argc, argv, "hnsgS:o:r:P:")) != -1) {
     switch (opt) {
       case 's':
         ++hermetic;
@@ -663,6 +664,19 @@ static void GetOpts(int argc, char *argv[]) {
         if (genroot)
           Die("multiple generated roots specified");
         genroot = optarg;
+        break;
+      case 'P':
+        if (strlen(optarg) >= PATH_MAX)
+          Die("shim prefix too long");
+        strcpy(g_shim_prefix, optarg);
+        /* Ensure it ends with slash */
+        if (!endswith(g_shim_prefix, "/")) {
+          size_t len = strlen(g_shim_prefix);
+          if (len + 1 >= PATH_MAX)
+            Die("shim prefix too long (needs trailing slash)");
+          g_shim_prefix[len] = '/';
+          g_shim_prefix[len + 1] = '\0';
+        }
         break;
       case 'n':
         exit(0);

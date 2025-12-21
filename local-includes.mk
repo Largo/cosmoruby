@@ -7,10 +7,15 @@ include third_party/libyaml/BUILD.mk
 include third_party/ruby/BUILD.mk
 include examples/rubyapp/BUILD.mk
 include third_party/mexican_toaster/BUILD.mk
+# Cosmo plugin loader + tests
+include third_party/cosmo_plugin/BUILD.mk
+include test/third_party/cosmo_plugin/BUILD.mk
 
-# Prefer mtdeps for dependency generation when it's built; fall back to stock mkdeps otherwise.
-ifneq ($(wildcard o/$(MODE)/third_party/mexican_toaster/mtdeps),)
-MKDEPS := o/$(MODE)/third_party/mexican_toaster/mtdeps
+# Require bootstrap mtdeps for dependency generation.
+ifeq ($(wildcard build/bootstrap/mtdeps),)
+$(error Missing build/bootstrap/mtdeps. Run third_party/ruby/cosmo_configure.sh --bootstrap)
+else
+MKDEPS := build/bootstrap/mtdeps
 endif
 
 # Core Makefile computes SRCS/HDRS/INCS/BINS before loading this file, so
@@ -19,7 +24,9 @@ LOCAL_PKGS :=							\
 	THIRD_PARTY_LIBYAML					\
 	THIRD_PARTY_RUBY					\
 	RUBYAPP							\
-	THIRD_PARTY_MEXICAN_TOASTER
+	THIRD_PARTY_MEXICAN_TOASTER				\
+	THIRD_PARTY_COSMO_PLUGIN				\
+	TEST_THIRD_PARTY_COSMO_PLUGIN
 
 OBJS   += $(foreach x,$(LOCAL_PKGS),$($(x)_OBJS))
 SRCS   += $(foreach x,$(LOCAL_PKGS),$($(x)_SRCS))

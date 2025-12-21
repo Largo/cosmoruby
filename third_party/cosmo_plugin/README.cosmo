@@ -1,0 +1,15 @@
+Cosmo Plugin Loader
+===================
+
+Source: new Cosmopolitan-local utility.
+
+Purpose: Load position-independent `.a` archives as plugins for embedded
+languages (Ruby/Python/Lua/etc.) without modifying Cosmopolitan core. Provides
+runtime ELF loader, relocation engine, TLS shim, and host-export resolution
+using data embedded in the host binary.
+
+Notes:
+- Lives entirely in third_party/ to respect the "no core edits" rule.
+- Export tables are generated from linked `.dbg` images by an accompanying
+  script; no header scraping.
+- Intended to be linked by language runtimes as an opt-in helper.

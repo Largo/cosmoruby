@@ -124,6 +124,8 @@ rb_cosmo_configure_load_path(void)
 {
 #if defined(RUBY_COSMO_RESET_LOAD_PATH)
 	VALUE load_path = rb_gv_get("$LOAD_PATH");
+	const char *plugin_path = getenv("COSMO_RUBY_PLUGIN_PATH");
+	const char *default_plugin_path = "/zip/lib/ruby/3.4.0/extensions/x86_64-cosmo";
 	const char *rubylib;
 	const char *segment;
 	const char *cursor;
@@ -148,6 +150,13 @@ rb_cosmo_configure_load_path(void)
 			}
 			cursor++;
 		}
+	}
+
+	if (plugin_path && *plugin_path) {
+		rb_ary_push(load_path, rb_str_new2(plugin_path));
+	}
+	else {
+		rb_ary_push(load_path, rb_str_new2(default_plugin_path));
 	}
 
 #endif

@@ -19,10 +19,30 @@
 
 o/$(MODE)/third_party/ruby/ruby.dbg: | ruby.codegen
 
+# Phase 1: Build without exports to extract symbols
+# Note: Does NOT depend on ruby.pkg (which includes exports.o) to break circular dependency
+o/$(MODE)/third_party/ruby/ruby.pre.dbg:			\
+        $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
+        o/$(MODE)/third_party/ruby/ruby.main.o			\
+        $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+        $(CRT)							\
+        $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/ruby.pre.dbg: private		\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+		--no-whole-archive
+
+# Phase 2: Generate exports from pre-built binary (ruby.compile.mk has the rule)
+
+# Phase 3: Build final binary with real exports
 o/$(MODE)/third_party/ruby/ruby.dbg:				\
         $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
         o/$(MODE)/third_party/ruby/ruby.pkg			\
         o/$(MODE)/third_party/ruby/ruby.main.o			\
+        o/$(MODE)/third_party/ruby/ruby_exports.o		\
         $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
         $(CRT)							\
         $(APE_NO_MODIFY_SELF)
@@ -48,6 +68,7 @@ o/$(MODE)/third_party/ruby/ruby.zipless.dbg:			\
         $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
         o/$(MODE)/third_party/ruby/ruby.zipless.pkg		\
         o/$(MODE)/third_party/ruby/ruby.main.zipless.o		\
+        o/$(MODE)/third_party/ruby/ruby_exports.o		\
         $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
         $(CRT)							\
         $(APE_NO_MODIFY_SELF)
@@ -79,14 +100,32 @@ THIRD_PARTY_RUBY_IRB_DEPS :=					\
 
 o/$(MODE)/third_party/ruby/irb.pkg:				\
     o/$(MODE)/third_party/ruby/irb.main.o			\
+    o/$(MODE)/third_party/ruby/irb_exports.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_IRB_DIRECTDEPS),$($(x)_A).pkg)
 
 o/$(MODE)/third_party/ruby/irb.dbg: | ruby.codegen
 
+# Phase 1: Build without exports
+o/$(MODE)/third_party/ruby/irb.pre.dbg:				\
+    $(THIRD_PARTY_RUBY_IRB_DEPS)				\
+    o/$(MODE)/third_party/ruby/irb.main.o			\
+    $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+    $(CRT)							\
+    $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/irb.pre.dbg: private			\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
+		--no-whole-archive
+
+# Phase 3: Build final binary with exports
 o/$(MODE)/third_party/ruby/irb.dbg:				\
     $(THIRD_PARTY_RUBY_IRB_DEPS)				\
     o/$(MODE)/third_party/ruby/irb.pkg				\
     o/$(MODE)/third_party/ruby/irb.main.o			\
+    o/$(MODE)/third_party/ruby/irb_exports.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)
@@ -104,6 +143,7 @@ o/$(MODE)/third_party/ruby/irb.dbg: private			\
 
 o/$(MODE)/third_party/ruby/irb.zipless.pkg:			\
     o/$(MODE)/third_party/ruby/irb.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/irb_exports.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_IRB_DIRECTDEPS),$($(x)_A).pkg)
 
 o/$(MODE)/third_party/ruby/irb.zipless.dbg: | ruby.codegen
@@ -112,6 +152,7 @@ o/$(MODE)/third_party/ruby/irb.zipless.dbg:			\
     $(THIRD_PARTY_RUBY_IRB_DEPS)				\
     o/$(MODE)/third_party/ruby/irb.zipless.pkg			\
     o/$(MODE)/third_party/ruby/irb.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/irb_exports.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))	\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)
@@ -143,10 +184,31 @@ THIRD_PARTY_RUBY_MINIRUBY_DEPS :=				\
 # miniruby.zipless - filesystem paths only
 o/$(MODE)/third_party/ruby/miniruby.zipless.pkg:		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(foreach x,$(THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS),$($(x)_A).pkg)
 
 o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: | ruby.codegen
 
+# Phase 1: Build without exports
+o/$(MODE)/third_party/ruby/miniruby.zipless.pre.dbg:		\
+    $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
+    $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
+    $(THIRD_PARTY_RUBY_EXT_STRINGIO_A)				\
+    $(THIRD_PARTY_RUBY_EXT_PATHNAME_A)				\
+    o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    $(CRT)							\
+    $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/miniruby.zipless.pre.dbg: private	\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(THIRD_PARTY_RUBY_EXT_MONITOR_A)	\
+		$(THIRD_PARTY_RUBY_EXT_STRINGIO_A)	\
+		$(THIRD_PARTY_RUBY_EXT_PATHNAME_A)	\
+		--no-whole-archive
+
+# Phase 3: Build final binary with exports
 o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
     $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
     $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
@@ -154,6 +216,7 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
     $(THIRD_PARTY_RUBY_EXT_PATHNAME_A)				\
     o/$(MODE)/third_party/ruby/miniruby.zipless.pkg		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)
 	@$(APELINK)
@@ -169,10 +232,31 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: private	\
 # miniruby - ZIP paths only
 o/$(MODE)/third_party/ruby/miniruby.pkg:			\
     o/$(MODE)/third_party/ruby/miniruby.main.o			\
+    o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(foreach x,$(THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS),$($(x)_A).pkg)
 
 o/$(MODE)/third_party/ruby/miniruby.dbg: | ruby.codegen
 
+# Phase 1: Build without exports
+o/$(MODE)/third_party/ruby/miniruby.pre.dbg:			\
+    $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
+    $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
+    $(THIRD_PARTY_RUBY_EXT_STRINGIO_A)				\
+    $(THIRD_PARTY_RUBY_EXT_PATHNAME_A)				\
+    o/$(MODE)/third_party/ruby/miniruby.main.o			\
+    $(CRT)							\
+    $(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/miniruby.pre.dbg: private		\
+	LDFLAGS +=						\
+		--whole-archive				\
+		$(THIRD_PARTY_RUBY_EXT_MONITOR_A)	\
+		$(THIRD_PARTY_RUBY_EXT_STRINGIO_A)	\
+		$(THIRD_PARTY_RUBY_EXT_PATHNAME_A)	\
+		--no-whole-archive
+
+# Phase 3: Build final binary with exports
 o/$(MODE)/third_party/ruby/miniruby.dbg:			\
     $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
     $(THIRD_PARTY_RUBY_EXT_MONITOR_A)				\
@@ -180,6 +264,7 @@ o/$(MODE)/third_party/ruby/miniruby.dbg:			\
     $(THIRD_PARTY_RUBY_EXT_PATHNAME_A)				\
     o/$(MODE)/third_party/ruby/miniruby.pkg			\
     o/$(MODE)/third_party/ruby/miniruby.main.o			\
+    o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)
 	@$(APELINK)
@@ -192,40 +277,8 @@ o/$(MODE)/third_party/ruby/miniruby.dbg: private			\
 		$(THIRD_PARTY_RUBY_EXT_PATHNAME_A)	\
 		--no-whole-archive
 
-################################################################################
-# automate_mkdeps (C replacement for bin/automate_mkdeps.sh)
-
-THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DIRECTDEPS =			\
-    LIBC_CALLS							\
-    LIBC_FMT							\
-    LIBC_INTRIN							\
-    LIBC_LOG							\
-    LIBC_MEM							\
-    LIBC_RUNTIME						\
-    LIBC_STDIO							\
-    LIBC_STR							\
-    LIBC_SYSTEM						\
-    LIBC_X
-
-THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DEPS :=				\
-    $(call uniq,$(foreach x,$(THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DIRECTDEPS),$($(x))))
-
-o/$(MODE)/third_party/ruby/automate_mkdeps.o:			\
-    third_party/ruby/automate_mkdeps.c
-
-o/$(MODE)/third_party/ruby/automate_mkdeps.dbg:			\
-    $(THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DEPS)			\
-    $(foreach x,$(THIRD_PARTY_RUBY_AUTOMATE_MKDEPS_DIRECTDEPS),$($(x)_A).pkg)	\
-    o/$(MODE)/third_party/ruby/automate_mkdeps.o		\
-    $(CRT)							\
-    $(APE_NO_MODIFY_SELF)
-	@$(APELINK)
-
-o/$(MODE)/third_party/ruby/automate_mkdeps:			\
-    o/$(MODE)/third_party/ruby/automate_mkdeps.dbg		\
-    $(APE)
-	@$(OBJCOPY) -S -O binary $< $@
-	@$(ZIPCOPY) $< $@
+# automate_mkdeps has been moved to third_party/mexican_toaster/
+# See third_party/mexican_toaster/BUILD.mk for build rules
 
 ################################################################################
 

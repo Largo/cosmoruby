@@ -1,371 +1,382 @@
-# mkdeps Automation System for Ruby Headers
+# mkdeps Automation System - Module-Generic Implementation
 
-**Date**: 2025-11-02
-**Status**: Stage 1 working, Stage 2 pending
-**Context**: Automating Ruby header dependency tracking for Cosmopolitan build system
+**Date**: 2025-12-13
+**Status**: ✅ WORKING - Fully automated, module-generic
+**Context**: Automated header dependency tracking for third-party modules in Cosmopolitan
 
 ## Overview
 
-The mkdeps tool analyzes C source files to track header dependencies. For Ruby, we have ~hundreds of headers that need to be registered. Manual registration is impractical, so we built an automation system.
+The mkdeps automation system automatically discovers and registers header dependencies for third-party modules (Ruby, Python, Lua, etc.) by:
+1. Running mkdeps and capturing errors about missing headers
+2. Resolving headers using C header search rules
+3. Creating context-keyed shim files to handle include path mismatches
+4. Iterating until all dependencies are resolved
 
-## The mkdeps Two-Stage Resolution System
+**Key Achievement**: Fully generic - works for any module with `--module=NAME` flag.
 
-### Stage 1: Hash Table Registration
-**Error**: `file.h: path not specified by HDRS/SRCS/INCS make variables (it was included by source.c)`
+## Quick Start
 
-**What it means**: mkdeps loads all files from HDRS/SRCS/INCS into an internal hash table during initialization. When scanning source files, it looks up `#include` directives in this hash table. If not found → Stage 1 error.
+```bash
+# From repo root:
+bin/run_mkdeps_and_shims.sh --module=ruby
 
-**Solution**: Add the filename **as it appears in the #include directive** to `THIRD_PARTY_RUBY_A_HDRS` in `third_party/ruby/ruby.deps.mk`.
-
-**Example**:
-```c
-// In third_party/ruby/ext/date/date_core.c
-#include "ruby.h"
+# Or manually:
+build/bootstrap/automate_mkdeps --module=ruby --truncate  # Clear and restart
+build/bootstrap/automate_mkdeps --module=ruby             # Add dependencies
+bin/create_shims.sh --module=ruby shims                   # Create shim files
+# Repeat until clean
 ```
-Add to deps.mk:
+
+## Architecture
+
+### Core Components
+
+1. **`build/bootstrap/automate_mkdeps`** (C binary from `third_party/mexican_toaster/automate_mkdeps.c`)
+   - Parses mkdeps errors
+   - Resolves headers using C search rules
+   - Adds entries to module's deps.mk file
+   - Logs actions to stage1 log
+
+2. **`build/bootstrap/mtdeps`** (Enhanced mkdeps from `third_party/mexican_toaster/mtdeps.c`)
+   - Standard mkdeps with context-key synthesis
+   - Accepts `-P <prefix>` for module-specific shim directories
+   - Synthesizes `{module}_shims/SANITIZED_HEADER` for missing includes
+
+3. **`bin/create_shims.sh`**
+   - Reads stage1 log
+   - Creates shim files with proper include redirects
+   - Supports per-header and per-includer strategies
+
+4. **`bin/loop_automate_mkdeps.sh`**
+   - Runs automate_mkdeps repeatedly
+   - Detects completion (exit code 2)
+   - Detects infinite loops (duplicate entries)
+
+5. **`bin/run_mkdeps_and_shims.sh`**
+   - Orchestrates: loop → create_shims → loop → ...
+   - Stops when mkdeps reports no errors
+
+### Module Configuration
+
+Each module needs:
+- `third_party/{module}/{module}.deps.mk` - Contains HDRS/INCS variables
+- `third_party/{module}/{module}.pc` (optional) - pkg-config file for include paths
+
+Example for Ruby:
 ```makefile
+# In third_party/ruby/ruby.deps.mk
 THIRD_PARTY_RUBY_A_HDRS =\
-    ruby.h
-```
+    internal.h\
+    internal/array.h\
+    ...
 
-### Stage 2: File Reading
-**Error**: `third_party/ruby/include/ruby.h: No such file or directory`
-
-**What it means**: mkdeps found the header in Stage 1 (in the hash table), but when trying to read the actual file to scan its dependencies, it doesn't exist at that path.
-
-**Why this happens**: mkdeps runs from the repository root. The header is registered as `ruby.h` (from the `#include`), but the actual file is at `third_party/ruby/include/ruby.h`.
-
-**Solution**: Create a **shim** file at the registered path that redirects to the actual file location.
-
-**Example**: Create `ruby.h` in repo root:
-```c
-/* Auto-generated shim for Cosmopolitan Ruby port */
-#ifndef __RUBY_H__
-#define __RUBY_H__
-#include "third_party/ruby/include/ruby.h"
-#endif
-```
-
-## The Automation Scripts
-
-### 1. `bin/strip_ruby_hdrs.sh`
-**Purpose**: Clear all entries from HDRS and INCS to start fresh.
-
-**Usage**:
-```bash
-bin/strip_ruby_hdrs.sh
-```
-
-**What it does**:
-- Empties `THIRD_PARTY_RUBY_A_HDRS` in `third_party/ruby/ruby.deps.mk`
-- Empties `THIRD_PARTY_RUBY_A_INCS` in `third_party/ruby/ruby.deps.mk`
-- Leaves just the variable declarations: `HDRS =` and `INCS =`
-
-### 2. `bin/automate_mkdeps.sh`
-**Purpose**: ONE iteration of finding and adding missing headers.
-
-**How it works**:
-
-1. **Cleans dependency files**: `rm -f o/$MODE/{srcs,hdrs,incs}.txt`
-
-2. **Runs mkdeps**: `make MODE=$MODE -j1 o/$MODE/depend`
-
-3. **Parses errors**: Looks for "path not specified by HDRS/SRCS/INCS" errors
-
-4. **For each missing header**:
-   - **Resolves using C header resolution**:
-     1. Try includer's directory: `$(dirname includer)/$FILENAME`
-     2. Try `-I` directories in order (from `ruby.compile.mk`):
-        - `third_party/ruby/include`
-        - `third_party/ruby`
-        - `third_party/ruby/prism`
-        - `third_party/ruby/enc/unicode/15.0.0`
-        - `third_party/zlib`
-
-   - **Adds to HDRS**:
-     - Filename as it appears in `#include`: `ruby.h`
-     - Adds to `THIRD_PARTY_RUBY_A_HDRS` in deps.mk
-
-   - **Logs for shim creation**:
-     - Format: `FILENAME|INCLUDER|HDRS|ENTRY_PATH|FULLPATH`
-     - Example: `ruby.h|third_party/ruby/ext/date/date_core.c|THIRD_PARTY_RUBY_A_HDRS|ruby.h|third_party/ruby/include/ruby.h`
-     - Appends to `o/$MODE/automate_mkdeps_stage1.log`
-
-5. **Exits**:
-   - Exit 0 if headers were added or no errors found
-   - Exit 1 if file not found (indicates broken code or missing -I path)
-
-### 3. `bin/loop_automate_mkdeps.sh`
-**Purpose**: Run `automate_mkdeps.sh` repeatedly until completion or stuck.
-
-**Stops when**:
-1. `automate_mkdeps.sh` exits non-zero (error)
-2. Duplicate consecutive entry detected (stuck in loop)
-3. Max iterations (500) reached
-
-**Duplicate detection**: Checks `o/$MODE/automate_mkdeps_stage1.log` for same entry twice in a row.
-
-**Usage**:
-```bash
-bin/loop_automate_mkdeps.sh
-# Or with different mode:
-MODE=opt bin/loop_automate_mkdeps.sh
-```
-
-### 4. `bin/create_shims.sh`
-**Purpose**: Create shim headers to satisfy Stage 2 file reading.
-
-**Usage**:
-```bash
-# Preview what will be created
-bin/create_shims.sh
-
-# Actually create the shims
-bin/create_shims.sh shims
-```
-
-**How it works**:
-- Reads `o/$MODE/automate_mkdeps_stage1.log`
-- For each entry where `ENTRY_PATH` doesn't start with `third_party/ruby/`:
-  - Creates directory if needed: `mkdir -p $(dirname ENTRY_PATH)`
-  - Creates shim file at `ENTRY_PATH`:
-    ```c
-    #ifndef __GUARD__
-    #define __GUARD__
-    #include "FULLPATH"
-    #endif
-    ```
-
-**Example**:
-```bash
-# Log entry:
-# ruby.h|...|HDRS|ruby.h|third_party/ruby/include/ruby.h
-
-# Creates shim at repo root: ruby.h
-#ifndef __RUBY_H__
-#define __RUBY_H__
-#include "third_party/ruby/include/ruby.h"
-#endif
-```
-
-## C Header Resolution Rules
-
-For `#include "file.h"` (double quotes), the compiler searches:
-
-1. **Current directory of source file**: If `source.c` is in `foo/bar/`, try `foo/bar/file.h`
-   - This handles relative paths: `#include "../digest.h"` resolves to parent directory
-
-2. **-I directories in ORDER**: Try each `-I` path until found
-   - Order matters! First match wins
-
-For `#include <file.h>` (angle brackets):
-- Only searches system/standard library paths
-- mkdeps doesn't error on these (handled by Cosmopolitan)
-
-## Complete Workflow
-
-### Initial Setup
-```bash
-# 1. Strip existing HDRS/INCS
-bin/strip_ruby_hdrs.sh
-
-# 2. Run Stage 1 automation (populates HDRS)
-bin/loop_automate_mkdeps.sh
-```
-
-**Expected output**: Loop runs multiple iterations, each adding more headers to `THIRD_PARTY_RUBY_A_HDRS`. Eventually completes with no Stage 1 errors.
-
-**Result**:
-- `third_party/ruby/ruby.deps.mk` has populated `THIRD_PARTY_RUBY_A_HDRS`
-- `o/dbg/automate_mkdeps_stage1.log` has all discovered headers with their full paths
-
-### Stage 2: Shim Creation
-```bash
-# 3. Preview shims to be created
-bin/create_shims.sh
-
-# 4. Create the shims
-bin/create_shims.sh shims
-
-# 5. Run loop again (should hit Stage 2 errors or complete)
-bin/loop_automate_mkdeps.sh
-```
-
-**Expected**: mkdeps can now read files via shims, discovers more headers nested inside.
-
-**Loop continues**: More Stage 1 errors for headers included BY the shimmed headers.
-
-### Iteration
-Repeat until one of:
-1. **Success**: No more mkdeps errors, `o/dbg/depend` generated successfully
-2. **Stage 2 blocker**: A file truly doesn't exist (need manual intervention)
-3. **Stuck**: Same error repeating (indicates code bug or missing -I path)
-
-## Key Files
-
-### Source Files
-- `bin/strip_ruby_hdrs.sh` - Clear HDRS/INCS
-- `bin/automate_mkdeps.sh` - Single iteration of automation
-- `bin/loop_automate_mkdeps.sh` - Loop driver
-- `bin/create_shims.sh` - Shim generation
-
-### Generated Files
-- `third_party/ruby/ruby.deps.mk` - Contains `THIRD_PARTY_RUBY_A_HDRS` and `THIRD_PARTY_RUBY_A_INCS`
-- `o/$MODE/automate_mkdeps_stage1.log` - Log of all headers added (used by create_shims.sh)
-- `o/$MODE/mkdeps_output.log` - Full make output from each iteration
-- Shim files: `ruby.h`, `ruby/encoding.h`, etc. (created in repo root)
-
-### Config Files
-- `third_party/ruby/ruby.compile.mk` - Source of truth for `-I` paths (lines ~24-25)
-- `third_party/ruby/ruby.deps.mk` - Contains HDRS/INCS/SRCS (lines ~87-90)
-
-## Current State (as of 2025-11-02)
-
-**Stage 1**: ✅ Working correctly
-- Loop runs without infinite loops
-- Finds files using C header resolution
-- Adds to HDRS correctly
-- Logs for shim creation
-
-**Stage 2**: ⏳ Pending
-- Shim creation tested and working
-- Need to run full loop with shims to discover Stage 2 issues
-- Expected blocker: TBD (user knows what it is, not documented yet)
-
-**HDRS entries** (example of what's populated):
-```makefile
-THIRD_PARTY_RUBY_A_HDRS =\
-    ruby.h\
-    ruby/encoding.h\
-    ruby/util.h\
-    ruby/re.h\
-    ruby/ruby.h\
-    ../digest.h\
+THIRD_PARTY_RUBY_A_INCS =\
+    ruby_shims/ruby.h\
+    ruby_shims/debug_counter.h\
     ...
 ```
 
-**INCS entries**: Currently empty (shims handle file location)
+## The Two-Stage Resolution System
+
+### Stage 1: Hash Table Registration
+
+**Error**: `file.h: path not specified by HDRS/SRCS/INCS make variables (it was included by source.c)`
+
+**What it means**: mkdeps loads all HDRS/SRCS/INCS into a hash table. When it encounters `#include "file.h"`, it looks up `file.h` in the hash table. If not found → Stage 1 error.
+
+**Solution**: Add an entry to HDRS or INCS that matches the include directive exactly.
+
+### Stage 2: File Reading
+
+**Error**: `ruby_shims/ruby.h: No such file or directory`
+
+**What it means**: mkdeps found the entry in Stage 1, but when trying to read the actual file, it doesn't exist.
+
+**Solution**: Create a shim file at that path.
+
+## Context-Keyed Shims
+
+### Why Context Keys?
+
+When `third_party/ruby/array.c` includes `"internal.h"`, mkdeps looks for `internal.h` in its hash table. But many different files might include headers with the same name:
+- `array.c` includes `"internal.h"` → `third_party/ruby/internal.h`
+- `prism/api_node.c` includes `"internal.h"` → `third_party/ruby/prism/internal.h`
+
+We need different shims for different contexts!
+
+### Shim Strategies
+
+**Per-Header (default)**: One shim per unique header
+- Entry: `ruby_shims/internal.h`
+- Shim created: `ruby_shims/internal.h` → includes real header
+- Simpler, fewer files (~200-400 shims for Ruby)
+
+**Per-Includer**: One shim per (header, includer) pair
+- Entry: `ruby_shims/internal.h@third_party+ruby+array.c`
+- More granular, more files (~2400 shims for Ruby)
+- Original shell script behavior
+
+### Sanitization
+
+Filenames are sanitized to create valid filesystem paths:
+- Lowercase everything
+- `/` → `+`
+- `..` → `_dotdot`
+- Non-alphanumeric → `_xx` (hex encoding)
+
+Examples:
+- `internal.h` → `internal.h`
+- `ruby/encoding.h` → `ruby+encoding.h`
+- `../digest.h` → `_dotdot+digest.h`
+- `third_party/ruby/include/ruby.h` → `third_party+ruby+include+ruby.h`
+
+### Shim Directory Structure
+
+Module-specific shim directories at repo root:
+```
+{module}_shims/
+  ruby.h              # Shim for "ruby.h"
+  debug_counter.h     # Shim for "debug_counter.h"
+  ruby+encoding.h     # Shim for "ruby/encoding.h"
+  third_party+ruby+include+ruby.h  # Shim for full path
+```
+
+### Shim File Format
+
+```c
+/* Auto-generated shim for Cosmopolitan Ruby port
+ * Target: third_party/ruby/debug_counter.h
+ * Included by:
+ *   - third_party/ruby/array.c
+ *   - third_party/ruby/gc.c
+ */
+#ifndef __RUBY_SHIMS_DEBUG_COUNTER_H__
+#define __RUBY_SHIMS_DEBUG_COUNTER_H__
+#include "third_party/ruby/debug_counter.h"
+#endif
+```
+
+**Note**: Uses quotes `""` not angle brackets `<>` - semantically correct for project headers.
+
+## C Header Resolution
+
+When resolving `#include "file.h"` from `includer.c`:
+
+1. **Includer's directory**: `$(dirname includer)/file.h`
+   - Handles relative paths like `#include "../digest.h"`
+
+2. **-I directories in order** (from module.pc or defaults):
+   - `.` (repo root) - **CRITICAL** for full-path includes!
+   - `third_party/{module}/include`
+   - `third_party/{module}`
+   - Additional module-specific paths
+
+3. **First match wins** - order matters!
+
+## The HDRS vs INCS Decision
+
+When processing a missing header:
+
+```c
+if (includer contains "{module}_shims/") {
+    // Includer is a shim, so this is a REAL header
+    entry_path = filename;  // Use as-is from #include directive
+    target = HDRS;
+} else {
+    // Includer is real code, create a SHIM
+    entry_path = "{module}_shims/" + sanitize(filename);
+    target = INCS;
+}
+```
+
+**Key insight**: When the includer is already a shim file, the header being included is real code, so add it to HDRS using the exact string from the `#include` directive (for hash table matching).
+
+## Critical Implementation Details
+
+### Fix 1: Hash Table Matching
+
+**Bug**: When `is_real_header = true`, code was returning `NormalizePath(found)` (full path) instead of `filename` (include directive string).
+
+**Problem**: mkdeps looks up the exact string from `#include` in its hash table. If we add the full path instead, lookup fails.
+
+**Fix** (in `automate_mkdeps.c` line 672):
+```c
+if (is_real_header) {
+    return strdup(filename);  // Use include directive string, not resolved path
+}
+```
+
+### Fix 2: Include Path Configuration
+
+**Bug**: `ruby.pc` was missing `-I.` in its Cflags.
+
+**Problem**: When files outside the Ruby module used full paths like `#include "third_party/ruby/include/ruby.h"`, resolution tried:
+- `third_party/ruby/include` + `third_party/ruby/include/ruby.h` ✗
+- But NOT: `.` + `third_party/ruby/include/ruby.h` ✓
+
+**Fix** (in `ruby.pc` line 14):
+```
+Cflags: -I. \
+        -I${includedir} \
+        ...
+```
+
+**Why it matters**: Full-path includes are common from files outside the module (e.g., `tool/net/redbean.c` including Ruby headers).
+
+### Fix 3: Shim Include Format
+
+**Bug**: Shims used `#include <path>` (angle brackets).
+
+**Fix**: Changed to `#include "path"` (quotes) - semantically correct for project headers and matches historical documentation.
+
+## Complete Workflow
+
+### Initial Run (from clean state)
+
+```bash
+# 1. Clear everything
+bin/run_mkdeps_and_shims.sh --module=ruby
+```
+
+This will:
+1. Truncate HDRS/INCS in deps.mk
+2. Remove shims directory
+3. Loop:
+   - Run automate_mkdeps → finds missing headers → adds to INCS/HDRS
+   - Create shims for INCS entries
+   - Repeat until mkdeps reports no errors
+
+### Typical Progression
+
+```
+Iteration 1: 0 HDRS, 214 INCS, 187 shims created
+Iteration 2: 207 HDRS, 299 INCS, 85 more shims
+Iteration 3: 283 HDRS, 369 INCS, 70 more shims
+Iteration 4: 350 HDRS, 383 INCS, 14 more shims
+Iteration 5: mkdeps clean; done.
+
+Final: 350 HDRS, 383 INCS, 352 shim files
+```
+
+## Files and Paths
+
+### Source Code
+- `third_party/mexican_toaster/automate_mkdeps.c` - Main automation logic (C)
+- `third_party/mexican_toaster/mtdeps.c` - Enhanced mkdeps with shim synthesis
+- `bin/create_shims.sh` - Shim file generator (Bash)
+- `bin/loop_automate_mkdeps.sh` - Iteration driver
+- `bin/run_mkdeps_and_shims.sh` - Full orchestration
+
+### Generated Files
+- `{module}_shims/*.h` - Shim files at repo root
+- `o/{MODE}/automate_mkdeps_{module}_stage1.log` - Detailed log of additions
+- `o/{MODE}/mkdeps_output.log` - Full make output for debugging
+- `third_party/{module}/{module}.deps.mk` - Updated with HDRS/INCS
+
+### Historical Reference
+- `docs/ai/historical/AUTOMATE_MKDEPS_SHELL_ORIGINAL.sh` - Original shell implementation
+- `docs/ai/historical/MKDEPS_AUTOMATION_SYSTEM_ORIGINAL.md` - Original docs
+- `docs/ai/historical/SHIM_STRATEGY_REFACTOR_PLAN.md` - Strategy design
 
 ## Troubleshooting
 
 ### Infinite Loop
-**Symptom**: Same file processed repeatedly, loop never advances.
+
+**Symptom**: Same errors appear repeatedly, nothing added to deps.mk
 
 **Causes**:
-1. File not found → add missing `-I` path to INCLUDE_PATHS in `automate_mkdeps.sh`
-2. "Already exists" check broken → verify regex in line ~184
-3. Not logging entry → verify Stage1_LOG append happens
+1. Resolution failing - check include paths in module.pc
+2. Hash table mismatch - ensure HDRS entries match include directives exactly
+3. Missing `-I.` - full-path includes won't resolve
 
-**Fix**: Check `o/dbg/automate_mkdeps_stage1.log` for duplicates. Loop script should detect and stop.
-
-### File Not Found Error
-**Symptom**: Script exits with "File not found using C header resolution"
-
-**Causes**:
-1. Typo in `#include` directive (broken Ruby code)
-2. Missing `-I` path in `ruby.compile.mk` or `automate_mkdeps.sh` INCLUDE_PATHS
-3. File truly doesn't exist
-
-**Fix**:
+**Debug**:
 ```bash
-# Check what was searched
-cat o/dbg/mkdeps_output.log
-
-# Find the actual file
-find third_party/ruby -name "filename.h"
-
-# If found, add its parent directory to INCLUDE_PATHS
+build/bootstrap/automate_mkdeps --module=ruby 2>&1 | less
+# Look for "File not found using C header resolution"
 ```
 
-### Script Won't Continue
-**Symptom**: Loop exits immediately, no progress.
+### Stage 2 Errors
+
+**Symptom**: "No such file or directory" after Stage 1 succeeds
 
 **Causes**:
-1. No Stage 1 errors found (success or already complete)
-2. Parse error (mkdeps output format changed)
-3. Script permissions
+1. Shim file not created - check create_shims.sh skip logic
+2. Wrong shim path - check sanitization matches between automate_mkdeps and mtdeps
 
-**Fix**:
+**Debug**:
 ```bash
-# Check for Stage 1 errors manually
-make MODE=dbg -j1 o/dbg/depend 2>&1 | grep "path not specified"
+# Check what shims exist
+ls -la {module}_shims/
 
-# Verify script is executable
-chmod +x bin/*.sh
+# Check what's in stage1 log
+tail o/dbg/automate_mkdeps_{module}_stage1.log
 ```
 
-## Implementation Details
+### Shim Count Mismatch
 
-### Why HDRS Not INCS?
-Initially tried adding to INCS. Problem: INCS is for `.inc` files (include snippets), HDRS is for `.h` files (headers).
+**Symptom**: More INCS entries than shim files
 
-Current approach: Everything goes to HDRS. Shims provide file location indirection.
+**Cause**: Per-header mode deduplicates - multiple includers use same shim
 
-### Why Shims Instead of Full Paths in INCS?
-mkdeps expects the path in HDRS to match the file on disk. If we add `ruby.h` to HDRS but the file is `third_party/ruby/include/ruby.h`, mkdeps can't read it.
+**Expected**: Normal! e.g., 383 INCS entries → 352 unique shims
 
-Shims solve this: `ruby.h` (shim) includes `third_party/ruby/include/ruby.h` (real file).
+## Extending to Other Modules
 
-### Why Not Add Both Bare and Full Paths?
-Tried adding both `ruby.h` and `third_party/ruby/include/ruby.h` to HDRS. Problem: mkdeps finds `ruby.h` in hash table, tries to read `ruby.h` from disk → doesn't exist.
+To add automation for a new module (e.g., Python):
 
-Shims are cleaner: Single HDRS entry + shim file.
+1. **Create module.pc** (optional but recommended):
+```
+# third_party/python/python.pc
+prefix=third_party/python
+includedir=${prefix}/Include
 
-## Next Steps
+Cflags: -I. \
+        -I${includedir} \
+        -I${prefix}
+```
 
-1. **Complete Stage 1**: Let current loop finish (in progress)
-2. **Create shims**: Run `bin/create_shims.sh shims`
-3. **Stage 2 loop**: Run `bin/loop_automate_mkdeps.sh` again
-4. **Hit blocker**: User mentioned a known blocker in Stage 2
-5. **Document blocker**: Update this file with Stage 2 blocker details
-6. **Continue**: Iterate until mkdeps succeeds
+2. **Run automation**:
+```bash
+bin/run_mkdeps_and_shims.sh --module=python
+```
 
-## Historical Context
+3. **Module conventions**:
+   - deps.mk: `third_party/{module}/{module}.deps.mk`
+   - Variables: `THIRD_PARTY_{MODULE}_A_HDRS` / `THIRD_PARTY_{MODULE}_A_INCS`
+   - Shims: `{module}_shims/` at repo root
 
-### Build System Reorg
-Scripts were moved from root to `bin/` directory. Updated to calculate `REPO_ROOT` and `cd` there before operating.
+That's it! The system handles the rest.
 
-### HDRS vs INCS Location
-Originally in `third_party/ruby/BUILD.mk`, now in `third_party/ruby/ruby.deps.mk` due to build system modularization.
+## Performance Notes
 
-### Failed Approaches
-1. **Adding full paths to INCS**: Didn't solve Stage 1 lookup
-2. **Adding both forms to HDRS and INCS**: Created maintenance burden, still needed shims
-3. **Using find for all resolution**: Too slow, didn't match C semantics
-4. **Ignoring -I order**: Wrong file selected when duplicates exist
+- **Per-header mode**: ~200-400 shims for Ruby, fewer file stats
+- **Per-includer mode**: ~2400 shims for Ruby, more granular
+- **Build time**: First run ~5-10 iterations, subsequent rebuilds use cached deps.mk
+- **Incremental**: Adding new files only processes new dependencies
 
-### What Finally Worked
-Implement exact C header resolution:
-1. Source directory first
-2. -I directories in order
-3. Add bare filename to HDRS
-4. Create shims for file location
+## Known Limitations
+
+1. **Quotes required**: Shims use `#include "path"` so code must use quotes or have path in -I list
+2. **Module isolation**: Each module has its own shims directory (can't share)
+3. **Manual triggers**: Need to rerun automation when adding new source files
+4. **Static analysis only**: Doesn't handle conditional includes or macro magic
+
+## Success Criteria
+
+Automation completes successfully when:
+- `automate_mkdeps` exits with code 2 ("No missing headers found")
+- `make o/{MODE}/depend` succeeds without errors
+- No Stage 1 or Stage 2 mkdeps errors remain
+
+## Future Improvements
+
+- [ ] Incremental mode: only process new errors, don't truncate
+- [ ] Parallel processing: handle multiple modules concurrently
+- [ ] Smart regeneration: detect when deps.mk needs updating
+- [ ] Build system integration: automatic rerun when needed
 
 ## References
 
-- mkdeps source: `tool/build/mkdeps.c`
-- Ruby compile flags: `third_party/ruby/ruby.compile.mk` lines 20-30
-- Ruby dependencies: `third_party/ruby/ruby.deps.mk` lines 87-270
-- Main Makefile: `Makefile` lines 397-420 (HDRS/INCS aggregation)
-
-## Contact
-
-If resuming with different AI or after context loss, provide:
-1. This document
-2. Current contents of `third_party/ruby/ruby.deps.mk` (HDRS section)
-3. Last few lines of `o/dbg/automate_mkdeps_stage1.log`
-4. Current error from `make MODE=dbg -j1 o/dbg/depend`
-
-## Planned Context-Key Integration
-
-- **mkdeps enhancements**  
-  Patch `tool/build/mkdeps.c` so that, when a quoted include still fails lookup, it synthesizes `shims/<sanitize(include)>@<sanitize(source)>` where sanitization lowercases, keeps `a–z 0–9 _.`, maps `/ → +`, converts `..` to `_dotdot`, and encodes any other byte as `_xx`. Successful hits skip the fatal Stage 1 error and later let Stage 2 mmap the shim.
-
-- **Automation rewrite**  
-  Refactor `bin/automate_mkdeps.sh` to compute the same sanitized strings, append the context key to `THIRD_PARTY_RUBY_A_HDRS`, and log `ENTRY_PATH` as `shims/include@source` alongside the resolved real header path.
-
-- **Shim generator overhaul**  
-  Update `bin/create_shims.sh` to read the new log format, ensure `shims/` exists, and emit guards plus `#include "<real path>"` for each `ENTRY_PATH`, deleting stale shims before regeneration if needed.
-
-- **Verification steps**  
-  Rebuild mkdeps, rerun the automation, generate shims, then `make o/$MODE/depend` to confirm both Stage 1 and Stage 2 pass without manual intervention.
+- mkdeps source: `tool/build/mkdeps.c` (original) and `third_party/mexican_toaster/mtdeps.c` (enhanced)
+- Original shell implementation: `docs/ai/historical/AUTOMATE_MKDEPS_SHELL_ORIGINAL.sh`
+- C header search rules: ISO C standard, section 6.10.2

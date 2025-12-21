@@ -45,7 +45,7 @@ module RbConfig
   CONFIG["RUBY_SEARCH_PATH"] = ""
   CONFIG["UNIVERSAL_INTS"] = ""
   CONFIG["UNIVERSAL_ARCHNAMES"] = ""
-  CONFIG["configure_args"] = " '--prefix=/tmp/ruby-cosmo-config' '--disable-shared' '--disable-pie' '--disable-install-doc' '--disable-install-rdoc' '--disable-install-capi' '--disable-yjit' '--disable-rjit' '--enable-load-relative' '--with-static-linked-ext' '--disable-dln' '--enable-debug-env' '--without-valgrind' '--without-jemalloc' '--without-gmp' '--with-baseruby=/usr/bin/ruby' '--with-parser=prism' '--with-thread=pthread' '--with-coroutine=amd64' 'CC=/home/groobiest/Code/jart/cosmopolitan/.cosmocc/current/bin/cosmocc' 'CFLAGS=-O2'"
+  CONFIG["configure_args"] = " '--prefix=/tmp/ruby-cosmo-config' '--disable-shared' '--disable-pie' '--disable-install-doc' '--disable-install-rdoc' '--disable-install-capi' '--disable-yjit' '--disable-rjit' '--enable-load-relative' '--disable-dln' '--enable-debug-env' '--without-valgrind' '--without-jemalloc' '--without-gmp' '--with-baseruby=/usr/bin/ruby' '--with-parser=prism' '--with-thread=pthread' '--with-coroutine=amd64' 'CC=/home/groobiest/Code/jart/cosmopolitan/.cosmocc/current/bin/cosmocc' 'CFLAGS=-O2'"
   CONFIG["CONFIGURE"] = "configure"
   CONFIG["vendorarchdir"] = "$(vendorlibdir)/$(sitearch)"
   CONFIG["vendorlibdir"] = "$(vendordir)/$(ruby_version)"
@@ -135,7 +135,8 @@ module RbConfig
 
 
 
-  CONFIG["DLEXT"] = "so"
+  CONFIG["DLEXT"] = "a"
+  CONFIG["EXTSTATIC"] = "no"
 
 
 

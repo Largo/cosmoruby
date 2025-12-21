@@ -1,0 +1,25 @@
+# pkg-config file for CosmoRuby
+# Single source of truth for include paths and build flags
+
+prefix=third_party/ruby
+includedir=${prefix}/include
+libdir=${prefix}
+
+Name: CosmoRuby
+Description: Ruby 3.4.7 ported to Cosmopolitan Libc
+Version: 3.4.7
+URL: https://www.ruby-lang.org/
+
+# Include paths used by Ruby compilation and tooling
+Cflags: -I. \
+        -I${includedir} \
+        -I${prefix} \
+        -I${prefix}/prism \
+        -I${prefix}/enc/unicode/15.0.0 \
+        -I${prefix}/ext/ripper \
+        -I${includedir}/ruby \
+        -I${prefix}/enc \
+        -Ithird_party/zlib
+
+# Library information (for tools that link against Ruby)
+Libs: -L${libdir} -lruby

@@ -11,6 +11,7 @@ void ruby_init_ext(const char *name, void (*init)(void));
 
 void Init_ext(void)
 {
+#if defined(EXTSTATIC) && EXTSTATIC
     init(Init_date_core, "date_core");
     init(Init_digest, "digest");
     init(Init_md5, "digest/md5");
@@ -27,4 +28,5 @@ void Init_ext(void)
     init(Init_socket, "socket");
     init(Init_stringio, "stringio");
     init(Init_zlib, "zlib");
+#endif
 }

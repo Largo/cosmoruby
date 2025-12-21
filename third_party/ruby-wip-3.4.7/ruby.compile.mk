@@ -147,6 +147,26 @@ o/$(MODE)/third_party/ruby/irb.main.zipless.o: private		\
             -DRUBY_COSMO_LOAD_PATH0=\"$(abspath third_party/ruby/lib)\" \
             -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\"
 
+# Host export table generated from linked ruby.pre.dbg (phase 1 binary without exports)
+# This breaks the circular dependency: pre.dbg → exports.c → exports.o → final.dbg
+o/$(MODE)/third_party/ruby/ruby_exports.c: o/$(MODE)/third_party/ruby/ruby.pre.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/ruby_exports.o: o/$(MODE)/third_party/ruby/ruby_exports.c
+
+# Host export table generated from linked irb.pre.dbg
+o/$(MODE)/third_party/ruby/irb_exports.c: o/$(MODE)/third_party/ruby/irb.pre.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/irb_exports.o: o/$(MODE)/third_party/ruby/irb_exports.c
+
+# Host export table generated from linked miniruby.pre.dbg
+# Note: miniruby and miniruby.zipless produce identical exports (same Ruby core)
+o/$(MODE)/third_party/ruby/miniruby_exports.c: o/$(MODE)/third_party/ruby/miniruby.pre.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/miniruby_exports.o: o/$(MODE)/third_party/ruby/miniruby_exports.c
+
 # ruby/irb/miniruby - ZIP paths
 o/$(MODE)/third_party/ruby/ruby.main.o: private			\
     CFLAGS +=							\
@@ -175,11 +195,13 @@ THIRD_PARTY_RUBY_RUBY_DIRECTDEPS =				\
     LIBC_SYSV							\
     LIBC_THREAD							\
     THIRD_PARTY_RUBY						\
-    TOOL_ARGS
+    TOOL_ARGS							\
+    THIRD_PARTY_COSMO_PLUGIN
 
 THIRD_PARTY_RUBY_RUBY_DEPS :=					\
     $(call uniq,$(foreach x,$(THIRD_PARTY_RUBY_RUBY_DIRECTDEPS),$($(x))))
 
 o/$(MODE)/third_party/ruby/ruby.pkg:				\
     o/$(MODE)/third_party/ruby/ruby.main.o			\
+    o/$(MODE)/third_party/ruby/ruby_exports.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_RUBY_DIRECTDEPS),$($(x)_A).pkg)

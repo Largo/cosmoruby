@@ -9,4 +9,5 @@ o/$(MODE)/test:	o/$(MODE)/test/ctl	\
 		o/$(MODE)/test/math	\
 		o/$(MODE)/test/net	\
 		o/$(MODE)/test/posix	\
+		o/$(MODE)/test/third_party	\
 		o/$(MODE)/test/tool

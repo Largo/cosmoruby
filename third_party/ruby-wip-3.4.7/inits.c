@@ -44,8 +44,13 @@ rb_call_inits(void)
     CALL(Regexp);
     CALL(pack);
     CALL(transcode);
-    // Initialize only the essential transcoder for backtraces
+#if defined(EXTSTATIC) && EXTSTATIC
+    // Static build: transcoder init symbols are prefixed with "trans_"
     CALL(trans_single_byte);
+#else
+    // Plugin/non-static: transcoder init symbols omit the "trans_" prefix
+    CALL(single_byte);
+#endif
     CALL(marshal);
     CALL(Range);
     CALL(IO);

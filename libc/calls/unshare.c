@@ -18,7 +18,9 @@
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/calls/calls.h"
 #include "libc/calls/syscall-sysv.internal.h"
+#include "libc/dce.h"
 #include "libc/intrin/strace.h"
+#include "libc/sysv/errfuns.h"
 
 /**
  * Disassociates parts of process execution context.
@@ -53,7 +55,11 @@
  */
 int unshare(int flags) {
   int rc;
-  rc = sys_unshare(flags);
+  if (!IsLinux()) {
+    rc = enosys();
+  } else {
+    rc = sys_unshare(flags);
+  }
   STRACE("unshare(%#x) → %d% m", flags, rc);
   return rc;
 }

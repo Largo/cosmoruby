@@ -12,6 +12,8 @@ $(THIRD_PARTY_RUBY_EXT_ETC_A):				\
 		$(THIRD_PARTY_RUBY_EXT_ETC_OBJS)
 
 
+
+# Compiler flags for etc extension
 o/$(MODE)/third_party/ruby/ext/etc/%.o: private		\
 	CFLAGS +=					\
 		-Ithird_party/ruby/include		\

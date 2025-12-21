@@ -52,6 +52,45 @@ cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/socket/lib/socket
 mkdir -p cosmo-ruby/lib/ruby/gems/3.4.0
 cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/* cosmo-ruby/lib/ruby/gems/3.4.0/
 
+# Copy plugin extension archives when building in plugin mode (EXTSTATIC=0)
+ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
+ARCH=${ARCH:-x86_64-cosmo}
+EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
+if [[ "$EXTSTATIC" == "0" ]]; then
+  plugins_dir="cosmo-ruby/lib/ruby/3.4.0/extensions/${ARCH}"
+  mkdir -p "${plugins_dir}"
+  # Map feature path -> archive path
+  while read -r feature archive; do
+    archive_dir="${archive}"
+    archive_base="${archive##*/}"
+    src="third_party/ruby/ext/${archive_dir}/${archive_base}.a"
+    dst="${plugins_dir}/${feature}.a"
+    if [[ -f "$src" ]]; then
+      mkdir -p "$(dirname "$dst")"
+      cp -a "$src" "$dst"
+    else
+      echo "Warning: plugin archive missing: $src"
+    fi
+  done <<'EOF'
+date_core date
+digest digest
+digest/md5 digest
+digest/sha1 digest
+digest/sha2 digest
+etc etc
+io/nonblock io/nonblock
+json/ext/generator json
+json/ext/parser json
+monitor monitor
+pathname pathname
+psych psych
+socket socket
+stringio stringio
+zlib zlib
+mbedtls mbedtls
+EOF
+fi
+
 # Create default gem specification for bundler (must be static, no require_relative)
 mkdir -p cosmo-ruby/lib/ruby/gems/3.4.0/specifications/default
 cat > cosmo-ruby/lib/ruby/gems/3.4.0/specifications/default/bundler.gemspec <<'EOF'
@@ -94,7 +133,7 @@ RUBYLIB=../../third_party/ruby/lib ../third_party/ruby/ruby ../../third_party/ru
 touch .cosmo
 
 # Create the ZIP file
-zip -q -r -dd ../ruby-stdlib.zip *
+RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib zip -q -r -dd ../ruby-stdlib.zip *
 echo Zip creation complete
 
 cd ..

@@ -7,6 +7,10 @@ THIRD_PARTY_RUBY_EXT_DATE_A = o/$(MODE)/third_party/ruby/ext/date/date.a
 THIRD_PARTY_RUBY_EXT_DATE_FILES := $(wildcard third_party/ruby/ext/date/*)
 THIRD_PARTY_RUBY_EXT_DATE_HDRS = $(filter %.h,$(THIRD_PARTY_RUBY_EXT_DATE_FILES))
 
+$(THIRD_PARTY_RUBY_EXT_DATE_A):			\
+		third_party/ruby/ext/date/		\
+		$(THIRD_PARTY_RUBY_EXT_DATE_OBJS)
+
 THIRD_PARTY_RUBY_EXT_DATE_SRCS =			\
 	third_party/ruby/ext/date/date_core.c		\
 	third_party/ruby/ext/date/date_parse.c		\
@@ -14,10 +18,6 @@ THIRD_PARTY_RUBY_EXT_DATE_SRCS =			\
 	third_party/ruby/ext/date/date_strptime.c
 
 THIRD_PARTY_RUBY_EXT_DATE_OBJS = $(THIRD_PARTY_RUBY_EXT_DATE_SRCS:%.c=o/$(MODE)/%.o)
-
-$(THIRD_PARTY_RUBY_EXT_DATE_A):			\
-		third_party/ruby/ext/date/		\
-		$(THIRD_PARTY_RUBY_EXT_DATE_OBJS)
 
 # Compiler flags for date extension
 o/$(MODE)/third_party/ruby/ext/date/%.o: private	\

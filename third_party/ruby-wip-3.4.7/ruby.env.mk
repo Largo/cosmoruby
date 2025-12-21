@@ -31,7 +31,16 @@ HOST_RUBY ?= $(if $(COSMO_RUBY),$(COSMO_RUBY),$(strip $(shell command -v ruby 2>
 # HOST_RUBY ?= $(strip $(shell command -v ruby 2>/dev/null))
 
 ifeq ($(strip $(HOST_RUBY)),)
-$(error No Ruby interpreter found. Build requires ruby.com or system ruby on PATH.)
+$(error No Ruby interpreter found. Build requires ruby.com or system ruby 3.4.7 on PATH.)
+endif
+
+# Verify Ruby version matches exactly (3.4.7) to avoid rbconfig.rb mismatches
+# Only check if using system Ruby (not CosmoRuby which has version baked in)
+ifeq ($(COSMO_RUBY),)
+RUBY_VERSION_CHECK := $(shell $(HOST_RUBY) -e 'puts RUBY_VERSION' 2>/dev/null)
+ifneq ($(RUBY_VERSION_CHECK),3.4.7)
+$(error System Ruby version is $(RUBY_VERSION_CHECK), but CosmoRuby 3.4.7 build requires exactly 3.4.7. Install with: rbenv install 3.4.7)
+endif
 endif
 
 export COSMO_RUBY HOST_RUBY

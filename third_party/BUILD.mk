@@ -7,6 +7,7 @@ o/$(MODE)/third_party:				\
 	o/$(MODE)/third_party/awk		\
 	o/$(MODE)/third_party/bzip2		\
 	o/$(MODE)/third_party/chibicc		\
+	o/$(MODE)/third_party/cosmo_plugin	\
 	o/$(MODE)/third_party/compiler_rt	\
 	o/$(MODE)/third_party/ctags		\
 	o/$(MODE)/third_party/dash		\

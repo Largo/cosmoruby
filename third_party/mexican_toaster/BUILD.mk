@@ -57,6 +57,14 @@ o/$(MODE)/third_party/mexican_toaster/mtdeps.dbg:	\
 		$(APE_NO_MODIFY_SELF)
 	@$(APELINK)
 
+# automate_mkdeps - Generic mkdeps automation for third-party modules
+o/$(MODE)/third_party/mexican_toaster/automate_mkdeps.dbg:	\
+		$(THIRD_PARTY_MEXICAN_TOASTER_DEPS)		\
+		o/$(MODE)/third_party/mexican_toaster/automate_mkdeps.o	\
+		$(CRT)						\
+		$(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
 # caboose - Proof of concept for "getting toasted"
 # Build without .com extension first so zipcopy can embed the ZIP
 o/$(MODE)/third_party/mexican_toaster/caboose.o:	\
@@ -125,6 +133,7 @@ THIRD_PARTY_MEXICAN_TOASTER_BINS =			\
 THIRD_PARTY_MEXICAN_TOASTER_COMS =			\
 	o/$(MODE)/third_party/mexican_toaster/mtsh.com		\
 	o/$(MODE)/third_party/mexican_toaster/mtdeps		\
+	o/$(MODE)/third_party/mexican_toaster/automate_mkdeps	\
 	o/$(MODE)/third_party/mexican_toaster/caboose		\
 	o/$(MODE)/third_party/mexican_toaster/rubybean		\
 	o/$(MODE)/third_party/mexican_toaster/lsdir.com

@@ -21,6 +21,7 @@
 #include "libc/calls/struct/dirent.h"
 #include "libc/calls/struct/stat.h"
 #include "libc/calls/struct/timespec.h"
+#include "libc/cosmotime.h"
 #include "libc/ctype.h"
 #include "libc/dce.h"
 #include "libc/errno.h"
@@ -117,6 +118,24 @@ struct MtshConfig {
 };
 
 static struct MtshConfig g_mtsh_config = {kMtshModeVanilla};
+
+// Signal names table (was removed from Cosmopolitan public API in Aug 2024)
+// Now defined in ksignalnames.S
+extern const struct MagnumStr kSignalNames[];
+
+// Local implementation of touch() (testlib version not suitable for production)
+static int touch(const char *file, uint32_t mode) {
+  int rc, fd, olderr;
+  olderr = errno;
+  if ((rc = utimes(file, 0)) == -1 && errno == ENOENT) {
+    errno = olderr;
+    fd = open(file, O_CREAT | O_WRONLY, mode);
+    if (fd == -1)
+      return -1;
+    return close(fd);
+  }
+  return rc;
+}
 
 static int ShellSpawn(void);
 static int ShellExec(void);

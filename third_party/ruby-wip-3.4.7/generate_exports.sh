@@ -8,7 +8,7 @@ RUBY_DBG="$1"
 OUTPUT="$2"
 
 if test -f "$RUBY_DBG"; then
-  EXPORT_PREFIXES="rb_|ruby_" bash third_party/cosmo_plugin/export_symbols.sh "$RUBY_DBG" "$OUTPUT"
+  bash third_party/cosmo_plugin/export_symbols.sh "$RUBY_DBG" "$OUTPUT"
 else
   # Create stub export table until ruby.dbg exists
   printf "/* stub export table until ruby.dbg exists */\n" >"$OUTPUT"

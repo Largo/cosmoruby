@@ -704,7 +704,8 @@
 /* ========================================================================
  * STATIC EXTENSIONS
  * ======================================================================== */
-#define EXTSTATIC 0
+#define EXTSTATIC 1
+#define SLIM_STATIC 1
 
 /* ========================================================================
  * BACKTRACE SUPPORT
@@ -714,9 +715,9 @@
 /* ========================================================================
  * DYNAMIC LIBRARY EXTENSION
  * ======================================================================== */
-#define DLEXT_MAXLEN 2
-#define DLEXT ".a"
-#define SOEXT ".a"
+#define DLEXT_MAXLEN 3
+#define DLEXT ".so"
+#define SOEXT ".so"
 
 /* ========================================================================
  * MODULAR GC
@@ -743,5 +744,14 @@
  * RUBY PARSER - Prism is the default
  * ======================================================================== */
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
+
+/* ========================================================================
+ * COSMOPOLITAN COMPATIBILITY WRAPPERS
+ * ======================================================================== */
+/* Cosmopolitan provides mremap as cosmo_mremap() */
+#ifdef HAVE_MREMAP
+#define mremap cosmo_mremap
+void *cosmo_mremap(void *, size_t, size_t, int, ...);
+#endif
 
 #endif /* INCLUDE_RUBY_CONFIG_H */

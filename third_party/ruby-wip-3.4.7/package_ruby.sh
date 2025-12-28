@@ -55,7 +55,10 @@ cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/* cosmo-ru
 # Copy plugin extension archives when building in plugin mode (EXTSTATIC=0)
 ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
 ARCH=${ARCH:-x86_64-cosmo}
+DLEXT="$(sed -n 's/^  CONFIG\["DLEXT"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
+DLEXT=${DLEXT:-a}
 EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
+SLIM_STATIC="$(sed -n 's/^#define[[:space:]]\+SLIM_STATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
 if [[ "$EXTSTATIC" == "0" ]]; then
   plugins_dir="cosmo-ruby/lib/ruby/3.4.0/extensions/${ARCH}"
   mkdir -p "${plugins_dir}"
@@ -63,14 +66,39 @@ if [[ "$EXTSTATIC" == "0" ]]; then
   while read -r feature archive; do
     archive_dir="${archive}"
     archive_base="${archive##*/}"
-    src="third_party/ruby/ext/${archive_dir}/${archive_base}.a"
-    dst="${plugins_dir}/${feature}.a"
+    src="third_party/ruby/ext/${archive_dir}/${archive_base}.${DLEXT}"
+    dst="${plugins_dir}/${feature}.${DLEXT}"
     if [[ -f "$src" ]]; then
       mkdir -p "$(dirname "$dst")"
       cp -a "$src" "$dst"
     else
       echo "Warning: plugin archive missing: $src"
     fi
+  done <<'EOF'
+date_core date
+digest digest
+digest/md5 digest
+digest/sha1 digest
+digest/sha2 digest
+etc etc
+io/nonblock io/nonblock
+json/ext/generator json
+json/ext/parser json
+monitor monitor
+pathname pathname
+psych psych
+socket socket
+stringio stringio
+zlib zlib
+mbedtls mbedtls
+EOF
+elif [[ "$EXTSTATIC" == "1" && "$SLIM_STATIC" == "1" ]]; then
+  plugins_dir="cosmo-ruby/lib/ruby/3.4.0/extensions/${ARCH}"
+  mkdir -p "${plugins_dir}"
+  while read -r feature archive; do
+    dst="${plugins_dir}/${feature}.${DLEXT}"
+    mkdir -p "$(dirname "$dst")"
+    : > "$dst"
   done <<'EOF'
 date_core date
 digest digest
@@ -129,7 +157,8 @@ cd cosmo-ruby
 
 # in o/cosmo-ruby !!
 # Extract the existing ZIP fs stuff into the current directory
-RUBYLIB=../../third_party/ruby/lib ../third_party/ruby/ruby ../../third_party/ruby/extract_zip.rb /zip/
+RUBYOPT=--disable-gems RUBYLIB=../../third_party/ruby/lib \
+  ../third_party/ruby/ruby --disable-gems ../../third_party/ruby/extract_zip.rb /zip/
 touch .cosmo
 
 # Create the ZIP file

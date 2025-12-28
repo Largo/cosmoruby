@@ -1149,11 +1149,13 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
     // Check if it's a statically linked extension when
     // not already a feature and not found as a dynamic library.
     if (!ft && type != loadable_ext_rb && vm->static_ext_inits) {
-        VALUE lookup_name = tmp;
+        // Prefer the logical feature name for static extensions, even if a stub file exists.
+        VALUE lookup_name = fname;
+        const char *lookup_ext = strrchr(RSTRING_PTR(lookup_name), '.');
         // Append ".so" if not already present so for example "etc" can find "etc.so".
         // We always register statically linked extensions with a ".so" extension.
         // See encinit.c and extinit.c (generated at build-time).
-        if (!ext) {
+        if (!lookup_ext) {
             lookup_name = rb_str_dup(lookup_name);
             rb_str_cat_cstr(lookup_name, ".so");
         }
@@ -1213,6 +1215,27 @@ run_static_ext_init(rb_vm_t *vm, const char *feature)
         ((void (*)(void))init_func)();
         return true;
     }
+
+    // If the feature looks like a stub path (contains /extensions/),
+    // try looking it up by basename instead.
+    // Stub paths look like: /zip/lib/ruby/3.4.0/extensions/x86_64-cosmo/monitor.so
+    // But static_ext_inits has entries like: monitor.so or io/nonblock.so
+    const char *extensions_marker = "/extensions/";
+    const char *stub_path = strstr(feature, extensions_marker);
+    if (stub_path) {
+        // Find the architecture directory (e.g., "x86_64-cosmo/")
+        const char *after_extensions = stub_path + strlen(extensions_marker);
+        const char *basename = strchr(after_extensions, '/');
+        if (basename) {
+            basename++; // Skip the '/'
+            key = (st_data_t)basename;
+            if (vm->static_ext_inits && st_delete(vm->static_ext_inits, &key, &init_func)) {
+                ((void (*)(void))init_func)();
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 

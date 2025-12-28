@@ -5,6 +5,8 @@
 
 RUBY_PLUGIN_ARCH ?= $(shell sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' third_party/ruby/lib/rbconfig.rb | head -1)
 RUBY_PLUGIN_ARCH ?= x86_64-cosmo
+RUBY_PLUGIN_DLEXT ?= $(shell sed -n 's/^  CONFIG\["DLEXT"\] = "\(.*\)"/\1/p' third_party/ruby/lib/rbconfig.rb | head -1)
+RUBY_PLUGIN_DLEXT ?= a
 RUBY_PLUGIN_DIR ?= o/$(MODE)/third_party/ruby/plugins/$(RUBY_PLUGIN_ARCH)
 
 RUBY_PLUGIN_ARCHIVES := $(foreach ext,$(RUBY_PLUGIN_EXTENSIONS),$($(ext)_A))
@@ -32,13 +34,21 @@ RUBY_PLUGIN_FEATURES := \
 ruby.plugins: $(RUBY_PLUGIN_ARCHIVES)
 	@mkdir -p $(RUBY_PLUGIN_DIR)
 	@set -e; \
-	for f in $(RUBY_PLUGIN_FEATURES); do \
-	  base=$${f%%/*}; \
-	  src="o/$(MODE)/third_party/ruby/ext/$${base}/$${base}.a"; \
-	  dst="$(RUBY_PLUGIN_DIR)/$${f}.a"; \
-	  mkdir -p "$${dst%/*}"; \
-	  cp -a "$$src" "$$dst"; \
-	done
+	if [ "$(RUBY_EXTSTATIC)" = "0" ]; then \
+	  for f in $(RUBY_PLUGIN_FEATURES); do \
+	    base=$${f%%/*}; \
+	    src="o/$(MODE)/third_party/ruby/ext/$${base}/$${base}.$(RUBY_PLUGIN_DLEXT)"; \
+	    dst="$(RUBY_PLUGIN_DIR)/$${f}.$(RUBY_PLUGIN_DLEXT)"; \
+	    mkdir -p "$${dst%/*}"; \
+	    cp -a "$$src" "$$dst"; \
+	  done; \
+	elif [ "$(RUBY_SLIM_STATIC)" = "1" ]; then \
+	  for f in $(RUBY_PLUGIN_FEATURES); do \
+	    dst="$(RUBY_PLUGIN_DIR)/$${f}.$(RUBY_PLUGIN_DLEXT)"; \
+	    mkdir -p "$${dst%/*}"; \
+	    : > "$$dst"; \
+	  done; \
+	fi
 
 $(RUBY_PLUGIN_DIR):
 	@mkdir -p $@

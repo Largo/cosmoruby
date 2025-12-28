@@ -45,6 +45,7 @@ o/$(MODE)/third_party/mexican_toaster/mtsh.o:		\
 o/$(MODE)/third_party/mexican_toaster/mtsh.com.dbg:	\
 		$(THIRD_PARTY_MEXICAN_TOASTER_DEPS)		\
 		o/$(MODE)/third_party/mexican_toaster/mtsh.o	\
+		o/$(MODE)/third_party/mexican_toaster/ksignalnames.o	\
 		$(CRT)						\
 		$(APE_NO_MODIFY_SELF)
 	@$(APELINK)
@@ -94,6 +95,7 @@ o/$(MODE)/third_party/mexican_toaster/caboose.dbg:	\
 		$(THIRD_PARTY_MEXICAN_TOASTER_DEPS)		\
 		o/$(MODE)/third_party/mexican_toaster/caboose.o	\
 		o/$(MODE)/third_party/mexican_toaster/mtsh_embed.o	\
+		o/$(MODE)/third_party/mexican_toaster/ksignalnames.o	\
 		$(CRT)						\
 		$(APE)					\
 		| o/$(MODE)/third_party/mexican_toaster/lsdir.com

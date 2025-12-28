@@ -110,7 +110,7 @@ gem.com list
 - ✅ HTTP/HTTPS via net-http (requires openssl gem for HTTPS)
 - ✅ Network operations for gem installation
 
-### Extensions (Statically Linked)
+### Extensions
 - ✅ Ripper (parser introspection)
 - ✅ io/console (terminal control)
 - ✅ io/wait (non-blocking I/O)
@@ -118,6 +118,11 @@ gem.com list
 - ✅ pathname (path manipulation)
 - ✅ stringio (string I/O)
 - ✅ socket (networking)
+
+Extension loading depends on `cosmo_configure.sh`:
+- Static: extensions baked into the executable (EXTSTATIC=1, DLEXT=.so)
+- Plugin: extensions loaded from `/zip` as `.a` archives (EXTSTATIC=0, DLEXT=.a)
+Optional `--with-slim-static` creates zero-byte extension markers in static mode.
 
 ## What Doesn't Work (Yet) ⚠️
 
@@ -127,7 +132,7 @@ gem.com list
   - bigdecimal, debug, nkf, racc, rbs, syslog
 - ❌ `gem install` for gems requiring compilation will fail
 
-**Why**: Cosmopolitan uses static linking. Dynamic .so loading is planned for future releases.
+**Why**: CosmoRuby uses a plugin loader for `.a` archives (EXTSTATIC=0). Full native `.so` gems still require a traditional dynamic linker, which Cosmopolitan does not provide.
 
 **Workaround**: Use pure Ruby alternatives when available.
 
@@ -203,6 +208,14 @@ CosmoRuby is perfect for portable CLI tools that need to run anywhere.
 - For stdlib: The file should be embedded in ruby.com
 - For gems: Install with `gem.com install GEMNAME` (pure Ruby gems only)
 
+### "cannot load such file -- monitor.so" when running bootstrap tests
+Bootstrap tests execute the target Ruby against the source tree. Use the Cosmo wrapper,
+which sets the extension archive path correctly:
+
+```bash
+HOST_RUBY=ruby sh third_party/ruby-wip-3.4.7/cosmo_tests/run_bootstrap.sh
+```
+
 ### "Permission denied"
 ```bash
 chmod +x ruby.com irb.com gem.com
@@ -216,7 +229,7 @@ This is expected without JIT. CosmoRuby prioritizes portability over speed.
 
 ## Building from Source
 
-See `docs/ai/RUBY_PORT_PROGRESS.md` for complete build instructions.
+See `docs/ai/RUBY_PORT_PROGRESS.md` for complete build instructions and `third_party/ruby/BUILD_TARGETS.md` for detailed artifact explanations.
 
 **Quick build:**
 ```bash
@@ -224,18 +237,36 @@ See `docs/ai/RUBY_PORT_PROGRESS.md` for complete build instructions.
 git clone https://github.com/jart/cosmopolitan.git
 cd cosmopolitan
 
-# Build Ruby
+# Build Ruby (requires RUBYLIB environment variable)
 make -j8 o//third_party/ruby/ruby
 make -j8 o//third_party/ruby/irb
 
-# Package with embedded stdlib
-cd third_party/ruby/port_scripts
+# Package with embedded stdlib (creates self-contained .com files)
+cd third_party/ruby
 bash package_ruby.sh
 
-# Binaries are at:
-# o/third_party/ruby/ruby.com
-# o/third_party/ruby/irb.com
+# Distribution binaries are at:
+# o/third_party/ruby/ruby.com     (~15MB, self-contained)
+# o/third_party/ruby/irb.com      (~15MB, self-contained)
+# o/third_party/ruby/miniruby.com (~15MB, self-contained)
 ```
+
+### Build Artifacts
+
+**For Distribution** (what end users should get):
+- `ruby.com`, `irb.com`, `miniruby.com` - Self-contained executables with embedded stdlib
+- No installation required, no environment variables needed
+- Created by `package_ruby.sh` script
+
+**For Development** (requires `RUBYLIB` environment variable):
+- `ruby`, `irb`, `miniruby` - Base executables (~6MB each)
+- Usage: `RUBYLIB=$PWD/third_party/ruby-wip-3.4.7/lib o//third_party/ruby/ruby script.rb`
+
+**For Debugging**:
+- `ruby.dbg`, `irb.dbg`, `miniruby.dbg` - Debug symbols (~35MB each)
+- Usage: `gdb o//third_party/ruby/ruby.dbg`
+
+See `third_party/ruby/BUILD_TARGETS.md` for complete details.
 
 ## Known Issues
 
@@ -272,13 +303,13 @@ gem.com list | grep bundler
 **Binary Size**: ~50MB (includes full stdlib and 24 gems)
 
 **Build System**: Cosmopolitan's BUILD.mk (not GNU Make)
-**Linking**: Static (no dynamic libraries)
+**Linking**: Static executable; extensions are either baked in or plugin-loaded
 **Parser**: Prism (modern Ruby parser)
 **Threading**: pthread (full thread/ractor support)
 
 ## Differences from Standard Ruby
 
-1. **No dynamic loading**: Extensions statically linked, marked with `rb_provide()`
+1. **No system .so loading**: Extensions are either statically linked or loaded from `/zip` as `.a` archives
 2. **No YJIT/RJIT**: JIT disabled for portability
 3. **errno wrapper**: Compile-time constants for Cosmopolitan compatibility
 4. **Socket constants**: Compile-time wrapper for switch statements

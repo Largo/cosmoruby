@@ -21,17 +21,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef R_X86_64_REX_GOTP
+#define R_X86_64_REX_GOTP 42
+#endif
+
+// Debug logging: enable with -DCOSMO_PLUGIN_DEBUG
+// In production builds, these compile to nothing (zero overhead)
+#ifdef COSMO_PLUGIN_DEBUG
+#define PLUGIN_DEBUG(fmt, ...) \
+  fprintf(stderr, "[PLUGIN] " fmt "\n", ##__VA_ARGS__)
+#else
+#define PLUGIN_DEBUG(fmt, ...) ((void)0)
+#endif
+
 // Export entries emitted by export_symbols.sh
 struct cosmo_export_entry {
   uint32_t name_off;
   uint64_t addr;
 };
 
-// Weak so hosts without exports still link.
-// Provide default NULL values for when no exports are present
-__attribute__((weak)) const struct cosmo_export_entry *const __cosmo_exports_start = NULL;
-__attribute__((weak)) const struct cosmo_export_entry *const __cosmo_exports_end = NULL;
-__attribute__((weak)) const char *const __cosmo_exports_names_start = NULL;
+// Weak references - if not provided by export table, they'll be NULL at link time
+extern __attribute__((weak)) const struct cosmo_export_entry *const __cosmo_exports_start;
+extern __attribute__((weak)) const struct cosmo_export_entry *const __cosmo_exports_end;
+extern __attribute__((weak)) const char *const __cosmo_exports_names_start;
 
 struct plugin_sym {
   const char *name;
@@ -76,6 +88,8 @@ struct plugin_tls_index {
 
 struct cosmo_plugin {
   char *path;
+  uint8_t *file_data;     // mmap'd archive data (must be kept alive)
+  size_t file_size;       // size of mmap'd data
   struct plugin_object *objs;
   size_t objcount;
   struct plugin_sym *syms;
@@ -110,6 +124,8 @@ struct plugin_tls_node {
 static __thread struct plugin_tls_node *g_tls_head;
 
 static const size_t kPage = 4096;
+static const size_t kNearStep = 0x1000000;       // 16MB
+static const size_t kNearMaxDistance = 0x70000000; // 1.75GB
 
 static int ReadFile(const char *path, uint8_t **data_out, size_t *size_out) {
   int fd = open(path, O_RDONLY);
@@ -145,12 +161,27 @@ static const char *DupString(const char *s, size_t n) {
 
 static const struct cosmo_export *g_export_cache;
 static size_t g_export_cache_n;
+static int g_export_cache_built;
 
 static void BuildExportCache(void) {
-  // Check if export symbols are available
+  if (g_export_cache_built) return;
+  g_export_cache_built = 1;
+
+  // Check if export symbols are defined (for weak references, check address)
+  // If weak symbols are not defined, their address will be NULL
+  if ((void*)&__cosmo_exports_start == NULL ||
+      (void*)&__cosmo_exports_end == NULL ||
+      (void*)&__cosmo_exports_names_start == NULL) {
+    // Export symbols not linked, return empty cache
+    g_export_cache = NULL;
+    g_export_cache_n = 0;
+    return;
+  }
+
+  // Symbols are defined, now check their values
   if (!__cosmo_exports_start || !__cosmo_exports_end ||
       !__cosmo_exports_names_start) {
-    // Export symbols not available, return empty cache
+    // Export symbols defined but NULL, return empty cache
     g_export_cache = NULL;
     g_export_cache_n = 0;
     return;
@@ -162,7 +193,6 @@ static void BuildExportCache(void) {
     if (it->name_off == 0 && it->addr == 0) break;
     ++count;
   }
-  fprintf(stderr, "BuildExportCache: found %zu export entries\n", count);
   if (!count) return;
   struct cosmo_export *tbl = calloc(count, sizeof(struct cosmo_export));
   if (!tbl) return;
@@ -173,10 +203,6 @@ static void BuildExportCache(void) {
   }
   g_export_cache = tbl;
   g_export_cache_n = count;
-  fprintf(stderr, "BuildExportCache: first 3 exports: %s=%p, %s=%p, %s=%p\n",
-          tbl[0].name, tbl[0].addr,
-          count > 1 ? tbl[1].name : "N/A", count > 1 ? tbl[1].addr : NULL,
-          count > 2 ? tbl[2].name : "N/A", count > 2 ? tbl[2].addr : NULL);
 }
 
 const struct cosmo_export *cosmo_get_exports(size_t *count_out) {
@@ -214,11 +240,72 @@ static int EnsureSymCap(struct cosmo_plugin *p, size_t need) {
   return 0;
 }
 
+static void *MapNear(uintptr_t anchor, size_t size, int prot) {
+  size_t rounded = ROUNDUP(size, kPage);
+  uintptr_t base = anchor & ~(uintptr_t)(kPage - 1);
+  for (size_t off = 0; off <= kNearMaxDistance; off += kNearStep) {
+    for (int dir = 0; dir < 2; ++dir) {
+      uintptr_t addr;
+      if (dir == 0) {
+        addr = base + off;
+      } else {
+        // Guard against underflow - skip if offset exceeds base
+        if (off > base) continue;
+        addr = base - off;
+      }
+      void *mem = mmap((void *)addr, rounded, prot,
+                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+      if (mem != MAP_FAILED) {
+        return mem;
+      }
+      if (errno == EINVAL) {
+        break;
+      }
+    }
+    if (errno == EINVAL) break;
+  }
+  return mmap((void *)base, rounded, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+}
+
 static int EnsureGotCap(struct cosmo_plugin *p, size_t need) {
   if (need <= p->gotcap) return 0;
+
+  // Refuse to resize after GOT is in use - this would invalidate existing GOTPCREL relocations
+  if (p->gotcount > 0) {
+    fprintf(stderr, "EnsureGotCap: Cannot resize GOT after slots allocated (need=%zu, cap=%zu, used=%zu)\n",
+            need, p->gotcap, p->gotcount);
+    fprintf(stderr, "  This indicates the GOT wasn't pre-sized correctly.\n");
+    return -1;
+  }
+
   size_t nc = MAX(need, p->gotcap ? p->gotcap * 2 : 16);
-  uint64_t *n = realloc(p->got, nc * sizeof(*n));
-  if (!n) return -1;
+  size_t new_size = ROUNDUP(nc * sizeof(*p->got), kPage);
+
+  // Calculate hint based on exports location for PC32/GOTPCREL reachability
+  static void *got_hint = NULL;
+  if (!got_hint) {
+    const struct cosmo_export *exports = cosmo_get_exports(NULL);
+    if (exports && g_export_cache_n > 0) {
+      uintptr_t anchor = (uintptr_t)exports[0].addr;
+      got_hint = (void *)(anchor + 0x20000000);  // ~512MB offset
+    } else {
+      got_hint = (void *)0x20000000;
+    }
+  }
+
+  uint64_t *n = MapNear((uintptr_t)got_hint, new_size, PROT_READ | PROT_WRITE);
+  if (n == MAP_FAILED) return -1;
+
+  // Copy old data if exists
+  if (p->got && p->gotcap > 0) {
+    memcpy(n, p->got, p->gotcap * sizeof(*p->got));
+    size_t old_size = ROUNDUP(p->gotcap * sizeof(*p->got), kPage);
+    munmap(p->got, old_size);
+  }
+
+  // Update hint for next allocation
+  got_hint = (void *)((uintptr_t)n + new_size + 0x100000);
+
   p->got = n;
   p->gotcap = nc;
   return 0;
@@ -248,17 +335,10 @@ static void *LookupPluginSymbol(struct cosmo_plugin *p, const char *name) {
 
 static void *LookupExports(const struct cosmo_export *exports, size_t n,
                            const char *name) {
-  if (!exports || !name) {
-    fprintf(stderr, "LookupExports: exports=%p n=%zu name=%s\n", (void*)exports, n, name ? name : "NULL");
-    return NULL;
-  }
+  if (!exports || !name) return NULL;
   for (size_t i = 0; i < n; ++i) {
-    if (!strcmp(exports[i].name, name)) {
-      fprintf(stderr, "LookupExports: found %s at %p (index %zu)\n", name, exports[i].addr, i);
-      return exports[i].addr;
-    }
+    if (!strcmp(exports[i].name, name)) return exports[i].addr;
   }
-  fprintf(stderr, "LookupExports: %s not found in %zu exports\n", name, n);
   return NULL;
 }
 
@@ -286,12 +366,18 @@ static size_t AllocateGotSlot(struct cosmo_plugin *p) {
 // jmp *0x0(%rip)  # 6 bytes: FF 25 00 00 00 00
 // <8-byte GOT address>
 #define PLT_STUB_SIZE 16
+// Avoid moving the PLT mapping after relocations are applied.
+#define PLT_INITIAL_STUBS 65536
 
 static int EnsurePltCap(struct cosmo_plugin *p, size_t need) {
   if (need <= p->pltcap) return 0;
-  size_t new_cap = MAX(need, p->pltcap ? p->pltcap * 2 : 16);
+  if (p->plt) {
+    fprintf(stderr, "EnsurePltCap: PLT exhausted (need=%zu cap=%zu)\n",
+            need, p->pltcap);
+    return -1;
+  }
+  size_t new_cap = MAX(need, (size_t)PLT_INITIAL_STUBS);
   size_t new_size = new_cap * PLT_STUB_SIZE;
-  size_t old_size = p->pltcap * PLT_STUB_SIZE;
 
   if (!p->plt) {
     p->plt = mmap(NULL, new_size, PROT_READ | PROT_WRITE | PROT_EXEC,
@@ -300,20 +386,6 @@ static int EnsurePltCap(struct cosmo_plugin *p, size_t need) {
       p->plt = NULL;
       return -1;
     }
-  } else {
-    // Use mremap if available, otherwise allocate new and copy
-    #ifdef __linux__
-    void *new_plt = mremap(p->plt, old_size, new_size, MREMAP_MAYMOVE);
-    if (new_plt == MAP_FAILED) return -1;
-    p->plt = new_plt;
-    #else
-    uint8_t *new_plt = mmap(NULL, new_size, PROT_READ | PROT_WRITE | PROT_EXEC,
-                            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (new_plt == MAP_FAILED) return -1;
-    memcpy(new_plt, p->plt, old_size);
-    munmap(p->plt, old_size);
-    p->plt = new_plt;
-    #endif
   }
   p->pltcap = new_cap;
   return 0;
@@ -345,7 +417,6 @@ static uint8_t *AllocatePltStub(struct cosmo_plugin *p, uint64_t target_addr) {
   *(uint64_t *)(stub + 6) = target_addr;
 
   // Padding to PLT_STUB_SIZE (already zero from mmap)
-
   return stub;
 }
 
@@ -486,6 +557,21 @@ static int AllocateSections(struct plugin_object *o) {
   size_t shnum = o->eh->e_shnum;
   o->sections = calloc(shnum, sizeof(struct plugin_section));
   if (!o->sections) return -1;
+
+  // Allocate near the host exports for PC32/GOTPCREL reachability (±2GB limit)
+  // Calculate hint based on where exports actually are
+  static void *hint_addr = NULL;
+  if (!hint_addr) {
+    const struct cosmo_export *exports = cosmo_get_exports(NULL);
+    if (exports && g_export_cache_n > 0) {
+      // Use first export address as anchor point, offset by ~256MB
+      uintptr_t anchor = (uintptr_t)exports[0].addr;
+      hint_addr = (void *)(anchor + 0x10000000);
+    } else {
+      hint_addr = (void *)0x10000000;  // Fallback
+    }
+  }
+
   for (size_t i = 0; i < shnum; ++i) {
     Elf64_Shdr *sh = &o->shdrs[i];
     if (!(sh->sh_flags & SHF_ALLOC)) continue;
@@ -493,12 +579,17 @@ static int AllocateSections(struct plugin_object *o) {
     if (!size) continue;
     size_t rounded = ROUNDUP(size, kPage);
     int prot = PROT_READ | PROT_WRITE;
-    uint8_t *mem =
-        mmap(NULL, rounded, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    // Try hint address first for better PC32 locality
+    uint8_t *mem = MapNear((uintptr_t)hint_addr, rounded, prot);
     if (mem == MAP_FAILED) {
       perror("mmap");
       return -1;
     }
+
+    // Update hint for next section
+    hint_addr = (void *)((uintptr_t)mem + rounded + 0x100000);
+
     if (sh->sh_type == SHT_PROGBITS) {
       memcpy(mem, o->elf + sh->sh_offset, sh->sh_size);
     } else if (sh->sh_type == SHT_NOBITS) {
@@ -511,10 +602,17 @@ static int AllocateSections(struct plugin_object *o) {
 }
 
 static void FreeSections(struct plugin_object *o) {
+  PLUGIN_DEBUG("    FreeSections: sections=%p", (void*)o->sections);
   if (!o->sections) return;
+  PLUGIN_DEBUG("    Freeing %u sections", o->eh->e_shnum);
   for (size_t i = 0; i < o->eh->e_shnum; ++i) {
-    if (o->sections[i].mem) munmap(o->sections[i].mem, o->sections[i].size);
+    if (o->sections[i].mem) {
+      PLUGIN_DEBUG("      Section %zu: mem=%p size=%zu",
+                   i, (void*)o->sections[i].mem, o->sections[i].size);
+      munmap(o->sections[i].mem, o->sections[i].size);
+    }
   }
+  PLUGIN_DEBUG("    Freeing sections array");
   free(o->sections);
   o->sections = NULL;
 }
@@ -542,6 +640,36 @@ static void AddDefinedSymbols(struct cosmo_plugin *p, struct plugin_object *o) {
   }
 }
 
+// Count how many GOT slots this object will need
+// Must match the relocation types handled in ApplyRelocations
+static size_t CountGotRelocations(struct plugin_object *o) {
+  size_t count = 0;
+  for (size_t i = 0; i < o->eh->e_shnum; ++i) {
+    Elf64_Shdr *sh = &o->shdrs[i];
+    if (sh->sh_type != SHT_RELA) continue;
+    // Skip relocations to non-allocated sections
+    if (sh->sh_info >= o->eh->e_shnum || !(o->shdrs[sh->sh_info].sh_flags & SHF_ALLOC)) {
+      continue;
+    }
+    size_t relcount = sh->sh_size / sizeof(Elf64_Rela);
+    Elf64_Rela *rel = (Elf64_Rela *)(o->elf + sh->sh_offset);
+    for (size_t j = 0; j < relcount; ++j) {
+      uint32_t type = ELF64_R_TYPE(rel[j].r_info);
+      // Count all GOTPCREL variants
+      if (type == R_X86_64_GOTPCREL ||
+          type == R_X86_64_GOTPCRELX ||
+          type == R_X86_64_REX_GOTPCRELX ||
+#if R_X86_64_REX_GOTP != R_X86_64_REX_GOTPCRELX
+          type == R_X86_64_REX_GOTP ||
+#endif
+          0) {
+        count++;
+      }
+    }
+  }
+  return count;
+}
+
 static int ApplyRelocations(struct cosmo_plugin *p, struct plugin_object *o,
                             const struct cosmo_export *exports,
                             size_t exports_n) {
@@ -566,12 +694,14 @@ static int ApplyRelocations(struct cosmo_plugin *p, struct plugin_object *o,
       if (sh->sh_info >= o->eh->e_shnum || !(o->shdrs[sh->sh_info].sh_flags & SHF_ALLOC)) {
         continue;
       }
+      const char *target_sec_name = "";
+      if (sh->sh_info < o->eh->e_shnum &&
+          o->shdrs[sh->sh_info].sh_name < o->shdrs[o->eh->e_shstrndx].sh_size) {
+        target_sec_name = (const char *)(o->elf + o->shdrs[o->eh->e_shstrndx].sh_offset +
+                                         o->shdrs[sh->sh_info].sh_name);
+      }
       uint8_t *target_base = SectionAddr(o, sh->sh_info, r->r_offset);
       if (!target_base) {
-        const char *target_sec_name = "";
-        if (sh->sh_info < o->eh->e_shnum && o->shdrs[sh->sh_info].sh_name < o->shdrs[o->eh->e_shstrndx].sh_size) {
-          target_sec_name = (const char*)(o->elf + o->shdrs[o->eh->e_shstrndx].sh_offset + o->shdrs[sh->sh_info].sh_name);
-        }
         fprintf(stderr, "relocation target missing: section index %u (%s), offset 0x%lx, reloc type %u\n",
                 sh->sh_info, target_sec_name, r->r_offset, type);
         return -1;
@@ -614,7 +744,11 @@ static int ApplyRelocations(struct cosmo_plugin *p, struct plugin_object *o,
         case R_X86_64_PC32: {
           int64_t v = (int64_t)(S + A - (uint64_t)(uintptr_t)P);
           if (v < INT32_MIN || v > INT32_MAX) {
-            fprintf(stderr, "PC32 overflow for %s\n", sname ? sname : "?");
+            fprintf(stderr,
+                    "PC32 overflow: sym=%s S=0x%lx P=%p delta=0x%lx\n"
+                    "  Plugin sections allocated too far from main executable.\n"
+                    "  PC32 relocations require target within ±2GB.\n",
+                    sname ? sname : "?", (unsigned long)S, (void*)P, (unsigned long)v);
             return -1;
           }
           *(uint32_t *)P = (uint32_t)v;
@@ -645,10 +779,15 @@ static int ApplyRelocations(struct cosmo_plugin *p, struct plugin_object *o,
           break;
         case R_X86_64_GOTPCREL:
         case R_X86_64_GOTPCRELX:
-        case R_X86_64_REX_GOTPCRELX: {
+        case R_X86_64_REX_GOTPCRELX:
+#if R_X86_64_REX_GOTP != R_X86_64_REX_GOTPCRELX
+        case R_X86_64_REX_GOTP:
+#endif
+        {
           size_t slot = AllocateGotSlot(p);
           if (slot == (size_t)-1) return -1;
           p->got[slot] = S;
+
           uint64_t disp =
               (uint64_t)(uintptr_t)(&p->got[slot]) + A -
               (uint64_t)(uintptr_t)P;
@@ -1002,72 +1141,121 @@ void *cosmo_plugin_tls_get(struct cosmo_plugin *p, size_t off) {
 struct cosmo_plugin *cosmo_load_plugin(const char *path,
                                        const struct cosmo_export *host_exports,
                                        const char *init_name) {
+  PLUGIN_DEBUG("cosmo_load_plugin: path=%s", path ? path : "NULL");
   if (!path) {
     errno = EINVAL;
     return NULL;
   }
 
+  PLUGIN_DEBUG("Getting host exports...");
   if (!host_exports) {
     host_exports = cosmo_get_exports(NULL);
   }
   size_t exports_n = g_export_cache_n;
+  PLUGIN_DEBUG("Host has %zu exports", exports_n);
 
+  PLUGIN_DEBUG("Checking plugin registry...");
   struct cosmo_plugin *cached = PluginRegistryFind(path);
-  if (cached) return cached;
+  if (cached) {
+    PLUGIN_DEBUG("Found cached plugin");
+    return cached;
+  }
 
+  PLUGIN_DEBUG("Reading file...");
   uint8_t *data = NULL;
   size_t size = 0;
-  if (ReadFile(path, &data, &size) == -1) return NULL;
+  if (ReadFile(path, &data, &size) == -1) {
+    PLUGIN_DEBUG("ReadFile failed");
+    return NULL;
+  }
+  PLUGIN_DEBUG("Read %zu bytes", size);
 
+  PLUGIN_DEBUG("Allocating plugin structure...");
   struct cosmo_plugin *p = calloc(1, sizeof(*p));
   if (!p) {
+    PLUGIN_DEBUG("calloc failed");
     ReleaseFile(data, size);
     return NULL;
   }
   p->path = strdup(path);
+  p->file_data = data;  // Keep file data alive
+  p->file_size = size;
+  PLUGIN_DEBUG("Plugin allocated, path=%s", p->path);
 
+  PLUGIN_DEBUG("Parsing archive...");
   if (ParseArchive(data, size, p) == -1) {
-    fprintf(stderr, "failed to parse archive %s\n", path);
-    ReleaseFile(data, size);
+    PLUGIN_DEBUG("ParseArchive failed for %s", path);
+    // Don't ReleaseFile here - cosmo_unload_plugin will do it
     cosmo_unload_plugin(p);
     return NULL;
   }
+  PLUGIN_DEBUG("Archive parsed, found %zu objects", p->objcount);
 
   // Build symbol tables and TLS templates
+  PLUGIN_DEBUG("Building symbol tables...");
   for (size_t i = 0; i < p->objcount; ++i) {
+    PLUGIN_DEBUG("  Object %zu/%zu", i+1, p->objcount);
     AddDefinedSymbols(p, &p->objs[i]);
     LoadTlsTemplate(p, &p->objs[i]);
   }
+  PLUGIN_DEBUG("Built %zu symbols", p->symcount);
+
+  // Pre-size GOT to avoid resizing during relocation (which would invalidate earlier GOTPCREL relocations)
+  PLUGIN_DEBUG("Pre-sizing GOT...");
+  size_t total_got_needed = 0;
+  for (size_t i = 0; i < p->objcount; ++i) {
+    total_got_needed += CountGotRelocations(&p->objs[i]);
+  }
+  if (total_got_needed > 0) {
+    PLUGIN_DEBUG("  Need %zu GOT slots total", total_got_needed);
+    if (EnsureGotCap(p, total_got_needed) == -1) {
+      PLUGIN_DEBUG("Failed to pre-allocate GOT");
+      cosmo_unload_plugin(p);
+      return NULL;
+    }
+  }
 
   // Apply relocations
+  PLUGIN_DEBUG("Applying relocations...");
   for (size_t i = 0; i < p->objcount; ++i) {
+    PLUGIN_DEBUG("  Relocating object %zu/%zu", i+1, p->objcount);
     if (ApplyRelocations(p, &p->objs[i], host_exports, exports_n) == -1) {
-      ReleaseFile(data, size);
+      PLUGIN_DEBUG("ApplyRelocations failed");
+      // Don't ReleaseFile here - cosmo_unload_plugin will do it
       cosmo_unload_plugin(p);
       return NULL;
     }
+    PLUGIN_DEBUG("  Protecting sections...");
     if (ProtectSections(&p->objs[i]) == -1) {
-      ReleaseFile(data, size);
+      PLUGIN_DEBUG("ProtectSections failed");
+      // Don't ReleaseFile here - cosmo_unload_plugin will do it
       cosmo_unload_plugin(p);
       return NULL;
     }
+    PLUGIN_DEBUG("  Running init arrays...");
     RunInitArrays(&p->objs[i]);
   }
+  PLUGIN_DEBUG("Relocations complete");
 
   // Call init if requested
   if (init_name) {
+    PLUGIN_DEBUG("Looking for init function: %s", init_name);
     void (*initfn)(void) = FindInit(p, init_name);
     if (!initfn) {
-      fprintf(stderr, "Init function %s not found\n", init_name);
-      ReleaseFile(data, size);
+      PLUGIN_DEBUG("Init function %s not found", init_name);
+      // Don't ReleaseFile here - cosmo_unload_plugin will do it
       cosmo_unload_plugin(p);
       return NULL;
     }
+    PLUGIN_DEBUG("Calling init function...");
     initfn();
+    PLUGIN_DEBUG("Init function returned");
   }
 
-  ReleaseFile(data, size);
+  PLUGIN_DEBUG("Registering plugin (keeping file mapped)...");
+  // Don't release file data - we need it for FreeSections later
   PluginRegistryAdd(p);
+  PLUGIN_DEBUG("Plugin loaded successfully");
   return p;
 }
 
@@ -1077,20 +1265,65 @@ void *cosmo_plugin_sym(struct cosmo_plugin *plugin, const char *name) {
 }
 
 void cosmo_unload_plugin(struct cosmo_plugin *p) {
+  PLUGIN_DEBUG("cosmo_unload_plugin: p=%p", (void*)p);
   if (!p) return;
+
+  // Remove from registry first
+  PLUGIN_DEBUG("Removing from plugin registry");
+  pthread_mutex_lock(&g_plugin_mu);
+  struct cosmo_plugin **pp = &g_plugin_list;
+  while (*pp) {
+    if (*pp == p) {
+      *pp = p->next;
+      break;
+    }
+    pp = &(*pp)->next;
+  }
+  pthread_mutex_unlock(&g_plugin_mu);
+
+  PLUGIN_DEBUG("Freeing %zu objects", p->objcount);
   for (size_t i = 0; i < p->objcount; ++i) {
+    PLUGIN_DEBUG("  Freeing object %zu", i);
     FreeSections(&p->objs[i]);
     if (p->objs[i].name) free((char *)p->objs[i].name);
   }
+
+  PLUGIN_DEBUG("Releasing file data");
+  if (p->file_data) {
+    ReleaseFile(p->file_data, p->file_size);
+  }
+
+  PLUGIN_DEBUG("Freeing %zu symbols", p->symcount);
   for (size_t i = 0; i < p->symcount; ++i) {
     if (p->syms[i].name) free((char *)p->syms[i].name);
   }
+
+  PLUGIN_DEBUG("Freeing objs array");
   free(p->objs);
+  PLUGIN_DEBUG("Freeing syms array");
   free(p->syms);
-  free(p->got);
+
+  PLUGIN_DEBUG("Freeing GOT (cap=%zu)", p->gotcap);
+  if (p->got && p->gotcap) {
+    size_t got_size = ROUNDUP(p->gotcap * sizeof(*p->got), kPage);
+    munmap(p->got, got_size);
+  }
+
+  PLUGIN_DEBUG("Freeing PLT (cap=%zu)", p->pltcap);
+  if (p->plt && p->pltcap) {
+    size_t plt_size = p->pltcap * PLT_STUB_SIZE;
+    munmap(p->plt, plt_size);
+  }
+
+  PLUGIN_DEBUG("Freeing TLS");
   if (p->tls.image) free(p->tls.image);
   free(p->tlsdescs);
   free(p->tlsidx);
+
+  PLUGIN_DEBUG("Freeing path");
   if (p->path) free(p->path);
+
+  PLUGIN_DEBUG("Freeing plugin structure");
   free(p);
+  PLUGIN_DEBUG("cosmo_unload_plugin complete");
 }

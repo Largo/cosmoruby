@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CosmoRuby configuration shim: toggles static vs plugin (.a) extensions.
-# Usage: cosmo_configure.sh [--with-static-linked-ext] [--with-plugin-ext]
+# Usage: cosmo_configure.sh [--with-static-linked-ext] [--with-plugin-ext] [--with-slim-static]
 # Defaults to plugin mode (dynamic load via cosmo_plugin).
 set -euo pipefail
 
@@ -9,17 +9,22 @@ RBCONFIG="$ROOT/third_party/ruby/lib/rbconfig.rb"
 CONFIG_H="$ROOT/third_party/ruby/include/ruby/config.h"
 MODE="plugin" # default
 BOOTSTRAP=false
+SLIM_STATIC=false
 
 for arg in "$@"; do
   case "$arg" in
     --with-static-linked-ext) MODE="static" ;;
     --with-plugin-ext) MODE="plugin" ;;
+    --with-slim-static) SLIM_STATIC=true ;;
+    --without-slim-static) SLIM_STATIC=false ;;
     --bootstrap) BOOTSTRAP=true ;;
     -h|--help)
       cat <<EOF
 CosmoRuby configure shim
   --with-static-linked-ext   keep extensions linked into ruby.a (EXTSTATIC=1, DLEXT=.so)
   --with-plugin-ext          use cosmo_plugin-loaded .a extensions (EXTSTATIC=0, DLEXT=.a) [default]
+  --with-slim-static         create zero-byte extension markers in static mode (SLIM_STATIC=1)
+  --without-slim-static      disable zero-byte extension markers (SLIM_STATIC=0) [default]
   --bootstrap                build/copy automate_mkdeps + mtdeps into build/bootstrap
 EOF
       exit 0
@@ -56,10 +61,11 @@ echo "cosmo_configure: MODE=${MODE} (using $RUBY_BIN)"
   echo "cosmo_configure: bootstrap copies placed in build/bootstrap/"
 }
 
-"$RUBY_BIN" - "$RBCONFIG" "$CONFIG_H" "$MODE" <<'RUBY'
-rbconfig, configh, mode = ARGV.map { |p| p }
+"$RUBY_BIN" - "$RBCONFIG" "$CONFIG_H" "$MODE" "$SLIM_STATIC" <<'RUBY'
+rbconfig, configh, mode, slim_static = ARGV.map { |p| p }
 rbconfig = File.realpath(rbconfig)
 configh = File.realpath(configh)
+slim_static = slim_static == "true"
 
 def rewrite(path)
   text = File.read(path)
@@ -70,6 +76,8 @@ def rewrite(path)
 end
 
 plugin_mode = mode == "plugin"
+slim_value = slim_static ? "yes" : "no"
+slim_define = slim_static ? 1 : 0
 
 changed = false
 
@@ -83,13 +91,18 @@ changed |= rewrite(rbconfig) do |t|
   else
     t = t.sub(/CONFIG\["EXTSTATIC"\]\s*=\s*".*?"/, "CONFIG[\"EXTSTATIC\"] = \"#{extstatic}\"")
   end
+  if t !~ /CONFIG\["SLIM_STATIC"\]/
+    t = t.sub(/CONFIG\["EXTSTATIC"\].*\n/, "\\0  CONFIG[\"SLIM_STATIC\"] = \"#{slim_value}\"\n")
+  else
+    t = t.sub(/CONFIG\["SLIM_STATIC"\]\s*=\s*".*?"/, "CONFIG[\"SLIM_STATIC\"] = \"#{slim_value}\"")
+  end
   t
 end
 
 changed |= rewrite(configh) do |t|
   if plugin_mode
     t = t.sub(/#define\s+EXTSTATIC\s+\d+/, "#define EXTSTATIC 0")
-    t = t.sub(/#define\s+DLEXT_MAXLEN\s+\d+/, "#define DLEXT_MAXLEN 2")
+    t = t.sub(/#define\s+DLEXT_MAXLEN\s+\d+/, "#define DLEXT_MAXLEN 3")
     t = t.sub(/#define\s+DLEXT\s+\".*?\"/, '#define DLEXT ".a"')
     t = t.sub(/#define\s+SOEXT\s+\".*?\"/,  '#define SOEXT ".a"')
   else
@@ -97,6 +110,13 @@ changed |= rewrite(configh) do |t|
     t = t.sub(/#define\s+DLEXT_MAXLEN\s+\d+/, "#define DLEXT_MAXLEN 3")
     t = t.sub(/#define\s+DLEXT\s+\".*?\"/, '#define DLEXT ".so"')
     t = t.sub(/#define\s+SOEXT\s+\".*?\"/,  '#define SOEXT ".so"')
+  end
+  if t =~ /#define\s+SLIM_STATIC\s+\d+/
+    t = t.sub(/#define\s+SLIM_STATIC\s+\d+/, "#define SLIM_STATIC #{slim_define}")
+  elsif t =~ /#define\s+EXTSTATIC\s+\d+/
+    t = t.sub(/#define\s+EXTSTATIC\s+\d+\n/, "\\0#define SLIM_STATIC #{slim_define}\n")
+  else
+    t += "\n#define SLIM_STATIC #{slim_define}\n"
   end
   t
 end

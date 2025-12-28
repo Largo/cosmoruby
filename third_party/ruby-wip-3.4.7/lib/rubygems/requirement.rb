@@ -9,7 +9,7 @@ require_relative "version"
 # See Gem::Version for a description on how versions and requirements work
 # together in RubyGems.
 
-class Gem::Requirement
+class ::Gem::Requirement
   OPS = { # :nodoc:
     "=" => lambda {|v, r| v == r },
     "!=" => lambda {|v, r| v != r },

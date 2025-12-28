@@ -84,6 +84,9 @@ o/$(MODE)/third_party/ruby/coroutine/amd64/Context.o: private	\
             -D'PREFIXED_SYMBOL(name)=name'
 
 # Extension-specific compiler flags are now in ext/*/BUILD.mk
+o/$(MODE)/third_party/ruby/ext/%.o: private			\
+    CFLAGS +=							\
+            -fPIC
 
 # Main entry point files need Ruby includes
 o/$(MODE)/third_party/ruby/ruby.main.o				\
@@ -148,21 +151,57 @@ o/$(MODE)/third_party/ruby/irb.main.zipless.o: private		\
             -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\"
 
 # Host export table generated from linked ruby.pre.dbg (phase 1 binary without exports)
-# This breaks the circular dependency: pre.dbg → exports.c → exports.o → final.dbg
-o/$(MODE)/third_party/ruby/ruby_exports.c: o/$(MODE)/third_party/ruby/ruby.pre.dbg
+# This breaks the circular dependency: pre.dbg → exports.pre.c → exports.pre.o → stage1.dbg
+o/$(MODE)/third_party/ruby/ruby_exports.pre.c: o/$(MODE)/third_party/ruby/ruby.pre.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/ruby_exports.pre.o: o/$(MODE)/third_party/ruby/ruby_exports.pre.c
+
+# Stage1 export table generated from stage1 binary (phase 2)
+o/$(MODE)/third_party/ruby/ruby_exports.stage1.c: o/$(MODE)/third_party/ruby/ruby.stage1.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/ruby_exports.stage1.o: o/$(MODE)/third_party/ruby/ruby_exports.stage1.c
+
+# Final export table generated from stage2 binary (phase 3) for final link
+o/$(MODE)/third_party/ruby/ruby_exports.c: o/$(MODE)/third_party/ruby/ruby.stage2.dbg
 	@bash third_party/ruby/generate_exports.sh $< $@
 
 o/$(MODE)/third_party/ruby/ruby_exports.o: o/$(MODE)/third_party/ruby/ruby_exports.c
 
 # Host export table generated from linked irb.pre.dbg
-o/$(MODE)/third_party/ruby/irb_exports.c: o/$(MODE)/third_party/ruby/irb.pre.dbg
+o/$(MODE)/third_party/ruby/irb_exports.pre.c: o/$(MODE)/third_party/ruby/irb.pre.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/irb_exports.pre.o: o/$(MODE)/third_party/ruby/irb_exports.pre.c
+
+# Stage1 export table generated from stage1 binary (phase 2)
+o/$(MODE)/third_party/ruby/irb_exports.stage1.c: o/$(MODE)/third_party/ruby/irb.stage1.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/irb_exports.stage1.o: o/$(MODE)/third_party/ruby/irb_exports.stage1.c
+
+# Final export table generated from stage2 binary (phase 3) for final link
+o/$(MODE)/third_party/ruby/irb_exports.c: o/$(MODE)/third_party/ruby/irb.stage2.dbg
 	@bash third_party/ruby/generate_exports.sh $< $@
 
 o/$(MODE)/third_party/ruby/irb_exports.o: o/$(MODE)/third_party/ruby/irb_exports.c
 
 # Host export table generated from linked miniruby.pre.dbg
 # Note: miniruby and miniruby.zipless produce identical exports (same Ruby core)
-o/$(MODE)/third_party/ruby/miniruby_exports.c: o/$(MODE)/third_party/ruby/miniruby.pre.dbg
+o/$(MODE)/third_party/ruby/miniruby_exports.pre.c: o/$(MODE)/third_party/ruby/miniruby.pre.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/miniruby_exports.pre.o: o/$(MODE)/third_party/ruby/miniruby_exports.pre.c
+
+# Stage1 export table generated from stage1 binary (phase 2)
+o/$(MODE)/third_party/ruby/miniruby_exports.stage1.c: o/$(MODE)/third_party/ruby/miniruby.stage1.dbg
+	@bash third_party/ruby/generate_exports.sh $< $@
+
+o/$(MODE)/third_party/ruby/miniruby_exports.stage1.o: o/$(MODE)/third_party/ruby/miniruby_exports.stage1.c
+
+# Final export table generated from stage2 binary (phase 3) for final link
+o/$(MODE)/third_party/ruby/miniruby_exports.c: o/$(MODE)/third_party/ruby/miniruby.stage2.dbg
 	@bash third_party/ruby/generate_exports.sh $< $@
 
 o/$(MODE)/third_party/ruby/miniruby_exports.o: o/$(MODE)/third_party/ruby/miniruby_exports.c

@@ -135,8 +135,9 @@ module RbConfig
 
 
 
-  CONFIG["DLEXT"] = "a"
-  CONFIG["EXTSTATIC"] = "no"
+  CONFIG["DLEXT"] = "so"
+  CONFIG["EXTSTATIC"] = "yes"
+  CONFIG["SLIM_STATIC"] = "yes"
 
 
 

@@ -37,8 +37,10 @@ include third_party/ruby/ext/zlib/BUILD.mk
 PKGS += THIRD_PARTY_RUBY
 
 # Detect extension mode from config.h (EXTSTATIC=0 => plugin/dynamic extensions).
-RUBY_EXTSTATIC := $(shell sed -n 's/^#define[[:space:]]\\+EXTSTATIC[[:space:]]\\+\\([0-9]\\+\\)/\\1/p' third_party/ruby/include/ruby/config.h | head -1)
+RUBY_EXTSTATIC := $(shell awk '/^#define[[:space:]]+EXTSTATIC[[:space:]]+/{print $$3; exit}' third_party/ruby/include/ruby/config.h)
 RUBY_EXTSTATIC ?= 1
+RUBY_SLIM_STATIC := $(shell awk '/^#define[[:space:]]+SLIM_STATIC[[:space:]]+/{print $$3; exit}' third_party/ruby/include/ruby/config.h)
+RUBY_SLIM_STATIC ?= 0
 
 # All C extensions bundled with this port.
 RUBY_ALL_EXTENSIONS =				\
@@ -60,6 +62,16 @@ ifeq ($(RUBY_EXTSTATIC),0)
 THIRD_PARTY_RUBY_EXTENSIONS :=
 else
 THIRD_PARTY_RUBY_EXTENSIONS := $(RUBY_ALL_EXTENSIONS)
+endif
+
+# Miniruby uses a subset of extensions; avoid baking them when EXTSTATIC=0.
+ifeq ($(RUBY_EXTSTATIC),0)
+THIRD_PARTY_RUBY_MINIRUBY_EXTENSIONS :=
+else
+THIRD_PARTY_RUBY_MINIRUBY_EXTENSIONS :=		\
+	THIRD_PARTY_RUBY_EXT_MONITOR			\
+	THIRD_PARTY_RUBY_EXT_STRINGIO			\
+	THIRD_PARTY_RUBY_EXT_PATHNAME
 endif
 
 # Always stage all extensions as plugins (harmless in static builds).
@@ -91,6 +103,8 @@ THIRD_PARTY_RUBY_CHECKS =					\
     o/$(MODE)/third_party/ruby/irb.pkg
 
 ifeq ($(RUBY_EXTSTATIC),0)
+THIRD_PARTY_RUBY_CHECKS += ruby.plugins
+else ifeq ($(RUBY_SLIM_STATIC),1)
 THIRD_PARTY_RUBY_CHECKS += ruby.plugins
 endif
 
@@ -1072,3 +1086,11 @@ $(THIRD_PARTY_RUBY_A):						\
 $(THIRD_PARTY_RUBY_A).pkg:					\
     $(THIRD_PARTY_RUBY_A_OBJS)				\
     $(foreach x,$(THIRD_PARTY_RUBY_A_DIRECTDEPS),$($(x)_A).pkg)
+
+# extinit.c needs EXTSTATIC and SLIM_STATIC defined to match config.h
+# This enables static extension initialization for static/slim_static builds,
+# and disables it for dynamic builds (which use dmyext.c instead).
+o/$(MODE)/third_party/ruby/ext/extinit.o: private		\
+	CFLAGS +=						\
+		-DEXTSTATIC=$(RUBY_EXTSTATIC)			\
+		-DSLIM_STATIC=$(RUBY_SLIM_STATIC)

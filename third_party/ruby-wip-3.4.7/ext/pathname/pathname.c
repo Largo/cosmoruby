@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/cosmo.h"
 
 static VALUE rb_cPathname;
 static ID id_ENOTDIR;
@@ -1666,6 +1667,5 @@ InitVM_pathname(void)
     id_write = rb_intern("write");
     id_zero_p = rb_intern("zero?");
 
-    /* Mark pathname as already loaded (statically linked) */
-    rb_provide("pathname.so");
+    cosmo_provide("pathname" DLEXT);
 }

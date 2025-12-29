@@ -25,7 +25,10 @@ include third_party/ruby/ext/date/BUILD.mk
 include third_party/ruby/ext/digest/BUILD.mk
 include third_party/ruby/ext/etc/BUILD.mk
 include third_party/ruby/ext/io/nonblock/BUILD.mk
+include third_party/ruby/ext/io/console/BUILD.mk
+include third_party/ruby/ext/io/wait/BUILD.mk
 include third_party/ruby/ext/json/BUILD.mk
+include third_party/ruby/ext/ripper/BUILD.mk
 include third_party/ruby/ext/mbedtls/BUILD.mk
 include third_party/ruby/ext/monitor/BUILD.mk
 include third_party/ruby/ext/pathname/BUILD.mk
@@ -48,7 +51,10 @@ RUBY_ALL_EXTENSIONS =				\
 	THIRD_PARTY_RUBY_EXT_DIGEST			\
 	THIRD_PARTY_RUBY_EXT_ETC			\
 	THIRD_PARTY_RUBY_EXT_IO_NONBLOCK		\
+	THIRD_PARTY_RUBY_EXT_IO_CONSOLE		\
+	THIRD_PARTY_RUBY_EXT_IO_WAIT			\
 	THIRD_PARTY_RUBY_EXT_JSON			\
+	THIRD_PARTY_RUBY_EXT_RIPPER			\
 	THIRD_PARTY_RUBY_EXT_MBEDTLS			\
 	THIRD_PARTY_RUBY_EXT_MONITOR			\
 	THIRD_PARTY_RUBY_EXT_PATHNAME			\
@@ -877,7 +883,8 @@ THIRD_PARTY_RUBY_A_INCS =\
 	ruby_shims/ruby+internal+compiler_is+msvc.h\
 	ruby_shims/ruby+internal+compiler_is+sunpro.h\
 	ruby_shims/ruby+internal+core+rstring.h
-# Ruby core source files: VM, encodings, transcoders, prism parser, extensions (ripper, io/*, pathname, stringio, monitor, socket), and portability shims
+# Ruby core source files: VM, encodings, transcoders, prism parser, and portability shims
+# NOTE: Extensions (ripper, io/*, pathname, stringio, monitor, socket) are built separately via BUILD.mk files
 # Note: Some .c files are not listed here because they're included by other files (e.g., constdefs.c) or provided by Cosmopolitan (e.g., getaddrinfo.c)
 THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/array.c					\
@@ -1016,14 +1023,7 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/prism/util/pm_strpbrk.c			\
     third_party/ruby/missing/setproctitle.c			\
     third_party/ruby/missing/dladdr.c				\
-    third_party/ruby/addr2line.c				\
-    third_party/ruby/ext/ripper/ripper.c			\
-    third_party/ruby/ext/ripper/ripper_init.c			\
-    third_party/ruby/ext/ripper/eventids1.c			\
-    third_party/ruby/ext/ripper/eventids2.c			\
-    third_party/ruby/ext/ripper/eventids2table.c		\
-    third_party/ruby/ext/io/console/console.c			\
-    third_party/ruby/ext/io/wait/wait.c
+    third_party/ruby/addr2line.c
 
 # Modular extension system:
 # - Extensions are built as separate .a libraries (ext/date/date.a, ext/psych/psych.a, etc.)
@@ -1090,6 +1090,9 @@ $(THIRD_PARTY_RUBY_A).pkg:					\
 # extinit.c needs EXTSTATIC and SLIM_STATIC defined to match config.h
 # This enables static extension initialization for static/slim_static builds,
 # and disables it for dynamic builds (which use dmyext.c instead).
+o/$(MODE)/third_party/ruby/ext/extinit.o:				\
+		third_party/ruby/ext/extinit.c				\
+		third_party/ruby/include/ruby/config.h
 o/$(MODE)/third_party/ruby/ext/extinit.o: private		\
 	CFLAGS +=						\
 		-DEXTSTATIC=$(RUBY_EXTSTATIC)			\

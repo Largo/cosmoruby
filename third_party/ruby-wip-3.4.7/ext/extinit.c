@@ -1,4 +1,5 @@
 #include "ruby/ruby.h"
+#include "ruby/config.h"
 
 // Modular extension system using weak symbols
 // Extensions are only initialized if their .a files are linked
@@ -18,13 +19,16 @@ void Init_ext(void)
     init(Init_sha1, "digest/sha1");
     init(Init_sha2, "digest/sha2");
     init(Init_etc, "etc");
+    init(Init_console, "io/console");
     init(Init_nonblock, "io/nonblock");
+    init(Init_wait, "io/wait");
     init(Init_generator, "json/ext/generator");
     init(Init_parser, "json/ext/parser");
     init(Init_mbedtls, "mbedtls");
     init(Init_monitor, "monitor");
     init(Init_pathname, "pathname");
     init(Init_psych, "psych");
+    init(Init_ripper, "ripper");
     init(Init_socket, "socket");
     init(Init_stringio, "stringio");
     init(Init_zlib, "zlib");

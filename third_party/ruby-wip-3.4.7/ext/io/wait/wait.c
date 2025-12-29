@@ -13,6 +13,7 @@
 
 #include "ruby.h"
 #include "ruby/io.h"
+#include "ruby/cosmo.h"
 
 #include <sys/types.h>
 #if defined(HAVE_UNISTD_H) && (defined(__sun))
@@ -435,6 +436,5 @@ Init_wait(void)
 #endif
 #endif
 
-    /* Mark io/wait as already loaded (statically linked) */
-    rb_provide("io/wait.so");
+    cosmo_provide("io/wait" DLEXT);
 }

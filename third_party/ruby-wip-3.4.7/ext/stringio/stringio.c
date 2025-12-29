@@ -20,6 +20,7 @@ STRINGIO_VERSION = "3.1.2";
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/encoding.h"
+#include "ruby/cosmo.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -2013,6 +2014,5 @@ Init_stringio(void)
 
     sym_exception = ID2SYM(rb_intern("exception"));
 
-    /* Mark stringio as already loaded (statically linked) */
-    rb_provide("stringio.so");
+    cosmo_provide("stringio" DLEXT);
 }

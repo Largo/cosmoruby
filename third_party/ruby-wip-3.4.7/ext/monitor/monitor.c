@@ -1,4 +1,5 @@
 #include "ruby/ruby.h"
+#include "ruby/cosmo.h"
 
 /* Thread::Monitor */
 
@@ -253,6 +254,5 @@ Init_monitor(void)
     /* internal methods for MonitorMixin::ConditionVariable */
     rb_define_method(rb_cMonitor, "wait_for_cond", monitor_wait_for_cond, 2);
 
-    /* Mark monitor as already loaded (statically linked) */
-    rb_provide("monitor.so");
+    cosmo_provide("monitor" DLEXT);
 }

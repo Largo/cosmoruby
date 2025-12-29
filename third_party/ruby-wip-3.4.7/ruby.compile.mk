@@ -34,7 +34,15 @@ $(THIRD_PARTY_RUBY_A_OBJS): private				\
             -Wno-unused-variable				\
             -Wno-attributes
 #            -ffunction-sections					\
-#            -fdata-sections					\
+#            -fdata-sections
+
+# Force recompilation of all Ruby files when config.h changes
+# This is critical because config.h defines DLEXT, EXTSTATIC, SLIM_STATIC
+# which affect compiled code behavior (especially rb_provide() calls)
+$(THIRD_PARTY_RUBY_A_OBJS): third_party/ruby/include/ruby/config.h
+
+# Extension object files also depend on config.h
+o/$(MODE)/third_party/ruby/ext/%.o: third_party/ruby/include/ruby/config.h
 
 # Optimize GC for performance
 o/$(MODE)/third_party/ruby/gc.o: private			\

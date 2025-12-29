@@ -1154,10 +1154,8 @@ struct cosmo_plugin *cosmo_load_plugin(const char *path,
   size_t exports_n = g_export_cache_n;
   PLUGIN_DEBUG("Host has %zu exports", exports_n);
 
-  PLUGIN_DEBUG("Checking plugin registry...");
   struct cosmo_plugin *cached = PluginRegistryFind(path);
   if (cached) {
-    PLUGIN_DEBUG("Found cached plugin");
     return cached;
   }
 

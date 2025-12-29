@@ -48,15 +48,24 @@ cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/pathname/lib/path
 # Copy socket extension Ruby library files (required for Socket methods)
 cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/socket/lib/socket.rb cosmo-ruby/lib/ruby/3.4.0/
 
+# Get DLEXT and ARCH early for patching and plugin copying
+ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
+ARCH=${ARCH:-x86_64-cosmo}
+DLEXT="$(sed -n 's/^  CONFIG\["DLEXT"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
+DLEXT=${DLEXT:-a}
+
+# Patch extension wrapper files to use correct DLEXT in plugin mode
+# Ruby extension wrapper files have hardcoded 'require "ext.so"' but in plugin mode
+# we build .a files. Static mode uses DLEXT=".so" and extensions are linked in, so skip patching.
+if [[ "$DLEXT" != "so" ]]; then
+  find cosmo-ruby/lib/ruby/3.4.0 -name "*.rb" -type f -exec sed -i "s/require ['\"]\\([^'\"]*\\)\\.so['\"]/require '\\1.$DLEXT'/g" {} \;
+fi
+
 # Copy bundled gems (rake, minitest, etc.)
 mkdir -p cosmo-ruby/lib/ruby/gems/3.4.0
 cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/* cosmo-ruby/lib/ruby/gems/3.4.0/
 
 # Copy plugin extension archives when building in plugin mode (EXTSTATIC=0)
-ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
-ARCH=${ARCH:-x86_64-cosmo}
-DLEXT="$(sed -n 's/^  CONFIG\["DLEXT"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
-DLEXT=${DLEXT:-a}
 EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
 SLIM_STATIC="$(sed -n 's/^#define[[:space:]]\+SLIM_STATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
 if [[ "$EXTSTATIC" == "0" ]]; then
@@ -87,12 +96,18 @@ json/ext/parser json
 monitor monitor
 pathname pathname
 psych psych
+ripper ripper
+io/console io/console
+io/wait io/wait
 socket socket
 stringio stringio
 zlib zlib
 mbedtls mbedtls
 EOF
 elif [[ "$EXTSTATIC" == "1" && "$SLIM_STATIC" == "1" ]]; then
+  # In slim static mode (EXTSTATIC=1, SLIM_STATIC=1), extensions are linked but
+  # require still needs to find stub files to trigger their statically-linked init functions.
+  # Create zero-byte stub files for the require mechanism.
   plugins_dir="cosmo-ruby/lib/ruby/3.4.0/extensions/${ARCH}"
   mkdir -p "${plugins_dir}"
   while read -r feature archive; do
@@ -112,6 +127,9 @@ json/ext/parser json
 monitor monitor
 pathname pathname
 psych psych
+ripper ripper
+io/console io/console
+io/wait io/wait
 socket socket
 stringio stringio
 zlib zlib
@@ -156,14 +174,17 @@ cp -r /home/groobiest/Code/jart/cosmopolitan/usr/share/terminfo/* cosmo-ruby/usr
 cd cosmo-ruby
 
 # in o/cosmo-ruby !!
-# Extract the existing ZIP fs stuff into the current directory
-RUBYOPT=--disable-gems RUBYLIB=../../third_party/ruby/lib \
-  ../third_party/ruby/ruby --disable-gems ../../third_party/ruby/extract_zip.rb /zip/
+# NOTE: We used to extract existing ZIP content here, but that overwrites our patched files!
+# Since we're rebuilding stdlib from scratch (copying from ext/*/lib and patching .so->.a),
+# we don't need to preserve old ZIP content. If you need to preserve user-added content,
+# extract BEFORE the file copying step above.
+# RUBYOPT=--disable-gems RUBYLIB=../../third_party/ruby/lib \
+#   ../third_party/ruby/ruby --disable-gems ../../third_party/ruby/extract_zip.rb /zip/
+echo "ZIP extraction skipped (rebuilding from source)"
 touch .cosmo
 
 # Create the ZIP file
 RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib zip -q -r -dd ../ruby-stdlib.zip *
-echo Zip creation complete
 
 cd ..
 

@@ -1,5 +1,6 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/cosmo.h"
 #include "internal.h"
 #include "rubyparser.h"
 #define YYSTYPE_IS_DECLARED
@@ -623,9 +624,7 @@ Init_ripper(void)
     id_assoc = rb_intern_const("=>");
 
     InitVM(ripper);
-
-    /* Mark ripper as already loaded (statically linked) */
-    rb_provide("ripper.so");
+    cosmo_provide("ripper" DLEXT);
 }
 
 void

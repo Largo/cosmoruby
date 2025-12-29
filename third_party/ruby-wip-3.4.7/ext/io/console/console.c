@@ -9,6 +9,7 @@ IO_CONSOLE_VERSION = "0.8.1";
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
+#include "ruby/cosmo.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1908,9 +1909,7 @@ Init_console(void)
     id___send__ = rb_intern("__send__");
 #endif
     InitVM(console);
-
-    /* Mark io/console as already loaded (statically linked) */
-    rb_provide("io/console.so");
+    cosmo_provide("io/console" DLEXT);
 }
 
 void

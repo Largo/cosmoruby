@@ -19,12 +19,15 @@ RUBY_PLUGIN_FEATURES := \
 	digest/sha1 \
 	digest/sha2 \
 	etc \
+	io/console \
 	io/nonblock \
+	io/wait \
 	json/ext/generator \
 	json/ext/parser \
 	monitor \
 	pathname \
 	psych \
+	ripper \
 	socket \
 	stringio \
 	zlib \

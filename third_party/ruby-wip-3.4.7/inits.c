@@ -82,9 +82,6 @@ rb_call_inits(void)
     CALL(ast);
     CALL(shape);
     CALL(Prism);
-    CALL(ripper);
-    CALL(console);
-    CALL(wait);
 
     // enable builtin loading
     CALL(builtin);

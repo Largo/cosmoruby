@@ -737,14 +737,6 @@ rb_provide_feature(rb_vm_t *vm, VALUE feature)
     }
     feature = rb_fstring(feature);
 
-    // DEBUG: Track what features are being registered
-    const char *feature_str = RSTRING_PTR(feature);
-    if (strstr(feature_str, "monitor") || strstr(feature_str, "ripper") ||
-        strstr(feature_str, "pathname") || strstr(feature_str, "console") ||
-        strstr(feature_str, "wait") || strstr(feature_str, "stringio")) {
-        fprintf(stderr, "[DEBUG rb_provide_feature] Registering: %s\n", feature_str);
-    }
-
     get_loaded_features_index(vm);
     // If loaded_features and loaded_features_snapshot share the same backing
     // array, pushing into it would cause the whole array to be copied.
@@ -758,13 +750,6 @@ rb_provide_feature(rb_vm_t *vm, VALUE feature)
 void
 rb_provide(const char *feature)
 {
-    // DEBUG: Track calls to rb_provide
-    if (strstr(feature, "monitor") || strstr(feature, "ripper") ||
-        strstr(feature, "pathname") || strstr(feature, "console") ||
-        strstr(feature, "wait") || strstr(feature, "stringio")) {
-        fprintf(stderr, "[DEBUG rb_provide] Called with: %s from %p\n",
-                feature, __builtin_return_address(0));
-    }
     rb_provide_feature(GET_VM(), rb_fstring_cstr(feature));
 }
 
@@ -1178,21 +1163,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
             rb_str_cat_cstr(lookup_name, ".so");
         }
         ftptr = RSTRING_PTR(lookup_name);
-
-        // DEBUG: Track static extension lookup
-        if (strstr(ftptr, "monitor") || strstr(ftptr, "ripper") ||
-            strstr(ftptr, "pathname") || strstr(ftptr, "console") ||
-            strstr(ftptr, "wait") || strstr(ftptr, "stringio")) {
-            fprintf(stderr, "[DEBUG search_required] Checking static_ext_inits for: %s\n", ftptr);
-        }
-
         if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
-            // DEBUG
-            if (strstr(ftptr, "monitor") || strstr(ftptr, "ripper") ||
-                strstr(ftptr, "pathname") || strstr(ftptr, "console") ||
-                strstr(ftptr, "wait") || strstr(ftptr, "stringio")) {
-                fprintf(stderr, "[DEBUG search_required] FOUND in static_ext_inits! Returning short name: %s (type=%d, ft=%d)\n", ftptr, type, ft);
-            }
             *path = rb_filesystem_str_new_cstr(ftptr);
             RB_GC_GUARD(lookup_name);
             return 's';
@@ -1216,12 +1187,6 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
         if (rb_feature_p(vm, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
-        // DEBUG: Track file found
-        if (strstr(ftptr, "monitor") || strstr(ftptr, "ripper") ||
-            strstr(ftptr, "pathname") || strstr(ftptr, "console") ||
-            strstr(ftptr, "wait") || strstr(ftptr, "stringio")) {
-            fprintf(stderr, "[DEBUG search_required] Found file! Returning path: %s (type=%d)\n", ftptr, type);
-        }
         *path = tmp;
     }
     return type > loadable_ext_rb ? 's' : 'r';
@@ -1457,13 +1422,6 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     }
 
     if (result == TAG_RETURN) {
-        // DEBUG: Track require completion
-        const char *path_str = RSTRING_PTR(path);
-        if (strstr(path_str, "monitor") || strstr(path_str, "ripper") ||
-            strstr(path_str, "pathname") || strstr(path_str, "console") ||
-            strstr(path_str, "wait") || strstr(path_str, "stringio")) {
-            fprintf(stderr, "[DEBUG require_internal] About to register path: %s\n", path_str);
-        }
         rb_provide_feature(th2->vm, path);
         VALUE real = realpath;
         if (real) {

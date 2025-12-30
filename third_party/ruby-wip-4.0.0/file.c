@@ -6433,7 +6433,7 @@ rb_stat_sticky(VALUE obj)
 }
 
 #if !defined HAVE_MKFIFO && defined HAVE_MKNOD && defined S_IFIFO
-#define mkfifo(path, mode) mknod(path, (mode)&~S_IFMT|S_IFIFO, 0)
+#define mkfifo(path, mode) mknod(path, ((mode)&~S_IFMT)|S_IFIFO, 0)
 #define HAVE_MKFIFO
 #endif
 

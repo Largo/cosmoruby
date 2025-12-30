@@ -194,18 +194,18 @@ THIRD_PARTY_RUBY_PATCHES += $(RUBY_PARSE_C_PATCH) $(RUBY_PARSE_H_PATCH)
 # builtin_binary.inc generation (requires miniruby)
 # NOTE: This requires miniruby to be built first. We use HOST_RUBY as fallback.
 
-RUBY_BUILTIN_BINARY_GEN := $(RUBY_GENDIR)/builtin_binary.inc
+RUBY_BUILTIN_BINARY_GEN := $(RUBY_GENDIR)/builtin_binary.rbbin
 
-$(RUBY_BUILTIN_BINARY_GEN): $(RUBY_TOOLDIR)/generic_erb.rb third_party/ruby/template/builtin_binary.inc.tmpl | $(RUBY_GENDIR)
-	@cd $(RUBY_SRCDIR) && RUBYLIB=./lib:$(abspath $(RUBY_GENDIR)) $(RUBY_BUILTIN_INTERP) $(RUBY_BUILTIN_DISABLE) -I./lib -I. tool/generic_erb.rb -o $(abspath $@) template/builtin_binary.inc.tmpl $(RUBY_BUILTIN_EXTRA)
-	@$(RUBY_ENV) $(HOST_RUBY) --disable=gems $(RUBY_ADD_TO_MANIFEST) $(RUBY_MANIFEST) builtin_binary.inc third_party/ruby/builtin_binary.inc
+$(RUBY_BUILTIN_BINARY_GEN): $(RUBY_TOOLDIR)/generic_erb.rb third_party/ruby/template/builtin_binary.rbbin.tmpl | $(RUBY_GENDIR)
+	@cd $(RUBY_SRCDIR) && RUBYLIB=./lib:$(abspath $(RUBY_GENDIR)) $(RUBY_BUILTIN_INTERP) $(RUBY_BUILTIN_DISABLE) -I./lib -I. tool/generic_erb.rb -o $(abspath $@) template/builtin_binary.rbbin.tmpl $(RUBY_BUILTIN_EXTRA)
+	@$(RUBY_ENV) $(HOST_RUBY) --disable=gems $(RUBY_ADD_TO_MANIFEST) $(RUBY_MANIFEST) builtin_binary.rbbin third_party/ruby/builtin_binary.rbbin
 
 THIRD_PARTY_RUBY_GENERATED += $(RUBY_BUILTIN_BINARY_GEN)
 
-RUBY_BUILTIN_BINARY_PATCH := $(RUBY_PATCHDIR)/builtin_binary.inc.diff
+RUBY_BUILTIN_BINARY_PATCH := $(RUBY_PATCHDIR)/builtin_binary.rbbin.diff
 
 $(RUBY_BUILTIN_BINARY_PATCH): $(RUBY_BUILTIN_BINARY_GEN) | $(RUBY_PATCHDIR)
-	$(call ruby_write_patch,third_party/ruby/builtin_binary.inc,$(RUBY_BUILTIN_BINARY_GEN),$@)
+	$(call ruby_write_patch,third_party/ruby/builtin_binary.rbbin,$(RUBY_BUILTIN_BINARY_GEN),$@)
 
 THIRD_PARTY_RUBY_PATCHES += $(RUBY_BUILTIN_BINARY_PATCH)
 
@@ -343,9 +343,13 @@ THIRD_PARTY_RUBY_PATCHES += $(RUBY_EXTSMK_PATCH)
 
 ################################################################################
 
-.PHONY: ruby.codegen ruby.codegen.cleanpatches
+.PHONY: ruby.codegen ruby.codegen.cleanpatches ruby.codegen.sync
 
 ruby.codegen.cleanpatches:
 	@rm -f $(RUBY_PATCHDIR)/rbconfig.diff.tmp $(RUBY_PATCHDIR)/*.diff $(RUBY_PATCHDIR)/**/*.diff 2>/dev/null || true
 
 ruby.codegen: o/$(MODE)/third_party/mexican_toaster/mtsh.com ruby.codegen.cleanpatches $(THIRD_PARTY_RUBY_PATCHES) $(RUBY_MANIFEST)
+
+ruby.codegen.sync: ruby.codegen
+	@echo "Syncing generated files to source tree..."
+	@$(HOST_RUBY) --disable=gems third_party/ruby/tool/sync_generated_files.rb $(RUBY_MANIFEST)

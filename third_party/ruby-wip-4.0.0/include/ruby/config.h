@@ -2,14 +2,15 @@
 #define INCLUDE_RUBY_CONFIG_H 1
 /* Cosmopolitan Ruby Configuration */
 /* Generated for Cosmopolitan Libc - Actually Portable Executables */
-/* Based on Ruby 3.4.7 native configure output with Cosmopolitan adaptations */
+/* Based on Ruby 4.0.0 native configure output with Cosmopolitan adaptations */
 
 /* MUST include errno wrapper FIRST to override Cosmopolitan's runtime errno constants */
 #include "errno_wrapper.h"
 
-/* ========================================================================
- * STANDARD C HEADERS
- * ======================================================================== */
+/* Ruby 4.0.0: rb_io_mode_t is now defined in ruby/io.h as enum rb_io_mode */
+#define HAVE_TYPE_RB_IO_MODE_T 1
+
+/* confdefs.h */
 #define HAVE_STDIO_H 1
 #define HAVE_STDLIB_H 1
 #define HAVE_STRING_H 1
@@ -21,10 +22,6 @@
 #define HAVE_UNISTD_H 1
 #define HAVE_WCHAR_H 1
 #define STDC_HEADERS 1
-
-/* ========================================================================
- * FEATURE TEST MACROS
- * ======================================================================== */
 #define _ALL_SOURCE 1
 #define _DARWIN_C_SOURCE 1
 #define _GNU_SOURCE 1
@@ -41,31 +38,17 @@
 #define __STDC_WANT_MATH_SPEC_FUNCS__ 1
 #define _TANDEM_SOURCE 1
 #define __EXTENSIONS__ 1
-
-/* ========================================================================
- * COMPILER VISIBILITY AND EXPORTS
- * ======================================================================== */
 #define RUBY_SYMBOL_EXPORT_BEGIN _Pragma("GCC visibility push(default)")
 #define RUBY_SYMBOL_EXPORT_END _Pragma("GCC visibility pop")
-
-/* ========================================================================
- * COMPILER FEATURES
- * ======================================================================== */
 #define HAVE_STMT_AND_DECL_IN_EXPR 1
-
-/* ========================================================================
- * THREADING - Cosmopolitan has full pthread support
- * ======================================================================== */
 #define HAVE_PTHREAD_H 1
 #define _REENTRANT 1
 #define _THREAD_SAFE 1
 #define HAVE_LIBPTHREAD 1
 #define THREAD_IMPL_H "thread_pthread.h"
 #define THREAD_IMPL_SRC "thread_pthread.c"
-
-/* ========================================================================
- * SYSTEM HEADERS - Available in Cosmopolitan
- * ======================================================================== */
+#define HAVE_LIBCRYPT 1
+#define HAVE_LIBDL 1
 #define HAVE_DIRENT_H 1
 #define HAVE__BOOL 1
 #define HAVE_STDBOOL_H 1
@@ -78,9 +61,8 @@
 #define HAVE_LOCALE_H 1
 #define HAVE_MALLOC_H 1
 #define HAVE_PWD_H 1
-#define HAVE_SANITIZER_ASAN_INTERFACE_H 1
 #define HAVE_STDALIGN_H 1
-/* #define HAVE_SYS_EVENTFD_H 1 */
+#define HAVE_STDIO_H 1
 #define HAVE_SYS_FCNTL_H 1
 #define HAVE_SYS_FILE_H 1
 #define HAVE_SYS_IOCTL_H 1
@@ -97,32 +79,20 @@
 #define HAVE_SYS_TIMES_H 1
 #define HAVE_SYS_UIO_H 1
 #define HAVE_SYSCALL_H 1
-#define HAVE_TERMIOS_H 1
 #define HAVE_TIME_H 1
-#define HAVE_RB_IO_CLOSED_P 1
 #define HAVE_UCONTEXT_H 1
 #define HAVE_UTIME_H 1
-/* #define HAVE_SYS_EPOLL_H 1 */
+/* #define HAVE_SYS_EVENT_H 1 */ /* Cosmopolitan doesn't support kqueue/kevent */
+#define HAVE_STDCKDINT_H 1
 #define HAVE_STDATOMIC_H 1
 #define HAVE_X86INTRIN_H 1
-#define HAVE_SYS_USER_H 1
-
-/* x86_64 specific - Cosmopolitan supports x86_64 */
 #if defined(__x86_64__)
 #define HAVE_X86INTRIN_H 1
 #endif
-
-/* ========================================================================
- * TYPE FEATURES
- * ======================================================================== */
 #define HAVE_TYPEOF 1
 #define restrict __restrict__
 #define HAVE_LONG_LONG 1
 #define HAVE_OFF_T 1
-
-/* ========================================================================
- * SIZE DEFINITIONS - x86_64
- * ======================================================================== */
 #define SIZEOF_INT 4
 #define SIZEOF_SHORT 2
 #define SIZEOF_LONG 8
@@ -135,108 +105,65 @@
 #define SIZEOF_DOUBLE 8
 #define SIZEOF_TIME_T 8
 #define SIZEOF_CLOCK_T 8
-#define SIZEOF_SIZE_T 8
-#define SIZEOF_PTRDIFF_T 8
-#define SIZEOF_DEV_T 8
-
-/* ========================================================================
- * PACKED STRUCT SUPPORT
- * ======================================================================== */
 #define RBIMPL_ATTR_PACKED_STRUCT_BEGIN()
 #define RBIMPL_ATTR_PACKED_STRUCT_END() __attribute__((packed))
 #define USE_UNALIGNED_MEMBER_ACCESS 1
-
-/* ========================================================================
- * PRINTF FORMAT PREFIXES
- * ======================================================================== */
 #define PRI_LL_PREFIX "ll"
-#define PRI_SIZE_PREFIX "z"
-#define PRI_PTRDIFF_PREFIX "t"
-
-/* ========================================================================
- * TYPE DEFINITIONS AND CONVERSIONS
- * ======================================================================== */
-
-/* pid_t */
 #define HAVE_PID_T 1
 #define rb_pid_t pid_t
 #define SIGNEDNESS_OF_PID_T -1
 #define PIDT2NUM(v) INT2NUM(v)
 #define NUM2PIDT(v) NUM2INT(v)
 #define PRI_PIDT_PREFIX PRI_INT_PREFIX
-
-/* uid_t */
 #define HAVE_UID_T 1
 #define rb_uid_t uid_t
 #define SIGNEDNESS_OF_UID_T +1
 #define UIDT2NUM(v) UINT2NUM(v)
 #define NUM2UIDT(v) NUM2UINT(v)
 #define PRI_UIDT_PREFIX PRI_INT_PREFIX
-
-/* gid_t */
 #define HAVE_GID_T 1
 #define rb_gid_t gid_t
 #define SIGNEDNESS_OF_GID_T +1
 #define GIDT2NUM(v) UINT2NUM(v)
 #define NUM2GIDT(v) NUM2UINT(v)
 #define PRI_GIDT_PREFIX PRI_INT_PREFIX
-
-/* time_t */
 #define HAVE_TIME_T 1
 #define rb_time_t time_t
 #define SIGNEDNESS_OF_TIME_T -1
 #define TIMET2NUM(v) LONG2NUM(v)
 #define NUM2TIMET(v) NUM2LONG(v)
 #define PRI_TIMET_PREFIX PRI_LONG_PREFIX
-
-/* dev_t */
 #define HAVE_DEV_T 1
 #define rb_dev_t dev_t
 #define SIGNEDNESS_OF_DEV_T +1
 #define DEVT2NUM(v) ULONG2NUM(v)
 #define NUM2DEVT(v) NUM2ULONG(v)
 #define PRI_DEVT_PREFIX PRI_LONG_PREFIX
-
-/* mode_t */
 #define HAVE_MODE_T 1
 #define rb_mode_t mode_t
 #define SIGNEDNESS_OF_MODE_T +1
 #define MODET2NUM(v) UINT2NUM(v)
 #define NUM2MODET(v) NUM2UINT(v)
 #define PRI_MODET_PREFIX PRI_INT_PREFIX
-
-/* rlim_t */
 #define HAVE_RLIM_T 1
 #define rb_rlim_t rlim_t
 #define SIGNEDNESS_OF_RLIM_T +1
 #define RLIM2NUM(v) ULONG2NUM(v)
 #define NUM2RLIM(v) NUM2ULONG(v)
 #define PRI_RLIM_PREFIX PRI_LONG_PREFIX
-
-/* off_t */
 #define HAVE_OFF_T 1
 #define rb_off_t off_t
 #define SIGNEDNESS_OF_OFF_T -1
 #define OFFT2NUM(v) LONG2NUM(v)
 #define NUM2OFFT(v) NUM2LONG(v)
 #define PRI_OFFT_PREFIX PRI_LONG_PREFIX
-
-/* clockid_t */
 #define HAVE_CLOCKID_T 1
 #define rb_clockid_t clockid_t
 #define SIGNEDNESS_OF_CLOCKID_T -1
 #define CLOCKID2NUM(v) INT2NUM(v)
 #define NUM2CLOCKID(v) NUM2INT(v)
 #define PRI_CLOCKID_PREFIX PRI_INT_PREFIX
-
-/* ========================================================================
- * VARIADIC MACROS
- * ======================================================================== */
 #define HAVE_VA_ARGS_MACRO 1
-
-/* ========================================================================
- * COMPILER ATTRIBUTES
- * ======================================================================== */
 #define HAVE__ALIGNOF 1
 #define CONSTFUNC(x) __attribute__ ((__const__)) x
 #define PUREFUNC(x) __attribute__ ((__pure__)) x
@@ -258,42 +185,23 @@
 #define HAVE_NULLPTR 1
 #define FUNC_UNOPTIMIZED(x) __attribute__ ((__optimize__("O0"))) x
 #define FUNC_MINIMIZED(x) __attribute__ ((__optimize__("-Os","-fomit-frame-pointer"))) x
-
-/* ========================================================================
- * FUNCTION ALIASES
- * ======================================================================== */
 #define HAVE_ATTRIBUTE_FUNCTION_ALIAS 1
 #define RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args) type prot __attribute__((alias(#name)));
 #define RUBY_ALIAS_FUNCTION_VOID(prot, name, args) RUBY_ALIAS_FUNCTION_TYPE(void, prot, name, args)
-
-/* ========================================================================
- * ATOMIC BUILTINS
- * ======================================================================== */
 #define HAVE_GCC_ATOMIC_BUILTINS 1
 #define HAVE_GCC_SYNC_BUILTINS 1
 #define HAVE___BUILTIN_UNREACHABLE 1
-
-/* ========================================================================
- * VISIBILITY AND EXPORTS
- * ======================================================================== */
 #define RUBY_FUNC_EXPORTED __attribute__ ((__visibility__("default"))) extern
 #define RUBY_FUNC_NONNULL(n,x) __attribute__ ((__nonnull__(n))) x
-
-/* ========================================================================
- * FUNCTION NAME
- * ======================================================================== */
 #define RUBY_FUNCTION_NAME_STRING __func__
-
-/* ========================================================================
- * OTHER FEATURES
- * ======================================================================== */
 #define ENUM_OVER_INT 1
 #define HAVE_DECL_SYS_NERR 0
 #define HAVE_DECL_GETENV 1
-
-/* ========================================================================
- * STRUCT STAT MEMBERS - Cosmopolitan has these
- * ======================================================================== */
+#define SIZEOF_SIZE_T 8
+#define SIZEOF_PTRDIFF_T 8
+#define SIZEOF_DEV_T 8
+#define PRI_SIZE_PREFIX "z"
+#define PRI_PTRDIFF_PREFIX "t"
 #define HAVE_STRUCT_STAT_ST_BLKSIZE 1
 #define HAVE_STRUCT_STAT_ST_BLOCKS 1
 #define HAVE_STRUCT_STAT_ST_RDEV 1
@@ -303,26 +211,15 @@
 #define SIZEOF_STRUCT_STAT_ST_DEV SIZEOF_DEV_T
 #define SIZEOF_STRUCT_STAT_ST_RDEV SIZEOF_DEV_T
 #define HAVE_STRUCT_STAT_ST_ATIM 1
+#define HAVE_STRUCT_STAT_ST_ATIMENSEC 1
 #define HAVE_STRUCT_STAT_ST_MTIM 1
+#define HAVE_STRUCT_STAT_ST_MTIMENSEC 1
 #define HAVE_STRUCT_STAT_ST_CTIM 1
-/* #define HAVE_STRUCT_STATX_STX_BTIME 1 */ /* no STATX */
-
-/* ========================================================================
- * TIME STRUCTURES
- * ======================================================================== */
+#define HAVE_STRUCT_STAT_ST_CTIMENSEC 1
 #define HAVE_STRUCT_TIMEVAL 1
 #define SIZEOF_STRUCT_TIMEVAL_TV_SEC SIZEOF_TIME_T
 #define HAVE_STRUCT_TIMESPEC 1
 #define HAVE_STRUCT_TIMEZONE 1
-
-/* ========================================================================
- * RB FD_SET
- * ======================================================================== */
-#define HAVE_RB_FD_INIT 1
-
-/* ========================================================================
- * FIXED-WIDTH INTEGER TYPES
- * ======================================================================== */
 #define HAVE_INT8_T 1
 #define SIZEOF_INT8_T 1
 #define HAVE_UINT8_T 1
@@ -349,40 +246,18 @@
 #define SIZEOF_INTPTR_T 8
 #define HAVE_UINTPTR_T 1
 #define SIZEOF_UINTPTR_T 8
+#define PRI_PTR_PREFIX "l"
 #define HAVE_SSIZE_T 1
 #define SIZEOF_SSIZE_T 8
-
-/* ========================================================================
- * STACK END ADDRESS - Not used on Cosmopolitan
- * ======================================================================== */
-/* Cosmopolitan doesn't provide __libc_stack_end symbol.
- * Ruby's thread_pthread.c has a portable fallback when this is not defined. */
-/* #define STACK_END_ADDRESS __libc_stack_end */
-
-/* ========================================================================
- * GETGROUPS TYPE
- * ======================================================================== */
-#define GETGROUPS_T gid_t
-
-/* ========================================================================
- * ALLOCA
- * ======================================================================== */
+#define PRI_64_PREFIX "l"
+#define GETGROUPS_T unsigned int /* Cosmopolitan uses unsigned */
 #define HAVE_ALLOCA_H 1
 #define HAVE_ALLOCA 1
-
-/* ========================================================================
- * STANDARD C FUNCTIONS - Cosmopolitan has these
- * ======================================================================== */
 #define HAVE_DUP 1
 #define HAVE_DUP2 1
-#define HAVE_DUP3 1
 #define HAVE_ACOSH 1
 #define HAVE_CBRT 1
 #define HAVE_CRYPT 1
-/* Cosmopolitan has crypt() but not crypt_r() - thread-safe version not available */
-/* #undef HAVE_CRYPT_H */
-/* #undef HAVE_CRYPT_R */
-/* #undef HAVE_STRUCT_CRYPT_DATA_INITIALIZED */
 #define HAVE_ERF 1
 #define HAVE_EXPLICIT_BZERO 1
 #define HAVE_FFS 1
@@ -390,8 +265,6 @@
 #define HAVE_HYPOT 1
 #define HAVE_LGAMMA_R 1
 #define HAVE_MEMMOVE 1
-#define HAVE_MEMRCHR 1
-#define HAVE_MEMMEM 1
 #define HAVE_NAN 1
 #define HAVE_NEXTAFTER 1
 #define HAVE_STRCHR 1
@@ -401,35 +274,13 @@
 #define HAVE_STRSTR 1
 #define HAVE_TGAMMA 1
 #define HAVE_ISFINITE 1
-
-/* SPT_TYPE for setproctitle */
 #define SPT_TYPE SPT_REUSEARGV
-
-/* ========================================================================
- * SIGNAL AND MATH FUNCTIONS
- * ======================================================================== */
 #define HAVE_SIGNBIT 1
-
-/* ========================================================================
- * PROCESS FUNCTIONS
- * ======================================================================== */
 #define HAVE_FORK 1
 #define HAVE_VFORK 1
 #define HAVE_WORKING_VFORK 1
 #define HAVE_WORKING_FORK 1
-
-/* ========================================================================
- * SETJMP/LONGJMP
- * ======================================================================== */
 #define HAVE__LONGJMP 1
-#define HAVE__SETJMP 1
-#define RUBY_SETJMP(env) __builtin_setjmp((env))
-#define RUBY_LONGJMP(env,val) __builtin_longjmp((env),val)
-
-/* ========================================================================
- * ADDITIONAL SYSTEM FUNCTIONS
- * ======================================================================== */
-#define HAVE_ARC4RANDOM_BUF 1
 #define HAVE_ATAN2L 1
 #define HAVE_ATAN2F 1
 #define HAVE_DECL_ATOMIC_SIGNAL_FENCE 1
@@ -437,16 +288,15 @@
 #define HAVE_CHOWN 1
 #define HAVE_CHROOT 1
 #define HAVE_CLOCK_GETTIME 1
-#define HAVE_CLOCK_GETRES 1
 #define HAVE_COPY_FILE_RANGE 1
 #define HAVE_COSH 1
+/* #define HAVE_CRYPT_R 1 */ /* Cosmopolitan doesn't have thread-safe crypt_r() */
 #define HAVE_DIRFD 1
 #define HAVE_DL_ITERATE_PHDR 1
 #define HAVE_DLOPEN 1
-/* #define HAVE_DLADDR 1 */ /* Disabled: Cosmopolitan doesn't support dladdr() */
+#define HAVE_DUP3 1
 #define HAVE_EACCESS 1
 #define HAVE_ENDGRENT 1
-#define HAVE_EVENTFD 1
 #define HAVE_EXECL 1
 #define HAVE_EXECLE 1
 #define HAVE_EXECV 1
@@ -490,6 +340,7 @@
 #define HAVE_GMTIME_R 1
 #define HAVE_INITGROUPS 1
 #define HAVE_IOCTL 1
+#define HAVE_ISSETUGID 1
 #define HAVE_KILL 1
 #define HAVE_KILLPG 1
 #define HAVE_LCHMOD 1
@@ -505,7 +356,8 @@
 #define HAVE_MBLEN 1
 #define HAVE_MEMALIGN 1
 #define HAVE_WRITEV 1
-/* #define HAVE_MKFIFO 1 */ /* Disabled: Cosmopolitan doesn't expose mkfifo() in public API */
+#define HAVE_MEMRCHR 1
+#define HAVE_MEMMEM 1
 #define HAVE_MKNOD 1
 #define HAVE_MKTIME 1
 #define HAVE_MMAP 1
@@ -558,7 +410,6 @@
 #define HAVE_TIMEGM 1
 #define HAVE_TIMES 1
 #define HAVE_TRUNCATE 1
-#define HAVE_TRUNCATE64 1
 #define HAVE_TZSET 1
 #define HAVE_UMASK 1
 #define HAVE_UNSETENV 1
@@ -566,11 +417,8 @@
 #define HAVE_UTIMES 1
 #define HAVE_WAIT4 1
 #define HAVE_WAITPID 1
-/* #define HAVE_STATX 1 */ /* Disabled: Cosmopolitan doesn't support statx() */
-
-/* ========================================================================
- * BUILTIN FUNCTIONS - GCC/Clang compiler intrinsics
- * ======================================================================== */
+#define HAVE_CRYPT_H 1
+#define HAVE_STRUCT_CRYPT_DATA_INITIALIZED 1
 #define HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN 1
 #define HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED 1
 #define HAVE_BUILTIN___BUILTIN_BSWAP16 1
@@ -598,68 +446,19 @@
 #define HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW 1
 #define HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P 1
 #define USE___BUILTIN_MUL_OVERFLOW_LONG_LONG 1
-
-/* ========================================================================
- * QSORT_R - GNU version
- * ======================================================================== */
 #define HAVE_GNU_QSORT_R 1
-
-/* ========================================================================
- * ATAN2 BEHAVIOR
- * ======================================================================== */
 #define ATAN2_INF_C99 1
-
-
-/* ========================================================================
- * REALTIME LIBRARY FUNCTIONS
- * ======================================================================== */
-#define HAVE_LIBRT 1
-#define HAVE_TIMER_CREATE 1
-#define HAVE_TIMER_SETTIME 1
-
-/* ========================================================================
- * TIME STRUCTURES
- * ======================================================================== */
+#define HAVE_CLOCK_GETRES 1
 #define HAVE_STRUCT_TM_TM_ZONE 1
 #define HAVE_TM_ZONE 1
 #define HAVE_STRUCT_TM_TM_GMTOFF 1
 #define HAVE_DAYLIGHT 1
-#define NEGATIVE_TIME_T 1
-
-/* ========================================================================
- * SIGNAL HANDLING
- * ======================================================================== */
 #define POSIX_SIGNAL 1
-/* #define HAVE_SIG_T 1 */
-
-/* ========================================================================
- * BIT SHIFTING
- * ======================================================================== */
 #define RSHIFT(x,y) ((x)>>(int)(y))
-
-/* ========================================================================
- * COPY_FILE_RANGE
- * ======================================================================== */
 #define USE_COPY_FILE_RANGE 1
-
-/* ========================================================================
- * SYSTEM CONFIGURATION
- * ======================================================================== */
 #define HAVE__SC_CLK_TCK 1
-
-/* ========================================================================
- * STACK DIRECTION - x86_64 grows downward
- * ======================================================================== */
 #define STACK_GROW_DIRECTION -1
-
-/* ========================================================================
- * COROUTINE SUPPORT - x86_64
- * ======================================================================== */
 #define COROUTINE_H "coroutine/amd64/Context.h"
-
-/* ========================================================================
- * THREADING PRIMITIVES
- * ======================================================================== */
 #define HAVE_SCHED_YIELD 1
 #define HAVE_PTHREAD_ATTR_SETINHERITSCHED 1
 #define HAVE_PTHREAD_ATTR_GETSTACK 1
@@ -671,78 +470,27 @@
 #define SET_CURRENT_THREAD_NAME(name) pthread_setname_np(pthread_self(), name)
 #define SET_ANOTHER_THREAD_NAME(thid,name) pthread_setname_np(thid, name)
 #define RB_THREAD_LOCAL_SPECIFIER _Thread_local
-
-/* ========================================================================
- * CONTEXT MANAGEMENT
- * ======================================================================== */
 #define DEFINE_MCONTEXT_PTR(mc, uc) mcontext_t *mc = &(uc)->uc_mcontext
 #define HAVE_GETCONTEXT 1
 #define HAVE_SETCONTEXT 1
-
-/* ========================================================================
- * PAGE SIZE
- * ======================================================================== */
+#define CANNOT_FORK_WITH_PTHREAD 1
+#define HAVE_SYS_USER_H 1
 #define HAVE_CONST_PAGE_SIZE 0
-
-/* ========================================================================
- * IOCTL REQUEST TYPE
- * ======================================================================== */
 #define IOCTL_REQ_TYPE unsigned long
 #define NUM2IOCTLREQ(num) NUM2ULONG(num)
-
-/* ========================================================================
- * ELF FORMAT
- * ======================================================================== */
 #define USE_ELF 1
 #define HAVE_ELF_H 1
-
-/* ========================================================================
- * ZLIB SUPPORT
- * ======================================================================== */
-#define HAVE_LIBZ 1
-
-/* ========================================================================
- * STATIC EXTENSIONS
- * ======================================================================== */
 #define EXTSTATIC 1
-#define SLIM_STATIC 1
-
-/* ========================================================================
- * BACKTRACE SUPPORT
- * ======================================================================== */
-/* #define HAVE_BACKTRACE 1 */
-
-/* ========================================================================
- * DYNAMIC LIBRARY EXTENSION
- * ======================================================================== */
 #define DLEXT_MAXLEN 3
 #define DLEXT ".so"
 #define SOEXT ".so"
-
-/* ========================================================================
- * MODULAR GC
- * ======================================================================== */
+#define HAVE__SETJMP 1
+#define RUBY_SETJMP(env) __builtin_setjmp((env))
+#define RUBY_LONGJMP(env,val) __builtin_longjmp((env),val)
 #define USE_MODULAR_GC 0
-
-/* ========================================================================
- * JIT SUPPORT - Disabled for Cosmopolitan port
- * ======================================================================== */
 #define USE_YJIT 0
 #define USE_RJIT 0
-
-/* ========================================================================
- * LOAD RELATIVE
- * ======================================================================== */
-/* #define LOAD_RELATIVE 1 */
-
-/* ========================================================================
- * PLATFORM IDENTIFICATION
- * ======================================================================== */
 #define RUBY_PLATFORM "x86_64-cosmo"
-
-/* ========================================================================
- * RUBY PARSER - Prism is the default
- * ======================================================================== */
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
 
 /* ========================================================================

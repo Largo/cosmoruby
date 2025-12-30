@@ -190,9 +190,9 @@ typedef	struct __sFILE {
 #define	__SOFF	0x1000		/* set if and only if _offset is in fact correct */
 #define	__SMOD	0x2000		/* true => fgetln modified _p text */
 
-
+#ifndef EOF
 #define	EOF	(-1)
-
+#endif
 
 #define	BSD__sfeof(p)	(((p)->_flags & __SEOF) != 0)
 #define	BSD__sferror(p)	(((p)->_flags & __SERR) != 0)

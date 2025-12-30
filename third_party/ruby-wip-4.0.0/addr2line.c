@@ -2182,6 +2182,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             char *strtab = file + dynstr_shdr->sh_offset;
             ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
             int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
+#ifdef HAVE_DLADDR
             void *handle = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
             if (handle) {
                 for (j = 0; j < symtab_count; j++) {
@@ -2198,6 +2199,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                 }
                 dlclose(handle);
             }
+#endif
             if (ehdr->e_type == ET_EXEC) {
                 obj->base_addr = 0;
             }
@@ -2643,6 +2645,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout)
 #endif
 
     /* fill source lines by reading dwarf */
+#ifdef HAVE_DLADDR
     for (i = 0; i < num_traces; i++) {
         Dl_info info;
         if (lines[i].line) continue;
@@ -2677,6 +2680,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout)
 next_line:
         continue;
     }
+#endif
 
     /* output */
     for (i = 0; i < num_traces; i++) {

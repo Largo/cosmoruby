@@ -18,7 +18,7 @@
 ################################################################################
 
 # Detect preferred Ruby interpreter for build tooling.
-# Favor a prebuilt Cosmopolitan ruby.com, fall back to system ruby.
+# Favour a prebuilt Cosmopolitan ruby.com, fall back to system ruby.
 
 COSMO_RUBY_CANDIDATES :=					\
 	$(abspath o/$(MODE)/third_party/ruby/ruby.com)		\
@@ -28,7 +28,6 @@ COSMO_RUBY_CANDIDATES :=					\
 COSMO_RUBY ?= $(firstword $(foreach path,$(COSMO_RUBY_CANDIDATES),$(if $(wildcard $(path)),$(path))))
 
 HOST_RUBY ?= $(if $(COSMO_RUBY),$(COSMO_RUBY),$(strip $(shell command -v ruby 2>/dev/null)))
-# HOST_RUBY ?= $(strip $(shell command -v ruby 2>/dev/null))
 
 ifeq ($(strip $(HOST_RUBY)),)
 $(error No Ruby interpreter found. Build requires ruby.com or system ruby 4.0.0 on PATH.)

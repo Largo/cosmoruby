@@ -34,8 +34,8 @@
 /* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
-#ifndef YY_YY_PARSE_H_INCLUDED
-# define YY_YY_PARSE_H_INCLUDED
+#ifndef YY_YY__HOME_GROOBIEST_CODE_JART_COSMOPOLITAN_O_THIRD_PARTY_RUBY_GENERATED_PARSE_H_INCLUDED
+# define YY_YY__HOME_GROOBIEST_CODE_JART_COSMOPOLITAN_O_THIRD_PARTY_RUBY_GENERATED_PARSE_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -212,7 +212,7 @@ union YYSTYPE
     struct lex_context ctxt;
     enum lex_state_e state;
 
-#line 216 "parse.h"
+#line 216 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -242,5 +242,5 @@ int yyparse (struct parser_params *p);
 
 
 
-#endif /* !YY_YY_PARSE_H_INCLUDED  */
+#endif /* !YY_YY__HOME_GROOBIEST_CODE_JART_COSMOPOLITAN_O_THIRD_PARTY_RUBY_GENERATED_PARSE_H_INCLUDED  */
 

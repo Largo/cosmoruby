@@ -26,7 +26,6 @@ void Init_ext(void)
     init(Init_parser, "json/ext/parser");
     init(Init_mbedtls, "mbedtls");
     init(Init_monitor, "monitor");
-    init(Init_pathname, "pathname");
     init(Init_psych, "psych");
     init(Init_ripper, "ripper");
     init(Init_socket, "socket");

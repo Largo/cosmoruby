@@ -31,7 +31,6 @@ include third_party/ruby/ext/json/BUILD.mk
 include third_party/ruby/ext/ripper/BUILD.mk
 include third_party/ruby/ext/mbedtls/BUILD.mk
 include third_party/ruby/ext/monitor/BUILD.mk
-include third_party/ruby/ext/pathname/BUILD.mk
 include third_party/ruby/ext/psych/BUILD.mk
 include third_party/ruby/ext/socket/BUILD.mk
 include third_party/ruby/ext/stringio/BUILD.mk
@@ -57,7 +56,6 @@ RUBY_ALL_EXTENSIONS =				\
 	THIRD_PARTY_RUBY_EXT_RIPPER			\
 	THIRD_PARTY_RUBY_EXT_MBEDTLS			\
 	THIRD_PARTY_RUBY_EXT_MONITOR			\
-	THIRD_PARTY_RUBY_EXT_PATHNAME			\
 	THIRD_PARTY_RUBY_EXT_PSYCH			\
 	THIRD_PARTY_RUBY_EXT_SOCKET			\
 	THIRD_PARTY_RUBY_EXT_STRINGIO			\
@@ -76,8 +74,7 @@ THIRD_PARTY_RUBY_MINIRUBY_EXTENSIONS :=
 else
 THIRD_PARTY_RUBY_MINIRUBY_EXTENSIONS :=		\
 	THIRD_PARTY_RUBY_EXT_MONITOR			\
-	THIRD_PARTY_RUBY_EXT_STRINGIO			\
-	THIRD_PARTY_RUBY_EXT_PATHNAME
+	THIRD_PARTY_RUBY_EXT_STRINGIO
 endif
 
 # Always stage all extensions as plugins (harmless in static builds).
@@ -166,7 +163,7 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/internal/sanitizers.h\
 	third_party/ruby/internal/variable.h\
 	third_party/ruby/include/ruby/thread.h\
-	third_party/ruby/builtin_binary.inc\
+	third_party/ruby/builtin_binary.rbbin\
 	third_party/ruby/mini_builtin.c\
 	third_party/ruby/constant.h\
 	third_party/ruby/id_table.h\
@@ -194,7 +191,6 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/eval_intern.h\
 	third_party/ruby/internal/cont.h\
 	third_party/ruby/include/ruby/fiber/scheduler.h\
-	third_party/ruby/rjit.h\
 	third_party/ruby/vm_sync.h\
 	third_party/ruby/ractor_core.h\
 	third_party/ruby/internal/signal.h\
@@ -310,8 +306,8 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/missing/procstat_vm.c\
 	third_party/ruby/trace_point.rbinc\
 	third_party/ruby/enc/encdb.h\
-	third_party/ruby/enc/unicode/15.0.0/casefold.h\
-	third_party/ruby/enc/unicode/15.0.0/name2ctype.h\
+	third_party/ruby/enc/unicode/17.0.0/casefold.h\
+	third_party/ruby/enc/unicode/17.0.0/name2ctype.h\
 	third_party/ruby/enc/iso_8859.h\
 	third_party/ruby/enc/transdb.h\
 	third_party/ruby/prism/extension.h\
@@ -335,7 +331,6 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/prism/util/pm_string.h\
 	third_party/ruby/prism/util/pm_strncasecmp.h\
 	third_party/ruby/prism/util/pm_strpbrk.h\
-	third_party/ruby/missing/dladdr.h\
 	third_party/ruby/include/ruby/defines.h\
 	third_party/ruby/internal/static_assert.h\
 	third_party/ruby/ext/io/console/win32_vk.inc\
@@ -535,7 +530,7 @@ THIRD_PARTY_RUBY_A_INCS =\
 	ruby-4.0.0_shims/internal+sanitizers.h\
 	ruby-4.0.0_shims/internal+variable.h\
 	ruby-4.0.0_shims/ruby+thread.h\
-	ruby-4.0.0_shims/builtin_binary.inc\
+	ruby-4.0.0_shims/builtin_binary.rbbin\
 	ruby-4.0.0_shims/mini_builtin.c\
 	ruby-4.0.0_shims/constant.h\
 	ruby-4.0.0_shims/id_table.h\
@@ -564,7 +559,6 @@ THIRD_PARTY_RUBY_A_INCS =\
 	ruby-4.0.0_shims/eval_intern.h\
 	ruby-4.0.0_shims/internal+cont.h\
 	ruby-4.0.0_shims/ruby+fiber+scheduler.h\
-	ruby-4.0.0_shims/rjit.h\
 	ruby-4.0.0_shims/vm_sync.h\
 	ruby-4.0.0_shims/ractor_core.h\
 	ruby-4.0.0_shims/internal+signal.h\
@@ -890,11 +884,13 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/array.c					\
     third_party/ruby/ast.c					\
     third_party/ruby/bignum.c					\
+    third_party/ruby/box.c					\
     third_party/ruby/builtin.c					\
     third_party/ruby/class.c					\
     third_party/ruby/compar.c					\
     third_party/ruby/compile.c					\
     third_party/ruby/complex.c					\
+    third_party/ruby/concurrent_set.c				\
     third_party/ruby/cont.c					\
     third_party/ruby/debug.c					\
     third_party/ruby/debug_counter.c				\
@@ -902,7 +898,7 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/ext/extinit.c				\
     third_party/ruby/dln.c					\
     third_party/ruby/dln_cosmo.c				\
-    third_party/ruby/encinit.c					\
+    third_party/ruby/enc/enc/encinit.c				\
     third_party/ruby/dln_find.c					\
     third_party/ruby/encoding.c					\
     third_party/ruby/loadpath.c					\
@@ -929,6 +925,7 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/numeric.c					\
     third_party/ruby/object.c					\
     third_party/ruby/pack.c					\
+    third_party/ruby/pathname.c					\
     third_party/ruby/parse.c					\
     third_party/ruby/parser_st.c				\
     third_party/ruby/proc.c					\
@@ -947,6 +944,7 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/ruby.c					\
     third_party/ruby/ruby_parser.c				\
     third_party/ruby/scheduler.c				\
+    third_party/ruby/set.c					\
     third_party/ruby/shape.c					\
     third_party/ruby/signal.c					\
     third_party/ruby/sprintf.c					\
@@ -968,12 +966,49 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/vm_sync.c					\
     third_party/ruby/vm_trace.c					\
     third_party/ruby/enc/ascii.c				\
+    third_party/ruby/enc/big5.c					\
+    third_party/ruby/enc/cesu_8.c				\
+    third_party/ruby/enc/cp949.c				\
+    third_party/ruby/enc/emacs_mule.c				\
     third_party/ruby/enc/encdb.c				\
+    third_party/ruby/enc/euc_jp.c				\
+    third_party/ruby/enc/euc_kr.c				\
+    third_party/ruby/enc/euc_tw.c				\
+    third_party/ruby/enc/gb18030.c				\
+    third_party/ruby/enc/gb2312.c				\
+    third_party/ruby/enc/gbk.c					\
+    third_party/ruby/enc/iso_8859_1.c				\
+    third_party/ruby/enc/iso_8859_2.c				\
+    third_party/ruby/enc/iso_8859_3.c				\
+    third_party/ruby/enc/iso_8859_4.c				\
+    third_party/ruby/enc/iso_8859_5.c				\
+    third_party/ruby/enc/iso_8859_6.c				\
+    third_party/ruby/enc/iso_8859_7.c				\
+    third_party/ruby/enc/iso_8859_8.c				\
+    third_party/ruby/enc/iso_8859_9.c				\
+    third_party/ruby/enc/iso_8859_10.c				\
+    third_party/ruby/enc/iso_8859_11.c				\
+    third_party/ruby/enc/iso_8859_13.c				\
+    third_party/ruby/enc/iso_8859_14.c				\
+    third_party/ruby/enc/iso_8859_15.c				\
+    third_party/ruby/enc/iso_8859_16.c				\
+    third_party/ruby/enc/koi8_r.c				\
+    third_party/ruby/enc/koi8_u.c				\
+    third_party/ruby/enc/shift_jis.c				\
     third_party/ruby/enc/unicode.c				\
     third_party/ruby/enc/us_ascii.c				\
     third_party/ruby/enc/utf_8.c				\
     third_party/ruby/enc/utf_16be.c				\
     third_party/ruby/enc/utf_16le.c				\
+    third_party/ruby/enc/utf_32be.c				\
+    third_party/ruby/enc/utf_32le.c				\
+    third_party/ruby/enc/windows_31j.c				\
+    third_party/ruby/enc/windows_1250.c				\
+    third_party/ruby/enc/windows_1251.c				\
+    third_party/ruby/enc/windows_1252.c				\
+    third_party/ruby/enc/windows_1253.c				\
+    third_party/ruby/enc/windows_1254.c				\
+    third_party/ruby/enc/windows_1257.c				\
     third_party/ruby/enc/trans/big5.c				\
     third_party/ruby/enc/trans/cesu_8.c				\
     third_party/ruby/enc/trans/chinese.c			\
@@ -1022,7 +1057,6 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/prism/util/pm_strncasecmp.c		\
     third_party/ruby/prism/util/pm_strpbrk.c			\
     third_party/ruby/missing/setproctitle.c			\
-    third_party/ruby/missing/dladdr.c				\
     third_party/ruby/addr2line.c
 
 # Modular extension system:

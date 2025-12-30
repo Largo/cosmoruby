@@ -158,6 +158,7 @@ max(int a, int b)
 #define sub(x,y) (rb_funcall((x), '-', 1, (y)))
 #define mul(x,y) (rb_funcall((x), '*', 1, (y)))
 #define quo(x,y) (rb_funcall((x), rb_intern("quo"), 1, (y)))
+#undef div  /* Cosmopolitan defines div() - undefine to use Ruby's version */
 #define div(x,y) (rb_funcall((x), rb_intern("div"), 1, (y)))
 #define mod(x,y) (rb_funcall((x), '%', 1, (y)))
 

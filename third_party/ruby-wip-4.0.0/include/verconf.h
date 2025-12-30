@@ -1,15 +1,13 @@
-/* Generated verconf.h for Cosmopolitan Ruby */
 #define RUBY_BASE_NAME			"ruby"
-#define RUBY_VERSION_NAME		"ruby-4.0.0"
-#define RUBY_LIB_VERSION		"4.0.0"
-#define RUBY_EXEC_PREFIX		"/zip"
-#define RUBY_LIB_PREFIX 		"/zip/lib/ruby"
-#define RUBY_SITEARCH			"x86_64-cosmo"
-#define RUBY_ARCH_PREFIX_FOR(arch)	"/zip/lib/ruby"
-#define RUBY_SITEARCH_PREFIX_FOR(arch)	"/zip/lib/ruby/site_ruby"
-#define RUBY_LIB			"/zip/lib/ruby/4.0.0"
-#define RUBY_ARCH_LIB_FOR(arch) 	"/zip/lib/ruby/4.0.0/x86_64-cosmo"
-#define NO_RUBY_SITE_LIB		1
-#define NO_RUBY_VENDOR_LIB		1
-#define FREE_PALESTINE			1
-/* RUBY_SEARCH_PATH is defined via -D flag in BUILD.mk */
+#define RUBY_VERSION_NAME		"ruby-"RUBY_LIB_VERSION
+#define RUBY_LIB_VERSION_STYLE		3	/* full */
+#define RUBY_EXEC_PREFIX		""
+#define RUBY_LIB_PREFIX 		RUBY_EXEC_PREFIX"/lib/ruby"
+#define RUBY_ARCH_PREFIX_FOR(arch)	RUBY_LIB_PREFIX"/"arch
+#define RUBY_SITEARCH_PREFIX_FOR(arch)	RUBY_LIB_PREFIX"/"arch
+#define RUBY_LIB			RUBY_LIB_PREFIX"/"RUBY_LIB_VERSION
+#define RUBY_ARCH_LIB_FOR(arch) 	RUBY_LIB"/"arch
+#define RUBY_SITE_LIB			RUBY_LIB_PREFIX"/site_ruby"
+#define RUBY_SITE_ARCH_LIB_FOR(arch)	RUBY_SITE_LIB2"/"arch
+#define RUBY_VENDOR_LIB 		RUBY_LIB_PREFIX"/vendor_ruby"
+#define RUBY_VENDOR_ARCH_LIB_FOR(arch)	RUBY_VENDOR_LIB2"/"arch

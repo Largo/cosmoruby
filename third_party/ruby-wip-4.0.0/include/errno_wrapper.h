@@ -37,11 +37,13 @@
 #define EMFILE 24
 #define ENOTTY 25
 #define ESPIPE 29
+#define EDOM 33
 #define ERANGE 34
 #define ENAMETOOLONG 36
 #define ENOSYS 38
 #define ELOOP 40
 #define EPROTO 71
+#define EILSEQ 84
 #define ERESTART 85
 #define ENOTSUP 95
 #define EOPNOTSUPP 95
@@ -55,12 +57,15 @@
 #define EWOULDBLOCK EAGAIN
 
 /* fcntl constants (Linux x86_64 from libc/sysv/consts.sh) */
-#define F_DUPFD_CLOEXEC 0x0406
+#define F_GETFD 1
+#define F_SETFD 2
 #define F_GETFL 3
 #define F_SETFL 4
 #define F_GETLK 5
 #define F_SETLK 6
 #define F_SETLKW 7
+#define FD_CLOEXEC 1
+#define F_DUPFD_CLOEXEC 0x0406
 
 /* open() flags (Linux x86_64 values) */
 #define O_RDONLY    0

@@ -24,7 +24,7 @@ $(THIRD_PARTY_RUBY_A_OBJS): private				\
             -Ithird_party/ruby/include				\
             -Ithird_party/ruby					\
             -Ithird_party/ruby/prism				\
-	    -Ithird_party/ruby/enc/unicode/15.0.0		\
+	    -Ithird_party/ruby/enc/unicode/17.0.0		\
             -Ithird_party/zlib					\
             -DRUBY_EXPORT					\
             -DRUBY_COSMOPOLITAN					\
@@ -43,6 +43,57 @@ $(THIRD_PARTY_RUBY_A_OBJS): third_party/ruby/include/ruby/config.h
 
 # Extension object files also depend on config.h
 o/$(MODE)/third_party/ruby/ext/%.o: third_party/ruby/include/ruby/config.h
+
+# Encoding object files also depend on config.h
+o/$(MODE)/third_party/ruby/enc/%.o: third_party/ruby/include/ruby/config.h
+
+# Core encodings (ascii, utf_8, us_ascii) must export OnigEncoding* symbols
+# for early initialization in encoding.c, so do NOT define ONIG_ENC_REGISTER
+# (This rule intentionally left without CPPFLAGS override)
+
+# Extended encoding files need ONIG_ENC_REGISTER to create Init_* functions
+# Exclude core encodings (ascii, utf_8, us_ascii) from this rule
+o/$(MODE)/third_party/ruby/enc/big5.o			\
+o/$(MODE)/third_party/ruby/enc/cesu_8.o			\
+o/$(MODE)/third_party/ruby/enc/cp949.o			\
+o/$(MODE)/third_party/ruby/enc/emacs_mule.o		\
+o/$(MODE)/third_party/ruby/enc/euc_jp.o			\
+o/$(MODE)/third_party/ruby/enc/euc_kr.o			\
+o/$(MODE)/third_party/ruby/enc/euc_tw.o			\
+o/$(MODE)/third_party/ruby/enc/gb18030.o		\
+o/$(MODE)/third_party/ruby/enc/gb2312.o			\
+o/$(MODE)/third_party/ruby/enc/gbk.o			\
+o/$(MODE)/third_party/ruby/enc/iso_8859_1.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_2.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_3.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_4.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_5.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_6.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_7.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_8.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_9.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_10.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_11.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_13.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_14.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_15.o		\
+o/$(MODE)/third_party/ruby/enc/iso_8859_16.o		\
+o/$(MODE)/third_party/ruby/enc/koi8_r.o			\
+o/$(MODE)/third_party/ruby/enc/koi8_u.o			\
+o/$(MODE)/third_party/ruby/enc/shift_jis.o		\
+o/$(MODE)/third_party/ruby/enc/utf_16be.o		\
+o/$(MODE)/third_party/ruby/enc/utf_16le.o		\
+o/$(MODE)/third_party/ruby/enc/utf_32be.o		\
+o/$(MODE)/third_party/ruby/enc/utf_32le.o		\
+o/$(MODE)/third_party/ruby/enc/windows_31j.o		\
+o/$(MODE)/third_party/ruby/enc/windows_1250.o		\
+o/$(MODE)/third_party/ruby/enc/windows_1251.o		\
+o/$(MODE)/third_party/ruby/enc/windows_1252.o		\
+o/$(MODE)/third_party/ruby/enc/windows_1253.o		\
+o/$(MODE)/third_party/ruby/enc/windows_1254.o		\
+o/$(MODE)/third_party/ruby/enc/windows_1257.o: private	\
+    CPPFLAGS +=						\
+            -DONIG_ENC_REGISTER=rb_enc_register
 
 # Optimize GC for performance
 o/$(MODE)/third_party/ruby/gc.o: private			\
@@ -79,6 +130,11 @@ o/$(MODE)/third_party/ruby/prism/prism.o: private		\
 o/$(MODE)/third_party/ruby/prism/diagnostic.o: private		\
     CFLAGS +=							\
             -Wno-array-bounds
+
+# Transcoding files also need ONIG_ENC_REGISTER to create Init_trans_* functions
+o/$(MODE)/third_party/ruby/enc/trans/%.o: private		\
+    CPPFLAGS +=							\
+            -DONIG_ENC_REGISTER=rb_enc_register
 
 # Transcoder database needs access to generated transdb.h in enc/
 o/$(MODE)/third_party/ruby/enc/trans/transdb.o: private	\

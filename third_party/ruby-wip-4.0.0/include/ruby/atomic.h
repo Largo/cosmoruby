@@ -77,34 +77,10 @@ typedef unsigned int rb_atomic_t;
 typedef LONG rb_atomic_t;
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
 typedef unsigned int rb_atomic_t;
-#elif defined(HAVE_STDATOMIC_H)
-# include <stdatomic.h>
-typedef unsigned int rb_atomic_t;
 #else
 # error No atomic operation found
 #endif
 
-/* Memory ordering constants */
-#if defined(HAVE_GCC_ATOMIC_BUILTINS)
-# define RBIMPL_ATOMIC_RELAXED __ATOMIC_RELAXED
-# define RBIMPL_ATOMIC_ACQUIRE __ATOMIC_ACQUIRE
-# define RBIMPL_ATOMIC_RELEASE __ATOMIC_RELEASE
-# define RBIMPL_ATOMIC_ACQ_REL __ATOMIC_ACQ_REL
-# define RBIMPL_ATOMIC_SEQ_CST __ATOMIC_SEQ_CST
-#elif defined(HAVE_STDATOMIC_H)
-# define RBIMPL_ATOMIC_RELAXED memory_order_relaxed
-# define RBIMPL_ATOMIC_ACQUIRE memory_order_acquire
-# define RBIMPL_ATOMIC_RELEASE memory_order_release
-# define RBIMPL_ATOMIC_ACQ_REL memory_order_acq_rel
-# define RBIMPL_ATOMIC_SEQ_CST memory_order_seq_cst
-#else
-/* Dummy values for unsupported platforms */
-# define RBIMPL_ATOMIC_RELAXED 0
-# define RBIMPL_ATOMIC_ACQUIRE 1
-# define RBIMPL_ATOMIC_RELEASE 2
-# define RBIMPL_ATOMIC_ACQ_REL 3
-# define RBIMPL_ATOMIC_SEQ_CST 4
-#endif
 
 /**
  * Atomically replaces the  value pointed by `var` with the  result of addition
@@ -115,7 +91,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the addition.
  * @post    `var` holds `var + val`.
  */
-#define RUBY_ATOMIC_FETCH_ADD(var, val) rbimpl_atomic_fetch_add(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
+#define RUBY_ATOMIC_FETCH_ADD(var, val) rbimpl_atomic_fetch_add(&(var), (val))
 
 /**
  * Atomically  replaces  the  value  pointed   by  `var`  with  the  result  of
@@ -126,7 +102,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the subtraction.
  * @post    `var` holds `var - val`.
  */
-#define RUBY_ATOMIC_FETCH_SUB(var, val) rbimpl_atomic_fetch_sub(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
+#define RUBY_ATOMIC_FETCH_SUB(var, val) rbimpl_atomic_fetch_sub(&(var), (val))
 
 /**
  * Atomically  replaces  the  value  pointed   by  `var`  with  the  result  of
@@ -138,7 +114,7 @@ typedef unsigned int rb_atomic_t;
  * @post    `var` holds `var | val`.
  * @note    For portability, this macro can return void.
  */
-#define RUBY_ATOMIC_OR(var, val) rbimpl_atomic_or(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
+#define RUBY_ATOMIC_OR(var, val) rbimpl_atomic_or(&(var), (val))
 
 /**
  * Atomically replaces the value pointed by  `var` with `val`.  This is just an
@@ -149,7 +125,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the assignment.
  * @post    `var` holds `val`.
  */
-#define RUBY_ATOMIC_EXCHANGE(var, val) rbimpl_atomic_exchange(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
+#define RUBY_ATOMIC_EXCHANGE(var, val) rbimpl_atomic_exchange(&(var), (val))
 
 /**
  * Atomic compare-and-swap.   This stores  `val` to  `var` if  and only  if the

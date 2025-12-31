@@ -13,7 +13,6 @@ THIRD_PARTY_RUBY_EXT_JSON_OBJS = $(THIRD_PARTY_RUBY_EXT_JSON_SRCS:%.c=o/$(MODE)/
 THIRD_PARTY_RUBY_EXT_JSON_A = o/$(MODE)/third_party/ruby/ext/json/json.a
 
 $(THIRD_PARTY_RUBY_EXT_JSON_A):					\
-		third_party/ruby/ext/json/			\
 		$(THIRD_PARTY_RUBY_EXT_JSON_OBJS)
 
 # Compiler flags for JSON extension

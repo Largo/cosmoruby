@@ -42,11 +42,13 @@ cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/json/lib/json*
 # Copy monitor extension Ruby library files
 cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/monitor/lib/monitor.rb cosmo-ruby/lib/ruby/4.0.0/
 
-# Copy pathname extension Ruby library files
-cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/pathname/lib/pathname.rb cosmo-ruby/lib/ruby/4.0.0/
+# Note: pathname is now a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
 
 # Copy socket extension Ruby library files (required for Socket methods)
 cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/socket/lib/socket.rb cosmo-ruby/lib/ruby/4.0.0/
+
+# Copy ripper extension Ruby library files (required for IRB's ruby-lex)
+cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/ripper/lib/ripper* cosmo-ruby/lib/ruby/4.0.0/
 
 # Get DLEXT and ARCH early for patching and plugin copying
 ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
@@ -94,7 +96,6 @@ io/nonblock io/nonblock
 json/ext/generator json
 json/ext/parser json
 monitor monitor
-pathname pathname
 psych psych
 ripper ripper
 io/console io/console
@@ -125,7 +126,6 @@ io/nonblock io/nonblock
 json/ext/generator json
 json/ext/parser json
 monitor monitor
-pathname pathname
 psych psych
 ripper ripper
 io/console io/console
@@ -164,6 +164,43 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 end
 EOF
+
+# Generate default gemspecs for built-in extensions and stdlib
+# Ruby 4.0.0 moved IRB and other components to bundled gems, which depend on
+# built-in extensions and stdlib gems. These need default gemspecs for gem resolution.
+echo "Generating default gemspecs for built-in extensions and stdlib..."
+RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib third_party/ruby/ruby --disable-gems - <<'RUBY'
+require 'rubygems'
+require 'rubygems/specification'
+require 'find'
+
+ruby_root = '/home/groobiest/Code/jart/cosmopolitan/third_party/ruby'
+dest_dir = 'cosmo-ruby/lib/ruby/gems/4.0.0/specifications/default'
+
+# Find all .gemspec files in lib/ and ext/ directories
+gemspec_files = []
+['lib', 'ext'].each do |dir|
+  search_path = File.join(ruby_root, dir)
+  Find.find(search_path) do |path|
+    gemspec_files << path if path.end_with?('.gemspec')
+  end
+end
+
+puts "  Found #{gemspec_files.size} gemspec files"
+
+gemspec_files.each do |gemspec_path|
+  begin
+    spec = Gem::Specification.load(gemspec_path)
+    next unless spec
+
+    output_file = File.join(dest_dir, "#{spec.name}-#{spec.version}.gemspec")
+    File.write(output_file, spec.to_ruby)
+    puts "  Generated: #{spec.name}-#{spec.version}.gemspec"
+  rescue => e
+    puts "  Warning: Failed to generate #{File.basename(gemspec_path)}: #{e.message}"
+  end
+end
+RUBY
 
 #
 mkdir -p cosmo-ruby/usr/share/terminfo

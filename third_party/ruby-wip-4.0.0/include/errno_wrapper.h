@@ -120,6 +120,42 @@
 #define SIG_UNBLOCK 1
 #define SIG_SETMASK 2
 
+/* Socket errno constants */
+#define EMSGSIZE 90
+#define ENOTSOCK 88
+#define EDESTADDRREQ 89
+#define EPROTOTYPE 91
+#define ENOPROTOOPT 92
+#define EPROTONOSUPPORT 93
+#define ESOCKTNOSUPPORT 94
+#define EPFNOSUPPORT 96
+#define EAFNOSUPPORT 97
+#define EADDRINUSE 98
+#define EADDRNOTAVAIL 99
+#define ENETDOWN 100
+#define ENETUNREACH 101
+#define ENETRESET 102
+#define ENOTCONN 107
+#define ESHUTDOWN 108
+#define ETOOMANYREFS 109
+#define EHOSTDOWN 112
+
+/* Socket level constants (Linux x86_64 values) */
+#define SOL_SOCKET 1
+#define SOL_IP 0
+#define SOL_TCP 6
+#define SOL_UDP 17
+#define SOL_IPV6 41
+
+/* Socket control message types (Linux x86_64 values) */
+#define SCM_RIGHTS 1
+#define SCM_TIMESTAMP 29
+#define SCM_TIMESTAMPNS 35
+/* Note: SCM_CREDENTIALS intentionally omitted - requires struct ucred which Cosmopolitan doesn't provide */
+
+/* Address families: Use Cosmopolitan's compile-time constants from af.h */
+/* AF_UNIX, AF_INET, AF_INET6 are already defined as compile-time constants in libc/sysv/consts/af.h */
+
 /* Poll constants (Linux values) */
 #define POLLIN 0x0001
 #define POLLPRI 0x0002
@@ -138,7 +174,7 @@ struct pollfd {
 /* Poll function declaration */
 int poll(struct pollfd *, unsigned long, int);
 
-/* Now block Cosmopolitan's errno.h, fcntl, signal, wait, open, and poll constant headers */
+/* Now block Cosmopolitan's errno.h, fcntl, signal, wait, open, poll, and socket constant headers */
 #define COSMOPOLITAN_LIBC_ERRNO_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_F_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_O_H_
@@ -148,6 +184,9 @@ int poll(struct pollfd *, unsigned long, int);
 #define COSMOPOLITAN_LIBC_ISYSTEM_SYS_POLL_H_
 #define COSMOPOLITAN_LIBC_SOCK_STRUCT_POLLFD_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_POLL_H_
+#define COSMOPOLITAN_LIBC_SYSV_CONSTS_SOL_H_
+#define COSMOPOLITAN_LIBC_SYSV_CONSTS_SCM_H_
+/* Note: NOT blocking AF_H_ because AF_UNIX and AF_INET are already compile-time constants */
 
 /* But we still need errno_t,  __errno_location, and fcntl function */
 typedef int errno_t;

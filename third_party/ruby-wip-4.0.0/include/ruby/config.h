@@ -490,6 +490,6 @@
 #define USE_RJIT 0
 #define RUBY_PLATFORM "x86_64-cosmo"
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
-#define SLIM_STATIC 1
+#define SLIM_STATIC 0
 #define mremap cosmo_mremap
 #endif /* INCLUDE_RUBY_CONFIG_H */

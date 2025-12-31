@@ -13,7 +13,8 @@ module RbConfig
     raise "ruby lib version (4.0.0) doesn't match executable version (#{RUBY_VERSION})"
 
   # Ruby installed directory.
-  TOPDIR = File.dirname(__FILE__).chomp!("/lib/ruby/4.0.0/x86_64-cosmo")
+  # Base directory - use /zip for Cosmopolitan (portable)
+  TOPDIR = '/zip'
   # DESTDIR on make install.
   DESTDIR = '' unless defined? DESTDIR
   # The hash configurations stored.
@@ -24,8 +25,8 @@ module RbConfig
   CONFIG["TEENY"] = "0"
   CONFIG["PATCHLEVEL"] = "0"
   CONFIG["INSTALL"] = '/usr/bin/install -c'
-  CONFIG["EXEEXT"] = ""
-  CONFIG["prefix"] = (TOPDIR || DESTDIR + "/tmp/ruby-cosmo-config")
+  CONFIG["EXEEXT"] = ".com"
+  CONFIG["prefix"] = TOPDIR
   CONFIG["ruby_install_name"] = "$(RUBY_BASE_NAME)"
   CONFIG["RUBY_INSTALL_NAME"] = "$(RUBY_BASE_NAME)"
   CONFIG["RUBY_SO_NAME"] = "$(RUBY_BASE_NAME)"
@@ -140,7 +141,8 @@ module RbConfig
   CONFIG["LINK_SO"] = "\n$(POSTLINK)"
   CONFIG["ADDITIONAL_DLDFLAGS"] = ""
   CONFIG["ENCSTATIC"] = ""
-  CONFIG["EXTSTATIC"] = ""
+  CONFIG["EXTSTATIC"] = "yes"
+  CONFIG["SLIM_STATIC"] = "no"
   CONFIG["ASMEXT"] = "S"
   CONFIG["LIBEXT"] = "a"
   CONFIG["DLEXT"] = "so"
@@ -270,7 +272,7 @@ module RbConfig
   CONFIG["UNICODE_EMOJI_VERSION"] = "15.0"
   CONFIG["platform"] = "$(arch)"
   CONFIG["archdir"] = "$(rubyarchdir)"
-  CONFIG["topdir"] = File.dirname(__FILE__)
+  CONFIG["topdir"] = TOPDIR
   # Almost same with CONFIG. MAKEFILE_CONFIG has other variable
   # reference like below.
   #

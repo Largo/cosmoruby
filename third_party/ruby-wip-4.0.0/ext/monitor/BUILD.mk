@@ -8,7 +8,6 @@ THIRD_PARTY_RUBY_EXT_MONITOR_SRCS = third_party/ruby/ext/monitor/monitor.c
 THIRD_PARTY_RUBY_EXT_MONITOR_OBJS = $(THIRD_PARTY_RUBY_EXT_MONITOR_SRCS:%.c=o/$(MODE)/%.o)
 
 $(THIRD_PARTY_RUBY_EXT_MONITOR_A):			\
-		third_party/ruby/ext/monitor/		\
 		$(THIRD_PARTY_RUBY_EXT_MONITOR_OBJS)
 
 

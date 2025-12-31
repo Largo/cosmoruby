@@ -10,7 +10,6 @@ THIRD_PARTY_RUBY_EXT_ZLIB_SRCS = third_party/ruby/ext/zlib/zlib.c
 THIRD_PARTY_RUBY_EXT_ZLIB_OBJS = $(THIRD_PARTY_RUBY_EXT_ZLIB_SRCS:%.c=o/$(MODE)/%.o)
 
 $(THIRD_PARTY_RUBY_EXT_ZLIB_A):			\
-		third_party/ruby/ext/zlib/		\
 		$(THIRD_PARTY_RUBY_EXT_ZLIB_OBJS)
 
 

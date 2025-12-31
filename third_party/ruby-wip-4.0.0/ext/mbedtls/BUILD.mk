@@ -10,7 +10,6 @@ THIRD_PARTY_RUBY_EXT_MBEDTLS_SRCS = third_party/ruby/ext/mbedtls/mbedtls.c
 THIRD_PARTY_RUBY_EXT_MBEDTLS_OBJS = $(THIRD_PARTY_RUBY_EXT_MBEDTLS_SRCS:%.c=o/$(MODE)/%.o)
 
 $(THIRD_PARTY_RUBY_EXT_MBEDTLS_A):			\
-		third_party/ruby/ext/mbedtls/		\
 		$(THIRD_PARTY_RUBY_EXT_MBEDTLS_OBJS)
 
 

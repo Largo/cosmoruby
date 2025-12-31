@@ -8,7 +8,6 @@ THIRD_PARTY_RUBY_EXT_STRINGIO_SRCS = third_party/ruby/ext/stringio/stringio.c
 THIRD_PARTY_RUBY_EXT_STRINGIO_OBJS = $(THIRD_PARTY_RUBY_EXT_STRINGIO_SRCS:%.c=o/$(MODE)/%.o)
 
 $(THIRD_PARTY_RUBY_EXT_STRINGIO_A):			\
-		third_party/ruby/ext/stringio/		\
 		$(THIRD_PARTY_RUBY_EXT_STRINGIO_OBJS)
 
 
@@ -17,7 +16,8 @@ o/$(MODE)/third_party/ruby/ext/stringio/%.o: private	\
 		-Ithird_party/ruby/include		\
 		-Ithird_party/ruby			\
 		-DRUBY_EXPORT				\
-		-DRUBY_COSMOPOLITAN
+		-DRUBY_COSMOPOLITAN			\
+		-DHAVE_TYPE_RB_IO_MODE_T
 
 $(THIRD_PARTY_RUBY_EXT_STRINGIO_OBJS): third_party/ruby/ext/stringio/BUILD.mk
 

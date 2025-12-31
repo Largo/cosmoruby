@@ -96,6 +96,14 @@ changed |= rewrite(rbconfig) do |t|
   else
     t = t.sub(/CONFIG\["SLIM_STATIC"\]\s*=\s*".*?"/, "CONFIG[\"SLIM_STATIC\"] = \"#{slim_value}\"")
   end
+  # Set TOPDIR to /zip for Cosmopolitan portable executables
+  t = t.sub(/^  TOPDIR = .*$/, "  # Base directory - use /zip for Cosmopolitan (portable)\n  TOPDIR = '/zip'")
+  # Set prefix to TOPDIR (not the fallback expression)
+  t = t.sub(/CONFIG\["prefix"\] = .*$/, 'CONFIG["prefix"] = TOPDIR')
+  # Set topdir to TOPDIR (not File.dirname(__FILE__))
+  t = t.sub(/CONFIG\["topdir"\] = .*$/, 'CONFIG["topdir"] = TOPDIR')
+  # Set EXEEXT to .com for Cosmopolitan APE binaries
+  t = t.sub(/CONFIG\["EXEEXT"\]\s*=\s*".*?"/, 'CONFIG["EXEEXT"] = ".com"')
   t
 end
 

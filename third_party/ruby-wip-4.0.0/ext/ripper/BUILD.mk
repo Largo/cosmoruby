@@ -14,7 +14,6 @@ THIRD_PARTY_RUBY_EXT_RIPPER_OBJS = $(THIRD_PARTY_RUBY_EXT_RIPPER_SRCS:%.c=o/$(MO
 THIRD_PARTY_RUBY_EXT_RIPPER_A = o/$(MODE)/third_party/ruby/ext/ripper/ripper.a
 
 $(THIRD_PARTY_RUBY_EXT_RIPPER_A):				\
-		third_party/ruby/ext/ripper/			\
 		$(THIRD_PARTY_RUBY_EXT_RIPPER_OBJS)
 
 o/$(MODE)/third_party/ruby/ext/ripper/%.o: private		\

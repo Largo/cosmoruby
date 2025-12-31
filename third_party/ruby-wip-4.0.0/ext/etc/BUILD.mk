@@ -8,7 +8,6 @@ THIRD_PARTY_RUBY_EXT_ETC_SRCS = third_party/ruby/ext/etc/etc.c
 THIRD_PARTY_RUBY_EXT_ETC_OBJS = $(THIRD_PARTY_RUBY_EXT_ETC_SRCS:%.c=o/$(MODE)/%.o)
 
 $(THIRD_PARTY_RUBY_EXT_ETC_A):				\
-		third_party/ruby/ext/etc/		\
 		$(THIRD_PARTY_RUBY_EXT_ETC_OBJS)
 
 

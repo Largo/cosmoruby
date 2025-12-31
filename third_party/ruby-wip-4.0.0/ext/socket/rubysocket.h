@@ -511,4 +511,10 @@ const char *inet_ntop(int, const void *, char *, size_t);
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
 #endif
 
+/* Include compile-time socket constants for Cosmopolitan
+ * This MUST come after all system headers to override Cosmopolitan's
+ * runtime constants with compile-time constants for switch statements
+ */
+#include "socket_constants.h"
+
 #endif

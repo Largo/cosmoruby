@@ -1219,6 +1219,27 @@ run_static_ext_init(VALUE vm_ptr, VALUE feature_value)
         ((void (*)(void))init_func)();
         return Qtrue;
     }
+
+    // If the feature looks like a stub path (contains /extensions/),
+    // try looking it up by basename instead.
+    // Stub paths look like: /zip/lib/ruby/4.0.0/extensions/x86_64-cosmo/monitor.so
+    // But static_ext_inits has entries like: monitor.so or io/nonblock.so
+    const char *extensions_marker = "/extensions/";
+    const char *stub_path = strstr(feature, extensions_marker);
+    if (stub_path) {
+        // Find the architecture directory (e.g., "x86_64-cosmo/")
+        const char *after_extensions = stub_path + strlen(extensions_marker);
+        const char *basename = strchr(after_extensions, '/');
+        if (basename) {
+            basename++; // Skip the '/'
+            key = (st_data_t)basename;
+            if (vm->static_ext_inits && st_delete(vm->static_ext_inits, &key, &init_func)) {
+                ((void (*)(void))init_func)();
+                return Qtrue;
+            }
+        }
+    }
+
     return Qfalse;
 }
 

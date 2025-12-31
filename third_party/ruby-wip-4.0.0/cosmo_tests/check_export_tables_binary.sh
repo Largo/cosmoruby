@@ -4,7 +4,7 @@ set -eu
 MODE="${MODE:-}"
 O="o/${MODE}"
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-CHECK="${ROOT}/third_party/ruby-wip-3.4.7/cosmo_tests/check_export_table_binary.rb"
+CHECK="${ROOT}/third_party/ruby-wip-4.0.0/cosmo_tests/check_export_table_binary.rb"
 HOST_RUBY="${HOST_RUBY:-ruby}"
 RUBYOPT="${RUBYOPT:---disable-gems}"
 

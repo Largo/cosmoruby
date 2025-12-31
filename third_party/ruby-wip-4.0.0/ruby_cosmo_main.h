@@ -130,6 +130,14 @@ rb_cosmo_configure_load_path(void)
 	const char *segment;
 	const char *cursor;
 
+	/* Only clear load_path if it's empty - preserve user's -I flags */
+	if (RARRAY_LEN(load_path) == 0) {
+		/* Load path is empty, populate it from RUBYLIB */
+	} else {
+		/* Load path already has entries (from -I flags), don't clear */
+		return;
+	}
+
 	rb_ary_clear(load_path);
 
 	rubylib = getenv("RUBYLIB");

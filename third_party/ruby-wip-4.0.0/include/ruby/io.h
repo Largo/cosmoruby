@@ -22,7 +22,7 @@
 #include <errno.h>
 
 /** @cond INTERNAL_MACRO */
-#if defined(HAVE_POLL)
+#if defined(HAVE_POLL) && !defined(__COSMOPOLITAN__)
 #  ifdef _AIX
 #    define reqevents events
 #    define rtnevents revents
@@ -42,6 +42,7 @@
 #  endif
 #  define RB_WAITFD_OUT POLLOUT
 #else
+#  /* Cosmopolitan: POLLIN et al. are extern const, not compile-time constants */
 #  define RB_WAITFD_IN  0x001
 #  define RB_WAITFD_PRI 0x002
 #  define RB_WAITFD_OUT 0x004

@@ -18,7 +18,7 @@
 ################################################################################
 
 # Common CFLAGS for all Ruby files
-# -DRUBY_SEARCH_PATH=\"/zip/lib/ruby/3.4.0\"
+# -DRUBY_SEARCH_PATH=\"/zip/lib/ruby/4.0.0\"
 $(THIRD_PARTY_RUBY_A_OBJS): private				\
     CFLAGS +=							\
             -Ithird_party/ruby/include				\
@@ -195,10 +195,10 @@ o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\
 o/$(MODE)/third_party/ruby/miniruby.main.o: private		\
     CFLAGS +=							\
             -DRUBY_COSMO_RESET_LOAD_PATH			\
-            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/3.4.0\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\" \
-            -DRUBY_MINI_LIBDIR=\"/zip/lib/ruby/3.4.0\" \
-            -DRUBY_MINI_MONITOR_LIBDIR=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\"
+            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/4.0.0\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\" \
+            -DRUBY_MINI_LIBDIR=\"/zip/lib/ruby/4.0.0\" \
+            -DRUBY_MINI_MONITOR_LIBDIR=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\"
 
 # ruby - filesystem paths (zipless)
 o/$(MODE)/third_party/ruby/ruby.main.zipless.o: private		\
@@ -274,14 +274,14 @@ o/$(MODE)/third_party/ruby/miniruby_exports.o: o/$(MODE)/third_party/ruby/miniru
 o/$(MODE)/third_party/ruby/ruby.main.o: private			\
     CFLAGS +=							\
             -DRUBY_COSMO_RESET_LOAD_PATH			\
-            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/3.4.0\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\"
+            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/4.0.0\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\"
 
 o/$(MODE)/third_party/ruby/irb.main.o: private			\
     CFLAGS +=							\
             -DRUBY_COSMO_RESET_LOAD_PATH			\
-            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/3.4.0\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/3.4.0/x86_64-cosmo\"
+            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/4.0.0\" \
+            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\"
 
 ################################################################################
 # ruby

@@ -87,7 +87,7 @@ RUBY_RBCONFIG_GEN := $(RUBY_GENDIR)/rbconfig.rb
 $(RUBY_RBCONFIG_GEN): $(RUBY_TOOLDIR)/mkconfig.rb $(RUBY_CONFIG_STATUS_SRC) $(RUBY_GENDIR)/config.h | ruby.codegen.dirs
 	@$(RUBY_ENV) $(HOST_RUBY) --disable=gems -C $(RUBY_SRCDIR) tool/mkconfig.rb \
 		-arch=x86_64-linux \
-		-version=3.4.7 \
+		-version=4.0.0 \
 		-install_name=ruby \
 		-so_name=ruby \
 		-unicode_version=15.0.0 \

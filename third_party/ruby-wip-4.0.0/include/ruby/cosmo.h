@@ -16,7 +16,7 @@
  *
  * This function is intentionally a no-op in ALL build modes because Ruby's require
  * mechanism automatically calls rb_provide_feature() after successfully loading any
- * extension (see load.c:1421 in CosmoRuby, load.c:1354 in pristine Ruby 3.4.7).
+ * extension (see load.c:?1421? in CosmoRuby, load.c:?1354? in pristine Ruby 4.0.0).
  *
  * Historical context:
  * - We initially called rb_provide() here in static bare mode, causing duplicate

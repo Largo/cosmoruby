@@ -34,7 +34,8 @@ o/$(MODE)/third_party/ruby/ext/json/parser/%.o: private	\
 		-DRUBY_EXPORT				\
 		-DRUBY_COSMOPOLITAN			\
 		-DHAVE_STRNLEN				\
-		-DHAVE_RB_HASH_BULK_INSERT
+		-DHAVE_RB_HASH_BULK_INSERT		\
+		-DHAVE_RB_STR_TO_INTERNED_STR
 
 $(THIRD_PARTY_RUBY_EXT_JSON_OBJS): third_party/ruby/ext/json/BUILD.mk
 

@@ -2667,7 +2667,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 
 #endif /* !RIPPER */
 
-#line 2671 "parse.c"
+#line 2671 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -2690,7 +2690,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 #  endif
 # endif
 
-#include "parse.h"
+#include "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.h"
 /* Symbol kind.  */
 enum yysymbol_kind_t
 {
@@ -7854,7 +7854,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7858 "parse.c"
+#line 7858 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_module: /* "'module'"  */
@@ -7862,7 +7862,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7866 "parse.c"
+#line 7866 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_def: /* "'def'"  */
@@ -7870,7 +7870,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7874 "parse.c"
+#line 7874 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_undef: /* "'undef'"  */
@@ -7878,7 +7878,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7882 "parse.c"
+#line 7882 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_begin: /* "'begin'"  */
@@ -7886,7 +7886,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7890 "parse.c"
+#line 7890 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_rescue: /* "'rescue'"  */
@@ -7894,7 +7894,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7898 "parse.c"
+#line 7898 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_ensure: /* "'ensure'"  */
@@ -7902,7 +7902,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7906 "parse.c"
+#line 7906 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_end: /* "'end'"  */
@@ -7910,7 +7910,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7914 "parse.c"
+#line 7914 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_if: /* "'if'"  */
@@ -7918,7 +7918,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7922 "parse.c"
+#line 7922 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_unless: /* "'unless'"  */
@@ -7926,7 +7926,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7930 "parse.c"
+#line 7930 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_then: /* "'then'"  */
@@ -7934,7 +7934,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7938 "parse.c"
+#line 7938 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_elsif: /* "'elsif'"  */
@@ -7942,7 +7942,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7946 "parse.c"
+#line 7946 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_else: /* "'else'"  */
@@ -7950,7 +7950,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7954 "parse.c"
+#line 7954 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_case: /* "'case'"  */
@@ -7958,7 +7958,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7962 "parse.c"
+#line 7962 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_when: /* "'when'"  */
@@ -7966,7 +7966,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7970 "parse.c"
+#line 7970 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_while: /* "'while'"  */
@@ -7974,7 +7974,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7978 "parse.c"
+#line 7978 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_until: /* "'until'"  */
@@ -7982,7 +7982,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7986 "parse.c"
+#line 7986 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_for: /* "'for'"  */
@@ -7990,7 +7990,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 7994 "parse.c"
+#line 7994 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_break: /* "'break'"  */
@@ -7998,7 +7998,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8002 "parse.c"
+#line 8002 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_next: /* "'next'"  */
@@ -8006,7 +8006,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8010 "parse.c"
+#line 8010 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_redo: /* "'redo'"  */
@@ -8014,7 +8014,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8018 "parse.c"
+#line 8018 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_retry: /* "'retry'"  */
@@ -8022,7 +8022,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8026 "parse.c"
+#line 8026 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_in: /* "'in'"  */
@@ -8030,7 +8030,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8034 "parse.c"
+#line 8034 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_do: /* "'do'"  */
@@ -8038,7 +8038,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8042 "parse.c"
+#line 8042 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_do_cond: /* "'do' for condition"  */
@@ -8046,7 +8046,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8050 "parse.c"
+#line 8050 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_do_block: /* "'do' for block"  */
@@ -8054,7 +8054,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8058 "parse.c"
+#line 8058 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_do_LAMBDA: /* "'do' for lambda"  */
@@ -8062,7 +8062,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8066 "parse.c"
+#line 8066 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_return: /* "'return'"  */
@@ -8070,7 +8070,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8074 "parse.c"
+#line 8074 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_yield: /* "'yield'"  */
@@ -8078,7 +8078,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8082 "parse.c"
+#line 8082 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_super: /* "'super'"  */
@@ -8086,7 +8086,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8090 "parse.c"
+#line 8090 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_self: /* "'self'"  */
@@ -8094,7 +8094,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8098 "parse.c"
+#line 8098 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_nil: /* "'nil'"  */
@@ -8102,7 +8102,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8106 "parse.c"
+#line 8106 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_true: /* "'true'"  */
@@ -8110,7 +8110,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8114 "parse.c"
+#line 8114 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_false: /* "'false'"  */
@@ -8118,7 +8118,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8122 "parse.c"
+#line 8122 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_and: /* "'and'"  */
@@ -8126,7 +8126,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8130 "parse.c"
+#line 8130 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_or: /* "'or'"  */
@@ -8134,7 +8134,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8138 "parse.c"
+#line 8138 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_not: /* "'not'"  */
@@ -8142,7 +8142,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8146 "parse.c"
+#line 8146 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_modifier_if: /* "'if' modifier"  */
@@ -8150,7 +8150,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8154 "parse.c"
+#line 8154 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_modifier_unless: /* "'unless' modifier"  */
@@ -8158,7 +8158,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8162 "parse.c"
+#line 8162 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_modifier_while: /* "'while' modifier"  */
@@ -8166,7 +8166,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8170 "parse.c"
+#line 8170 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_modifier_until: /* "'until' modifier"  */
@@ -8174,7 +8174,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8178 "parse.c"
+#line 8178 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_modifier_rescue: /* "'rescue' modifier"  */
@@ -8182,7 +8182,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8186 "parse.c"
+#line 8186 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_alias: /* "'alias'"  */
@@ -8190,7 +8190,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8194 "parse.c"
+#line 8194 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_defined: /* "'defined?'"  */
@@ -8198,7 +8198,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8202 "parse.c"
+#line 8202 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_BEGIN: /* "'BEGIN'"  */
@@ -8206,7 +8206,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8210 "parse.c"
+#line 8210 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_END: /* "'END'"  */
@@ -8214,7 +8214,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8218 "parse.c"
+#line 8218 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword__LINE__: /* "'__LINE__'"  */
@@ -8222,7 +8222,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8226 "parse.c"
+#line 8226 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword__FILE__: /* "'__FILE__'"  */
@@ -8230,7 +8230,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8234 "parse.c"
+#line 8234 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword__ENCODING__: /* "'__ENCODING__'"  */
@@ -8238,7 +8238,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8242 "parse.c"
+#line 8242 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tIDENTIFIER: /* "local variable or method"  */
@@ -8246,7 +8246,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8250 "parse.c"
+#line 8250 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tFID: /* "method"  */
@@ -8254,7 +8254,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8258 "parse.c"
+#line 8258 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tGVAR: /* "global variable"  */
@@ -8262,7 +8262,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8266 "parse.c"
+#line 8266 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tIVAR: /* "instance variable"  */
@@ -8270,7 +8270,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8274 "parse.c"
+#line 8274 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tCONSTANT: /* "constant"  */
@@ -8278,7 +8278,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8282 "parse.c"
+#line 8282 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tCVAR: /* "class variable"  */
@@ -8286,7 +8286,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8290 "parse.c"
+#line 8290 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tLABEL: /* "label"  */
@@ -8294,7 +8294,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8298 "parse.c"
+#line 8298 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tINTEGER: /* "integer literal"  */
@@ -8317,7 +8317,7 @@ switch (yykind)
         break;
     }
 }
-#line 8321 "parse.c"
+#line 8321 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tFLOAT: /* "float literal"  */
@@ -8340,7 +8340,7 @@ switch (yykind)
         break;
     }
 }
-#line 8344 "parse.c"
+#line 8344 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tRATIONAL: /* "rational literal"  */
@@ -8363,7 +8363,7 @@ switch (yykind)
         break;
     }
 }
-#line 8367 "parse.c"
+#line 8367 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tIMAGINARY: /* "imaginary literal"  */
@@ -8386,7 +8386,7 @@ switch (yykind)
         break;
     }
 }
-#line 8390 "parse.c"
+#line 8390 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tCHAR: /* "char literal"  */
@@ -8409,7 +8409,7 @@ switch (yykind)
         break;
     }
 }
-#line 8413 "parse.c"
+#line 8413 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tNTH_REF: /* "numbered reference"  */
@@ -8417,7 +8417,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "$%ld", RNODE_NTH_REF(((*yyvaluep).node))->nd_nth);
 }
-#line 8421 "parse.c"
+#line 8421 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tBACK_REF: /* "back reference"  */
@@ -8425,7 +8425,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "$%c", (int)RNODE_BACK_REF(((*yyvaluep).node))->nd_nth);
 }
-#line 8429 "parse.c"
+#line 8429 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tSTRING_CONTENT: /* "literal content"  */
@@ -8448,7 +8448,7 @@ switch (yykind)
         break;
     }
 }
-#line 8452 "parse.c"
+#line 8452 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_69_: /* '.'  */
@@ -8456,7 +8456,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8460 "parse.c"
+#line 8460 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_70_backslash_: /* "backslash"  */
@@ -8464,7 +8464,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8468 "parse.c"
+#line 8468 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_72_escaped_horizontal_tab_: /* "escaped horizontal tab"  */
@@ -8472,7 +8472,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8476 "parse.c"
+#line 8476 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_73_escaped_form_feed_: /* "escaped form feed"  */
@@ -8480,7 +8480,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8484 "parse.c"
+#line 8484 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_74_escaped_carriage_return_: /* "escaped carriage return"  */
@@ -8488,7 +8488,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8492 "parse.c"
+#line 8492 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_75_escaped_vertical_tab_: /* "escaped vertical tab"  */
@@ -8496,7 +8496,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8500 "parse.c"
+#line 8500 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tANDDOT: /* "&."  */
@@ -8504,7 +8504,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8508 "parse.c"
+#line 8508 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tCOLON2: /* "::"  */
@@ -8512,7 +8512,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8516 "parse.c"
+#line 8516 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_tOP_ASGN: /* "operator-assignment"  */
@@ -8520,7 +8520,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8524 "parse.c"
+#line 8524 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_compstmt_top_stmts: /* compstmt_top_stmts  */
@@ -8533,7 +8533,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8537 "parse.c"
+#line 8537 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_top_stmts: /* top_stmts  */
@@ -8546,7 +8546,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8550 "parse.c"
+#line 8550 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_top_stmt: /* top_stmt  */
@@ -8559,7 +8559,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8563 "parse.c"
+#line 8563 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_open: /* block_open  */
@@ -8572,7 +8572,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_exits)))));
     }
 }
-#line 8576 "parse.c"
+#line 8576 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_begin_block: /* begin_block  */
@@ -8585,7 +8585,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8589 "parse.c"
+#line 8589 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_compstmt_stmts: /* compstmt_stmts  */
@@ -8598,7 +8598,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8602 "parse.c"
+#line 8602 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_bodystmt: /* bodystmt  */
@@ -8611,7 +8611,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8615 "parse.c"
+#line 8615 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_stmts: /* stmts  */
@@ -8624,7 +8624,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8628 "parse.c"
+#line 8628 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_stmt_or_begin: /* stmt_or_begin  */
@@ -8637,7 +8637,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8641 "parse.c"
+#line 8641 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_allow_exits: /* allow_exits  */
@@ -8650,7 +8650,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_exits)))));
     }
 }
-#line 8654 "parse.c"
+#line 8654 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_stmt: /* stmt  */
@@ -8663,7 +8663,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8667 "parse.c"
+#line 8667 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_asgn_mrhs: /* asgn_mrhs  */
@@ -8676,7 +8676,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8680 "parse.c"
+#line 8680 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_asgn_command_rhs: /* asgn_command_rhs  */
@@ -8689,7 +8689,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8693 "parse.c"
+#line 8693 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_command_asgn: /* command_asgn  */
@@ -8702,7 +8702,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8706 "parse.c"
+#line 8706 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_op_asgn_command_rhs: /* op_asgn_command_rhs  */
@@ -8715,7 +8715,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8719 "parse.c"
+#line 8719 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_def_endless_method_endless_command: /* def_endless_method_endless_command  */
@@ -8728,7 +8728,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8732 "parse.c"
+#line 8732 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_endless_command: /* endless_command  */
@@ -8741,7 +8741,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8745 "parse.c"
+#line 8745 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_command_rhs: /* command_rhs  */
@@ -8754,7 +8754,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8758 "parse.c"
+#line 8758 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_expr: /* expr  */
@@ -8767,7 +8767,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8771 "parse.c"
+#line 8771 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_def_name: /* def_name  */
@@ -8775,7 +8775,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 8779 "parse.c"
+#line 8779 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_defn_head: /* defn_head  */
@@ -8788,7 +8788,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_def_temp)))));
     }
 }
-#line 8792 "parse.c"
+#line 8792 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_defs_head: /* defs_head  */
@@ -8801,7 +8801,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_def_temp)))));
     }
 }
-#line 8805 "parse.c"
+#line 8805 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_value_expr_expr: /* value_expr_expr  */
@@ -8814,7 +8814,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8818 "parse.c"
+#line 8818 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_expr_value: /* expr_value  */
@@ -8827,7 +8827,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8831 "parse.c"
+#line 8831 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_expr_value_do: /* expr_value_do  */
@@ -8840,7 +8840,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8844 "parse.c"
+#line 8844 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_command_call: /* command_call  */
@@ -8853,7 +8853,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8857 "parse.c"
+#line 8857 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_value_expr_command_call: /* value_expr_command_call  */
@@ -8866,7 +8866,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8870 "parse.c"
+#line 8870 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_command_call_value: /* command_call_value  */
@@ -8879,7 +8879,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8883 "parse.c"
+#line 8883 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_command: /* block_command  */
@@ -8892,7 +8892,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8896 "parse.c"
+#line 8896 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_cmd_brace_block: /* cmd_brace_block  */
@@ -8905,7 +8905,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8909 "parse.c"
+#line 8909 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_fcall: /* fcall  */
@@ -8918,7 +8918,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_fcall)))));
     }
 }
-#line 8922 "parse.c"
+#line 8922 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_command: /* command  */
@@ -8931,7 +8931,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8935 "parse.c"
+#line 8935 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs: /* mlhs  */
@@ -8944,7 +8944,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_masgn)))));
     }
 }
-#line 8948 "parse.c"
+#line 8948 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_inner: /* mlhs_inner  */
@@ -8957,7 +8957,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_masgn)))));
     }
 }
-#line 8961 "parse.c"
+#line 8961 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_basic: /* mlhs_basic  */
@@ -8970,7 +8970,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_masgn)))));
     }
 }
-#line 8974 "parse.c"
+#line 8974 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_items_mlhs_item: /* mlhs_items_mlhs_item  */
@@ -8983,7 +8983,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 8987 "parse.c"
+#line 8987 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_item: /* mlhs_item  */
@@ -8996,7 +8996,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9000 "parse.c"
+#line 9000 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_head: /* mlhs_head  */
@@ -9009,7 +9009,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9013 "parse.c"
+#line 9013 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_node: /* mlhs_node  */
@@ -9022,7 +9022,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9026 "parse.c"
+#line 9026 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_lhs: /* lhs  */
@@ -9035,7 +9035,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9039 "parse.c"
+#line 9039 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_cname: /* cname  */
@@ -9043,7 +9043,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9047 "parse.c"
+#line 9047 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_cpath: /* cpath  */
@@ -9056,7 +9056,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9060 "parse.c"
+#line 9060 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_fname: /* fname  */
@@ -9064,7 +9064,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9068 "parse.c"
+#line 9068 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_fitem: /* fitem  */
@@ -9077,7 +9077,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9081 "parse.c"
+#line 9081 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_undef_list: /* undef_list  */
@@ -9090,7 +9090,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9094 "parse.c"
+#line 9094 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_op: /* op  */
@@ -9098,7 +9098,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9102 "parse.c"
+#line 9102 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_reswords: /* reswords  */
@@ -9106,7 +9106,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9110 "parse.c"
+#line 9110 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_asgn_arg_rhs: /* asgn_arg_rhs  */
@@ -9119,7 +9119,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9123 "parse.c"
+#line 9123 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_arg: /* arg  */
@@ -9132,7 +9132,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9136 "parse.c"
+#line 9136 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_op_asgn_arg_rhs: /* op_asgn_arg_rhs  */
@@ -9145,7 +9145,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9149 "parse.c"
+#line 9149 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_range_expr_arg: /* range_expr_arg  */
@@ -9158,7 +9158,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9162 "parse.c"
+#line 9162 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_def_endless_method_endless_arg: /* def_endless_method_endless_arg  */
@@ -9171,7 +9171,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9175 "parse.c"
+#line 9175 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_ternary: /* ternary  */
@@ -9184,7 +9184,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9188 "parse.c"
+#line 9188 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_endless_arg: /* endless_arg  */
@@ -9197,7 +9197,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9201 "parse.c"
+#line 9201 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_relop: /* relop  */
@@ -9205,7 +9205,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9209 "parse.c"
+#line 9209 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_rel_expr: /* rel_expr  */
@@ -9218,7 +9218,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9222 "parse.c"
+#line 9222 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_value_expr_arg: /* value_expr_arg  */
@@ -9231,7 +9231,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9235 "parse.c"
+#line 9235 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_arg_value: /* arg_value  */
@@ -9244,7 +9244,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9248 "parse.c"
+#line 9248 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_aref_args: /* aref_args  */
@@ -9257,7 +9257,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9261 "parse.c"
+#line 9261 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_arg_rhs: /* arg_rhs  */
@@ -9270,7 +9270,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9274 "parse.c"
+#line 9274 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_paren_args: /* paren_args  */
@@ -9283,7 +9283,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9287 "parse.c"
+#line 9287 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_paren_args: /* opt_paren_args  */
@@ -9296,7 +9296,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9300 "parse.c"
+#line 9300 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_call_args: /* opt_call_args  */
@@ -9309,7 +9309,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9313 "parse.c"
+#line 9313 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_value_expr_command: /* value_expr_command  */
@@ -9322,7 +9322,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9326 "parse.c"
+#line 9326 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_call_args: /* call_args  */
@@ -9335,7 +9335,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9339 "parse.c"
+#line 9339 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_command_args: /* command_args  */
@@ -9348,7 +9348,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9352 "parse.c"
+#line 9352 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_arg: /* block_arg  */
@@ -9361,7 +9361,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_block_pass)))));
     }
 }
-#line 9365 "parse.c"
+#line 9365 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_block_arg: /* opt_block_arg  */
@@ -9374,7 +9374,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_block_pass)))));
     }
 }
-#line 9378 "parse.c"
+#line 9378 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_args: /* args  */
@@ -9387,7 +9387,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9391 "parse.c"
+#line 9391 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_arg_splat: /* arg_splat  */
@@ -9400,7 +9400,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9404 "parse.c"
+#line 9404 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mrhs_arg: /* mrhs_arg  */
@@ -9413,7 +9413,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9417 "parse.c"
+#line 9417 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mrhs: /* mrhs  */
@@ -9426,7 +9426,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9430 "parse.c"
+#line 9430 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_primary: /* primary  */
@@ -9439,7 +9439,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9443 "parse.c"
+#line 9443 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_value_expr_primary: /* value_expr_primary  */
@@ -9452,7 +9452,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9456 "parse.c"
+#line 9456 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_primary_value: /* primary_value  */
@@ -9465,7 +9465,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9469 "parse.c"
+#line 9469 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_k_while: /* k_while  */
@@ -9478,7 +9478,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_exits)))));
     }
 }
-#line 9482 "parse.c"
+#line 9482 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_k_until: /* k_until  */
@@ -9491,7 +9491,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_exits)))));
     }
 }
-#line 9495 "parse.c"
+#line 9495 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_k_for: /* k_for  */
@@ -9504,7 +9504,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_exits)))));
     }
 }
-#line 9508 "parse.c"
+#line 9508 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_k_def: /* k_def  */
@@ -9517,7 +9517,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_def_temp)))));
     }
 }
-#line 9521 "parse.c"
+#line 9521 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_do: /* do  */
@@ -9525,7 +9525,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9529 "parse.c"
+#line 9529 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_if_tail: /* if_tail  */
@@ -9538,7 +9538,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9542 "parse.c"
+#line 9542 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_else: /* opt_else  */
@@ -9551,7 +9551,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9555 "parse.c"
+#line 9555 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_for_var: /* for_var  */
@@ -9564,7 +9564,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9568 "parse.c"
+#line 9568 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_marg: /* f_marg  */
@@ -9577,7 +9577,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9581 "parse.c"
+#line 9581 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_mlhs_items_f_marg: /* mlhs_items_f_marg  */
@@ -9590,7 +9590,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9594 "parse.c"
+#line 9594 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_margs: /* f_margs  */
@@ -9603,7 +9603,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_masgn)))));
     }
 }
-#line 9607 "parse.c"
+#line 9607 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_rest_marg: /* f_rest_marg  */
@@ -9616,7 +9616,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9620 "parse.c"
+#line 9620 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_any_kwrest: /* f_any_kwrest  */
@@ -9624,7 +9624,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9628 "parse.c"
+#line 9628 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_kw_primary_value: /* f_kw_primary_value  */
@@ -9637,7 +9637,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_kw_arg)))));
     }
 }
-#line 9641 "parse.c"
+#line 9641 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_kwarg_primary_value: /* f_kwarg_primary_value  */
@@ -9650,7 +9650,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_kw_arg)))));
     }
 }
-#line 9654 "parse.c"
+#line 9654 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_args_tail_basic_primary_value: /* args_tail_basic_primary_value  */
@@ -9663,7 +9663,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9667 "parse.c"
+#line 9667 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_args_tail: /* block_args_tail  */
@@ -9676,7 +9676,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9680 "parse.c"
+#line 9680 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_excessed_comma: /* excessed_comma  */
@@ -9684,7 +9684,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9688 "parse.c"
+#line 9688 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_opt_primary_value: /* f_opt_primary_value  */
@@ -9697,7 +9697,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_opt_arg)))));
     }
 }
-#line 9701 "parse.c"
+#line 9701 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_opt_arg_primary_value: /* f_opt_arg_primary_value  */
@@ -9710,7 +9710,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_opt_arg)))));
     }
 }
-#line 9714 "parse.c"
+#line 9714 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_args_tail_block_args_tail: /* opt_args_tail_block_args_tail  */
@@ -9723,7 +9723,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9727 "parse.c"
+#line 9727 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_param: /* block_param  */
@@ -9736,7 +9736,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9740 "parse.c"
+#line 9740 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_block_param_def: /* opt_block_param_def  */
@@ -9749,7 +9749,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9753 "parse.c"
+#line 9753 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_param_def: /* block_param_def  */
@@ -9762,7 +9762,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9766 "parse.c"
+#line 9766 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_block_param: /* opt_block_param  */
@@ -9775,7 +9775,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9779 "parse.c"
+#line 9779 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_bv_decl: /* opt_bv_decl  */
@@ -9783,7 +9783,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9787 "parse.c"
+#line 9787 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_bv_decls: /* bv_decls  */
@@ -9791,7 +9791,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9795 "parse.c"
+#line 9795 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_bvar: /* bvar  */
@@ -9799,7 +9799,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9803 "parse.c"
+#line 9803 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_numparam: /* numparam  */
@@ -9812,7 +9812,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9816 "parse.c"
+#line 9816 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_it_id: /* it_id  */
@@ -9820,7 +9820,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 9824 "parse.c"
+#line 9824 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_lambda: /* lambda  */
@@ -9833,7 +9833,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9837 "parse.c"
+#line 9837 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_larglist: /* f_larglist  */
@@ -9846,7 +9846,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 9850 "parse.c"
+#line 9850 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_do_block: /* do_block  */
@@ -9859,7 +9859,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9863 "parse.c"
+#line 9863 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_block_call: /* block_call  */
@@ -9872,7 +9872,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9876 "parse.c"
+#line 9876 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_method_call: /* method_call  */
@@ -9885,7 +9885,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9889 "parse.c"
+#line 9889 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_brace_block: /* brace_block  */
@@ -9898,7 +9898,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9902 "parse.c"
+#line 9902 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_brace_body: /* brace_body  */
@@ -9911,7 +9911,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9915 "parse.c"
+#line 9915 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_do_body: /* do_body  */
@@ -9924,7 +9924,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9928 "parse.c"
+#line 9928 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_case_args: /* case_args  */
@@ -9937,7 +9937,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9941 "parse.c"
+#line 9941 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_case_body: /* case_body  */
@@ -9950,7 +9950,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9954 "parse.c"
+#line 9954 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_cases: /* cases  */
@@ -9963,7 +9963,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9967 "parse.c"
+#line 9967 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_case_body: /* p_case_body  */
@@ -9976,7 +9976,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9980 "parse.c"
+#line 9980 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_cases: /* p_cases  */
@@ -9989,7 +9989,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 9993 "parse.c"
+#line 9993 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_top_expr: /* p_top_expr  */
@@ -10002,7 +10002,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10006 "parse.c"
+#line 10006 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_top_expr_body: /* p_top_expr_body  */
@@ -10015,7 +10015,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10019 "parse.c"
+#line 10019 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_expr: /* p_expr  */
@@ -10028,7 +10028,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10032 "parse.c"
+#line 10032 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_as: /* p_as  */
@@ -10041,7 +10041,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10045 "parse.c"
+#line 10045 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_alt: /* p_alt  */
@@ -10054,7 +10054,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10058 "parse.c"
+#line 10058 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_expr_basic: /* p_expr_basic  */
@@ -10067,7 +10067,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10071 "parse.c"
+#line 10071 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_args: /* p_args  */
@@ -10080,7 +10080,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10084 "parse.c"
+#line 10084 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_args_head: /* p_args_head  */
@@ -10093,7 +10093,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10097 "parse.c"
+#line 10097 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_args_tail: /* p_args_tail  */
@@ -10106,7 +10106,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10110 "parse.c"
+#line 10110 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_find: /* p_find  */
@@ -10119,7 +10119,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10123 "parse.c"
+#line 10123 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_rest: /* p_rest  */
@@ -10132,7 +10132,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10136 "parse.c"
+#line 10136 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_args_post: /* p_args_post  */
@@ -10145,7 +10145,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10149 "parse.c"
+#line 10149 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_arg: /* p_arg  */
@@ -10158,7 +10158,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10162 "parse.c"
+#line 10162 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_kwargs: /* p_kwargs  */
@@ -10171,7 +10171,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10175 "parse.c"
+#line 10175 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_kwarg: /* p_kwarg  */
@@ -10184,7 +10184,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10188 "parse.c"
+#line 10188 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_kw: /* p_kw  */
@@ -10197,7 +10197,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10201 "parse.c"
+#line 10201 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_kw_label: /* p_kw_label  */
@@ -10205,7 +10205,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10209 "parse.c"
+#line 10209 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_kwrest: /* p_kwrest  */
@@ -10213,7 +10213,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10217 "parse.c"
+#line 10217 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_kwnorest: /* p_kwnorest  */
@@ -10221,7 +10221,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10225 "parse.c"
+#line 10225 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_any_kwrest: /* p_any_kwrest  */
@@ -10229,7 +10229,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10233 "parse.c"
+#line 10233 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_value: /* p_value  */
@@ -10242,7 +10242,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10246 "parse.c"
+#line 10246 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_range_expr_p_primitive: /* range_expr_p_primitive  */
@@ -10255,7 +10255,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10259 "parse.c"
+#line 10259 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_primitive: /* p_primitive  */
@@ -10268,7 +10268,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10272 "parse.c"
+#line 10272 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_variable: /* p_variable  */
@@ -10281,7 +10281,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10285 "parse.c"
+#line 10285 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_var_ref: /* p_var_ref  */
@@ -10294,7 +10294,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10298 "parse.c"
+#line 10298 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_expr_ref: /* p_expr_ref  */
@@ -10307,7 +10307,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10311 "parse.c"
+#line 10311 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_p_const: /* p_const  */
@@ -10320,7 +10320,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10324 "parse.c"
+#line 10324 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_rescue: /* opt_rescue  */
@@ -10333,7 +10333,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10337 "parse.c"
+#line 10337 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_exc_list: /* exc_list  */
@@ -10346,7 +10346,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10350 "parse.c"
+#line 10350 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_exc_var: /* exc_var  */
@@ -10359,7 +10359,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10363 "parse.c"
+#line 10363 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_ensure: /* opt_ensure  */
@@ -10372,7 +10372,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10376 "parse.c"
+#line 10376 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_literal: /* literal  */
@@ -10385,7 +10385,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10389 "parse.c"
+#line 10389 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_strings: /* strings  */
@@ -10398,7 +10398,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10402 "parse.c"
+#line 10402 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_string: /* string  */
@@ -10411,7 +10411,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10415 "parse.c"
+#line 10415 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_string1: /* string1  */
@@ -10424,7 +10424,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10428 "parse.c"
+#line 10428 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_xstring: /* xstring  */
@@ -10437,7 +10437,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10441 "parse.c"
+#line 10441 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_regexp: /* regexp  */
@@ -10450,7 +10450,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10454 "parse.c"
+#line 10454 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_words_tWORDS_BEG_word_list: /* words_tWORDS_BEG_word_list  */
@@ -10463,7 +10463,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10467 "parse.c"
+#line 10467 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_words: /* words  */
@@ -10476,7 +10476,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10480 "parse.c"
+#line 10480 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_word_list: /* word_list  */
@@ -10489,7 +10489,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10493 "parse.c"
+#line 10493 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_word: /* word  */
@@ -10502,7 +10502,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10506 "parse.c"
+#line 10506 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_words_tSYMBOLS_BEG_symbol_list: /* words_tSYMBOLS_BEG_symbol_list  */
@@ -10515,7 +10515,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10519 "parse.c"
+#line 10519 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_symbols: /* symbols  */
@@ -10528,7 +10528,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10532 "parse.c"
+#line 10532 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_symbol_list: /* symbol_list  */
@@ -10541,7 +10541,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10545 "parse.c"
+#line 10545 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_words_tQWORDS_BEG_qword_list: /* words_tQWORDS_BEG_qword_list  */
@@ -10554,7 +10554,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10558 "parse.c"
+#line 10558 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_qwords: /* qwords  */
@@ -10567,7 +10567,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10571 "parse.c"
+#line 10571 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_words_tQSYMBOLS_BEG_qsym_list: /* words_tQSYMBOLS_BEG_qsym_list  */
@@ -10580,7 +10580,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10584 "parse.c"
+#line 10584 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_qsymbols: /* qsymbols  */
@@ -10593,7 +10593,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10597 "parse.c"
+#line 10597 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_qword_list: /* qword_list  */
@@ -10606,7 +10606,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10610 "parse.c"
+#line 10610 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_qsym_list: /* qsym_list  */
@@ -10619,7 +10619,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10623 "parse.c"
+#line 10623 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_string_contents: /* string_contents  */
@@ -10632,7 +10632,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10636 "parse.c"
+#line 10636 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_xstring_contents: /* xstring_contents  */
@@ -10645,7 +10645,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10649 "parse.c"
+#line 10649 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_regexp_contents: /* regexp_contents  */
@@ -10658,7 +10658,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10662 "parse.c"
+#line 10662 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_string_content: /* string_content  */
@@ -10671,7 +10671,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10675 "parse.c"
+#line 10675 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_string_dvar: /* string_dvar  */
@@ -10684,7 +10684,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10688 "parse.c"
+#line 10688 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_symbol: /* symbol  */
@@ -10697,7 +10697,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10701 "parse.c"
+#line 10701 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_ssym: /* ssym  */
@@ -10710,7 +10710,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10714 "parse.c"
+#line 10714 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_sym: /* sym  */
@@ -10718,7 +10718,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10722 "parse.c"
+#line 10722 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_dsym: /* dsym  */
@@ -10731,7 +10731,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10735 "parse.c"
+#line 10735 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_numeric: /* numeric  */
@@ -10744,7 +10744,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10748 "parse.c"
+#line 10748 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_simple_numeric: /* simple_numeric  */
@@ -10757,7 +10757,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10761 "parse.c"
+#line 10761 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_nonlocal_var: /* nonlocal_var  */
@@ -10765,7 +10765,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10769 "parse.c"
+#line 10769 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_user_variable: /* user_variable  */
@@ -10773,7 +10773,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10777 "parse.c"
+#line 10777 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_keyword_variable: /* keyword_variable  */
@@ -10781,7 +10781,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10785 "parse.c"
+#line 10785 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_var_ref: /* var_ref  */
@@ -10794,7 +10794,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10798 "parse.c"
+#line 10798 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_var_lhs: /* var_lhs  */
@@ -10807,7 +10807,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10811 "parse.c"
+#line 10811 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_backref: /* backref  */
@@ -10820,7 +10820,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10824 "parse.c"
+#line 10824 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_superclass: /* superclass  */
@@ -10833,7 +10833,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 10837 "parse.c"
+#line 10837 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_opt_paren_args: /* f_opt_paren_args  */
@@ -10846,7 +10846,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10850 "parse.c"
+#line 10850 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_paren_args: /* f_paren_args  */
@@ -10859,7 +10859,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10863 "parse.c"
+#line 10863 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_arglist: /* f_arglist  */
@@ -10872,7 +10872,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10876 "parse.c"
+#line 10876 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_kw_arg_value: /* f_kw_arg_value  */
@@ -10885,7 +10885,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_kw_arg)))));
     }
 }
-#line 10889 "parse.c"
+#line 10889 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_kwarg_arg_value: /* f_kwarg_arg_value  */
@@ -10898,7 +10898,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_kw_arg)))));
     }
 }
-#line 10902 "parse.c"
+#line 10902 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_args_tail_basic_arg_value: /* args_tail_basic_arg_value  */
@@ -10911,7 +10911,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10915 "parse.c"
+#line 10915 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_args_tail: /* args_tail  */
@@ -10924,7 +10924,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10928 "parse.c"
+#line 10928 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_opt_arg_value: /* f_opt_arg_value  */
@@ -10937,7 +10937,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_opt_arg)))));
     }
 }
-#line 10941 "parse.c"
+#line 10941 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_opt_arg_arg_value: /* f_opt_arg_arg_value  */
@@ -10950,7 +10950,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_opt_arg)))));
     }
 }
-#line 10954 "parse.c"
+#line 10954 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_args_tail_args_tail: /* opt_args_tail_args_tail  */
@@ -10963,7 +10963,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10967 "parse.c"
+#line 10967 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_args: /* f_args  */
@@ -10976,7 +10976,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args)))));
     }
 }
-#line 10980 "parse.c"
+#line 10980 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_args_forward: /* args_forward  */
@@ -10984,7 +10984,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10988 "parse.c"
+#line 10988 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_bad_arg: /* f_bad_arg  */
@@ -10992,7 +10992,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 10996 "parse.c"
+#line 10996 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_norm_arg: /* f_norm_arg  */
@@ -11000,7 +11000,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11004 "parse.c"
+#line 11004 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_arg_asgn: /* f_arg_asgn  */
@@ -11008,7 +11008,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11012 "parse.c"
+#line 11012 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_arg_item: /* f_arg_item  */
@@ -11021,7 +11021,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args_aux)))));
     }
 }
-#line 11025 "parse.c"
+#line 11025 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_arg: /* f_arg  */
@@ -11034,7 +11034,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node_args_aux)))));
     }
 }
-#line 11038 "parse.c"
+#line 11038 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_label: /* f_label  */
@@ -11042,7 +11042,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11046 "parse.c"
+#line 11046 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_no_kwarg: /* f_no_kwarg  */
@@ -11050,7 +11050,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11054 "parse.c"
+#line 11054 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_kwrest: /* f_kwrest  */
@@ -11058,7 +11058,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11062 "parse.c"
+#line 11062 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_rest_arg: /* f_rest_arg  */
@@ -11066,7 +11066,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11070 "parse.c"
+#line 11070 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_f_block_arg: /* f_block_arg  */
@@ -11074,7 +11074,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11078 "parse.c"
+#line 11078 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_opt_f_block_arg: /* opt_f_block_arg  */
@@ -11082,7 +11082,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11086 "parse.c"
+#line 11086 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_value_expr_singleton_expr: /* value_expr_singleton_expr  */
@@ -11095,7 +11095,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11099 "parse.c"
+#line 11099 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_singleton: /* singleton  */
@@ -11108,7 +11108,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11112 "parse.c"
+#line 11112 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_singleton_expr: /* singleton_expr  */
@@ -11121,7 +11121,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11125 "parse.c"
+#line 11125 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_assoc_list: /* assoc_list  */
@@ -11134,7 +11134,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11138 "parse.c"
+#line 11138 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_assocs: /* assocs  */
@@ -11147,7 +11147,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11151 "parse.c"
+#line 11151 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_assoc: /* assoc  */
@@ -11160,7 +11160,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11164 "parse.c"
+#line 11164 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_operation2: /* operation2  */
@@ -11168,7 +11168,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11172 "parse.c"
+#line 11172 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_operation3: /* operation3  */
@@ -11176,7 +11176,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11180 "parse.c"
+#line 11180 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_dot_or_colon: /* dot_or_colon  */
@@ -11184,7 +11184,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11188 "parse.c"
+#line 11188 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_call_op: /* call_op  */
@@ -11192,7 +11192,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11196 "parse.c"
+#line 11196 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_call_op2: /* call_op2  */
@@ -11200,7 +11200,7 @@ switch (yykind)
          {
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str(((*yyvaluep).id)));
 }
-#line 11204 "parse.c"
+#line 11204 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_none: /* none  */
@@ -11213,7 +11213,7 @@ switch (yykind)
         rb_parser_printf(p, "%s", parser_node_name(nd_type(RNODE(((*yyvaluep).node)))));
     }
 }
-#line 11217 "parse.c"
+#line 11217 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
       default:
@@ -11620,7 +11620,7 @@ yydestruct (const char *yymsg,
          {
     if (CASE_LABELS_ENABLED_P(((*yyvaluep).labels))) st_free_table(((*yyvaluep).labels));
 }
-#line 11624 "parse.c"
+#line 11624 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
     case YYSYMBOL_259_17: /* @17  */
@@ -11628,7 +11628,7 @@ yydestruct (const char *yymsg,
          {
     if (CASE_LABELS_ENABLED_P(((*yyvaluep).labels))) st_free_table(((*yyvaluep).labels));
 }
-#line 11632 "parse.c"
+#line 11632 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
         break;
 
       default:
@@ -11736,7 +11736,7 @@ YYLTYPE yylloc = yyloc_default;
     RUBY_SET_YYLLOC_OF_NONE(yylloc);
 }
 
-#line 11740 "parse.c"
+#line 11740 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
   yylsp[0] = yylloc;
   goto yysetstate;
@@ -11910,7 +11910,7 @@ yybackup:
         /* %after-shift code. */
 #line 2664 "parse.y"
         {after_shift(p);}
-#line 11914 "parse.c"
+#line 11914 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
 
   /* Discard the shifted token.  */
@@ -11947,7 +11947,7 @@ yyreduce:
         /* %before-reduce function. */
 #line 2665 "parse.y"
         {before_reduce(yylen, p);}
-#line 11951 "parse.c"
+#line 11951 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
 
   /* Default location. */
@@ -11964,7 +11964,7 @@ yyreduce:
                         /* jumps are possible in the top-level loop. */
                         if (!ifndef_ripper(p->do_loop) + 0) init_block_exit(p);
                     }
-#line 11968 "parse.c"
+#line 11968 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 5: /* compstmt_top_stmts: top_stmts option_terms  */
@@ -11972,7 +11972,7 @@ yyreduce:
                         {
                             void_stmts(p, (yyval.node) = (yyvsp[-1].node));
                         }
-#line 11976 "parse.c"
+#line 11976 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 6: /* program: $@1 compstmt_top_stmts  */
@@ -11994,7 +11994,7 @@ yyreduce:
                     /*% ripper[final]: program!($:2) %*/
                         local_pop(p);
                     }
-#line 11998 "parse.c"
+#line 11998 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 7: /* top_stmts: none  */
@@ -12003,7 +12003,7 @@ yyreduce:
                         (yyval.node) = NEW_BEGIN(0, &(yyloc));
                     /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
                     }
-#line 12007 "parse.c"
+#line 12007 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 8: /* top_stmts: top_stmt  */
@@ -12012,7 +12012,7 @@ yyreduce:
                         (yyval.node) = newline_node((yyvsp[0].node));
                     /*% ripper: stmts_add!(stmts_new!, $:1) %*/
                     }
-#line 12016 "parse.c"
+#line 12016 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 9: /* top_stmts: top_stmts terms top_stmt  */
@@ -12021,7 +12021,7 @@ yyreduce:
                         (yyval.node) = block_append(p, (yyvsp[-2].node), newline_node((yyvsp[0].node)));
                     /*% ripper: stmts_add!($:1, $:3) %*/
                     }
-#line 12025 "parse.c"
+#line 12025 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 10: /* top_stmt: stmt  */
@@ -12030,7 +12030,7 @@ yyreduce:
                         clear_block_exit(p, true);
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 12034 "parse.c"
+#line 12034 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 11: /* top_stmt: "'BEGIN'" begin_block  */
@@ -12039,13 +12039,13 @@ yyreduce:
                         (yyval.node) = (yyvsp[0].node);
                     /*% ripper: $:2 %*/
                     }
-#line 12043 "parse.c"
+#line 12043 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 12: /* block_open: '{'  */
 #line 3215 "parse.y"
                  {(yyval.node_exits) = init_block_exit(p);}
-#line 12049 "parse.c"
+#line 12049 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 13: /* begin_block: block_open compstmt_top_stmts '}'  */
@@ -12057,7 +12057,7 @@ yyreduce:
                         (yyval.node) = NEW_BEGIN(0, &(yyloc));
                     /*% ripper: BEGIN!($:2) %*/
                     }
-#line 12061 "parse.c"
+#line 12061 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 14: /* compstmt_stmts: stmts option_terms  */
@@ -12065,7 +12065,7 @@ yyreduce:
                         {
                             void_stmts(p, (yyval.node) = (yyvsp[-1].node));
                         }
-#line 12069 "parse.c"
+#line 12069 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 15: /* $@2: %empty  */
@@ -12074,7 +12074,7 @@ yyreduce:
                         if (!(yyvsp[-1].node)) yyerror1(&(yylsp[0]), "else without rescue is useless");
                         next_rescue_context(&p->ctxt, &(yyvsp[-2].ctxt), after_else);
                     }
-#line 12078 "parse.c"
+#line 12078 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 16: /* $@3: %empty  */
@@ -12082,7 +12082,7 @@ yyreduce:
                     {
                         next_rescue_context(&p->ctxt, &(yyvsp[-4].ctxt), after_ensure);
                     }
-#line 12086 "parse.c"
+#line 12086 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 17: /* bodystmt: compstmt_stmts lex_ctxt opt_rescue k_else $@2 compstmt_stmts $@3 opt_ensure  */
@@ -12091,7 +12091,7 @@ yyreduce:
                         (yyval.node) = new_bodystmt(p, (yyvsp[-7].node), (yyvsp[-5].node), (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: bodystmt!($:body, $:opt_rescue, $:elsebody, $:opt_ensure) %*/
                     }
-#line 12095 "parse.c"
+#line 12095 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 18: /* $@4: %empty  */
@@ -12099,7 +12099,7 @@ yyreduce:
                     {
                         next_rescue_context(&p->ctxt, &(yyvsp[-1].ctxt), after_ensure);
                     }
-#line 12103 "parse.c"
+#line 12103 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 19: /* bodystmt: compstmt_stmts lex_ctxt opt_rescue $@4 opt_ensure  */
@@ -12108,7 +12108,7 @@ yyreduce:
                         (yyval.node) = new_bodystmt(p, (yyvsp[-4].node), (yyvsp[-2].node), 0, (yyvsp[0].node), &(yyloc));
                     /*% ripper: bodystmt!($:body, $:opt_rescue, Qnil, $:opt_ensure) %*/
                     }
-#line 12112 "parse.c"
+#line 12112 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 20: /* stmts: none  */
@@ -12117,7 +12117,7 @@ yyreduce:
                         (yyval.node) = NEW_BEGIN(0, &(yyloc));
                     /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
                     }
-#line 12121 "parse.c"
+#line 12121 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 21: /* stmts: stmt_or_begin  */
@@ -12126,7 +12126,7 @@ yyreduce:
                         (yyval.node) = newline_node((yyvsp[0].node));
                     /*% ripper: stmts_add!(stmts_new!, $:1) %*/
                     }
-#line 12130 "parse.c"
+#line 12130 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 22: /* stmts: stmts terms stmt_or_begin  */
@@ -12135,7 +12135,7 @@ yyreduce:
                         (yyval.node) = block_append(p, (yyvsp[-2].node), newline_node((yyvsp[0].node)));
                     /*% ripper: stmts_add!($:1, $:3) %*/
                     }
-#line 12139 "parse.c"
+#line 12139 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 24: /* $@5: %empty  */
@@ -12143,7 +12143,7 @@ yyreduce:
                     {
                         yyerror1(&(yylsp[0]), "BEGIN is permitted only at toplevel");
                     }
-#line 12147 "parse.c"
+#line 12147 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 25: /* stmt_or_begin: "'BEGIN'" $@5 begin_block  */
@@ -12151,13 +12151,13 @@ yyreduce:
                     {
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 12155 "parse.c"
+#line 12155 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 26: /* allow_exits: %empty  */
 #line 3285 "parse.y"
               {(yyval.node_exits) = allow_block_exit(p);}
-#line 12161 "parse.c"
+#line 12161 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 27: /* k_END: "'END'" lex_ctxt  */
@@ -12167,13 +12167,13 @@ yyreduce:
                         p->ctxt.in_rescue = before_rescue;
                     /*% ripper: $:2 %*/
                     }
-#line 12171 "parse.c"
+#line 12171 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 28: /* $@6: %empty  */
 #line 3294 "parse.y"
                             {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);}
-#line 12177 "parse.c"
+#line 12177 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 29: /* stmt: "'alias'" fitem $@6 fitem  */
@@ -12182,7 +12182,7 @@ yyreduce:
                         (yyval.node) = NEW_ALIAS((yyvsp[-2].node), (yyvsp[0].node), &(yyloc), &(yylsp[-3]));
                     /*% ripper: alias!($:2, $:4) %*/
                     }
-#line 12186 "parse.c"
+#line 12186 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 30: /* stmt: "'alias'" "global variable" "global variable"  */
@@ -12191,7 +12191,7 @@ yyreduce:
                         (yyval.node) = NEW_VALIAS((yyvsp[-1].id), (yyvsp[0].id), &(yyloc), &(yylsp[-2]));
                     /*% ripper: var_alias!($:2, $:3) %*/
                     }
-#line 12195 "parse.c"
+#line 12195 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 31: /* stmt: "'alias'" "global variable" "back reference"  */
@@ -12203,7 +12203,7 @@ yyreduce:
                         (yyval.node) = NEW_VALIAS((yyvsp[-1].id), rb_intern2(buf, 2), &(yyloc), &(yylsp[-2]));
                     /*% ripper: var_alias!($:2, $:3) %*/
                     }
-#line 12207 "parse.c"
+#line 12207 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 32: /* stmt: "'alias'" "global variable" "numbered reference"  */
@@ -12216,7 +12216,7 @@ yyreduce:
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper[error]: alias_error!(ERR_MESG(), $:3) %*/
                     }
-#line 12220 "parse.c"
+#line 12220 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 33: /* stmt: "'undef'" undef_list  */
@@ -12227,7 +12227,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[0].node);
                     /*% ripper: undef!($:2) %*/
                     }
-#line 12231 "parse.c"
+#line 12231 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 34: /* stmt: stmt "'if' modifier" expr_value  */
@@ -12237,7 +12237,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[0].node));
                     /*% ripper: if_mod!($:3, $:1) %*/
                     }
-#line 12241 "parse.c"
+#line 12241 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 35: /* stmt: stmt "'unless' modifier" expr_value  */
@@ -12247,7 +12247,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[0].node));
                     /*% ripper: unless_mod!($:3, $:1) %*/
                     }
-#line 12251 "parse.c"
+#line 12251 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 36: /* stmt: stmt "'while' modifier" expr_value  */
@@ -12262,7 +12262,7 @@ yyreduce:
                         }
                     /*% ripper: while_mod!($:3, $:1) %*/
                     }
-#line 12266 "parse.c"
+#line 12266 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 37: /* stmt: stmt "'until' modifier" expr_value  */
@@ -12277,7 +12277,7 @@ yyreduce:
                         }
                     /*% ripper: until_mod!($:3, $:1) %*/
                     }
-#line 12281 "parse.c"
+#line 12281 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 38: /* stmt: stmt "'rescue' modifier" after_rescue stmt  */
@@ -12290,7 +12290,7 @@ yyreduce:
                         (yyval.node) = NEW_RESCUE(remove_begin((yyvsp[-3].node)), resq, 0, &(yyloc));
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-#line 12294 "parse.c"
+#line 12294 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 39: /* stmt: k_END allow_exits '{' compstmt_stmts '}'  */
@@ -12308,7 +12308,7 @@ yyreduce:
                         }
                     /*% ripper: END!($:compstmt) %*/
                     }
-#line 12312 "parse.c"
+#line 12312 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 41: /* stmt: mlhs '=' lex_ctxt command_call_value  */
@@ -12317,7 +12317,7 @@ yyreduce:
                         (yyval.node) = node_assign(p, (NODE *)(yyvsp[-3].node_masgn), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: massign!($:1, $:4) %*/
                     }
-#line 12321 "parse.c"
+#line 12321 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 42: /* asgn_mrhs: lhs '=' lex_ctxt mrhs  */
@@ -12326,7 +12326,7 @@ yyreduce:
                         (yyval.node) = node_assign(p, (NODE *)(yyvsp[-3].node), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: assign!($:1, $:4) %*/
                     }
-#line 12330 "parse.c"
+#line 12330 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 44: /* stmt: mlhs '=' lex_ctxt mrhs_arg "'rescue' modifier" after_rescue stmt  */
@@ -12340,7 +12340,7 @@ yyreduce:
                         (yyval.node) = node_assign(p, (NODE *)(yyvsp[-6].node_masgn), (yyvsp[-3].node), (yyvsp[-4].ctxt), &(yyloc));
                     /*% ripper: massign!($:1, rescue_mod!($:4, $:7)) %*/
                     }
-#line 12344 "parse.c"
+#line 12344 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 45: /* stmt: mlhs '=' lex_ctxt mrhs_arg  */
@@ -12349,7 +12349,7 @@ yyreduce:
                         (yyval.node) = node_assign(p, (NODE *)(yyvsp[-3].node_masgn), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: massign!($:1, $:4) %*/
                     }
-#line 12353 "parse.c"
+#line 12353 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 47: /* stmt: error  */
@@ -12358,7 +12358,7 @@ yyreduce:
                         (void)yynerrs;
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     }
-#line 12362 "parse.c"
+#line 12362 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 48: /* asgn_command_rhs: lhs '=' lex_ctxt command_rhs  */
@@ -12367,7 +12367,7 @@ yyreduce:
                         (yyval.node) = node_assign(p, (NODE *)(yyvsp[-3].node), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: assign!($:1, $:4) %*/
                     }
-#line 12371 "parse.c"
+#line 12371 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 50: /* op_asgn_command_rhs: var_lhs "operator-assignment" lex_ctxt command_rhs  */
@@ -12376,7 +12376,7 @@ yyreduce:
                         (yyval.node) = new_op_assign(p, (yyvsp[-3].node), (yyvsp[-2].id), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: opassign!($:1, $:2, $:4) %*/
                     }
-#line 12380 "parse.c"
+#line 12380 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 51: /* op_asgn_command_rhs: primary_value '[' opt_call_args rbracket "operator-assignment" lex_ctxt command_rhs  */
@@ -12385,7 +12385,7 @@ yyreduce:
                         (yyval.node) = new_ary_op_assign(p, (yyvsp[-6].node), (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[0].node), &(yylsp[-4]), &(yyloc), &NULL_LOC, &(yylsp[-5]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
                     }
-#line 12389 "parse.c"
+#line 12389 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 52: /* op_asgn_command_rhs: primary_value call_op "local variable or method" "operator-assignment" lex_ctxt command_rhs  */
@@ -12394,7 +12394,7 @@ yyreduce:
                         (yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), (yyvsp[-4].id), (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc), &(yylsp[-4]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-#line 12398 "parse.c"
+#line 12398 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 53: /* op_asgn_command_rhs: primary_value call_op "constant" "operator-assignment" lex_ctxt command_rhs  */
@@ -12403,7 +12403,7 @@ yyreduce:
                         (yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), (yyvsp[-4].id), (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc), &(yylsp[-4]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-#line 12407 "parse.c"
+#line 12407 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 54: /* op_asgn_command_rhs: primary_value "::" "local variable or method" "operator-assignment" lex_ctxt command_rhs  */
@@ -12412,7 +12412,7 @@ yyreduce:
                         (yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), idCOLON2, (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc), &(yylsp[-4]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-#line 12416 "parse.c"
+#line 12416 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 55: /* op_asgn_command_rhs: primary_value "::" "constant" "operator-assignment" lex_ctxt command_rhs  */
@@ -12422,7 +12422,7 @@ yyreduce:
                         (yyval.node) = new_const_op_assign(p, NEW_COLON2((yyvsp[-5].node), (yyvsp[-3].id), &loc, &(yylsp[-4]), &(yylsp[-3])), (yyvsp[-2].id), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
                     }
-#line 12426 "parse.c"
+#line 12426 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 56: /* op_asgn_command_rhs: ":: at EXPR_BEG" "constant" "operator-assignment" lex_ctxt command_rhs  */
@@ -12432,7 +12432,7 @@ yyreduce:
                         (yyval.node) = new_const_op_assign(p, NEW_COLON3((yyvsp[-3].id), &loc, &(yylsp[-4]), &(yylsp[-3])), (yyvsp[-2].id), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
                     }
-#line 12436 "parse.c"
+#line 12436 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 57: /* op_asgn_command_rhs: backref "operator-assignment" lex_ctxt command_rhs  */
@@ -12442,7 +12442,7 @@ yyreduce:
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
-#line 12446 "parse.c"
+#line 12446 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 59: /* def_endless_method_endless_command: defn_head f_opt_paren_args '=' endless_command  */
@@ -12457,7 +12457,7 @@ yyreduce:
                     /*% ripper: def!($:head, $:args, $:$) %*/
                         local_pop(p);
                     }
-#line 12461 "parse.c"
+#line 12461 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 60: /* def_endless_method_endless_command: defs_head f_opt_paren_args '=' endless_command  */
@@ -12472,7 +12472,7 @@ yyreduce:
                     /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
                         local_pop(p);
                     }
-#line 12476 "parse.c"
+#line 12476 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 63: /* endless_command: endless_command "'rescue' modifier" after_rescue arg  */
@@ -12482,7 +12482,7 @@ yyreduce:
                         (yyval.node) = rescued_expr(p, (yyvsp[-3].node), (yyvsp[0].node), &(yylsp[-3]), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-#line 12486 "parse.c"
+#line 12486 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 66: /* endless_command: "'not'" option_'\n' endless_command  */
@@ -12491,7 +12491,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, method_cond(p, (yyvsp[0].node), &(yylsp[0])), METHOD_NOT, &(yylsp[-2]), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
                     }
-#line 12495 "parse.c"
+#line 12495 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 68: /* command_rhs: command_call_value "'rescue' modifier" after_rescue stmt  */
@@ -12502,7 +12502,7 @@ yyreduce:
                         (yyval.node) = NEW_RESCUE((yyvsp[-3].node), NEW_RESBODY(0, 0, remove_begin((yyvsp[0].node)), 0, &loc), 0, &(yyloc));
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-#line 12506 "parse.c"
+#line 12506 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 71: /* expr: expr "'and'" expr  */
@@ -12511,7 +12511,7 @@ yyreduce:
                         (yyval.node) = logop(p, idAND, (yyvsp[-2].node), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idAND), $:3) %*/
                     }
-#line 12515 "parse.c"
+#line 12515 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 72: /* expr: expr "'or'" expr  */
@@ -12520,7 +12520,7 @@ yyreduce:
                         (yyval.node) = logop(p, idOR, (yyvsp[-2].node), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idOR), $:3) %*/
                     }
-#line 12524 "parse.c"
+#line 12524 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 73: /* expr: "'not'" option_'\n' expr  */
@@ -12529,7 +12529,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, method_cond(p, (yyvsp[0].node), &(yylsp[0])), METHOD_NOT, &(yylsp[-2]), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
                     }
-#line 12533 "parse.c"
+#line 12533 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 74: /* expr: '!' command_call  */
@@ -12538,7 +12538,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, method_cond(p, (yyvsp[0].node), &(yylsp[0])), '!', &(yylsp[-1]), &(yyloc));
                     /*% ripper: unary!(ID2VAL('\'!\''), $:2) %*/
                     }
-#line 12542 "parse.c"
+#line 12542 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 75: /* $@7: %empty  */
@@ -12546,7 +12546,7 @@ yyreduce:
                     {
                         value_expr(p, (yyvsp[-1].node));
                     }
-#line 12550 "parse.c"
+#line 12550 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 76: /* expr: arg "=>" $@7 p_in_kwarg p_pvtbl p_pktbl p_top_expr_body  */
@@ -12560,7 +12560,7 @@ yyreduce:
                         (yyval.node) = NEW_CASE3((yyvsp[-6].node), NEW_IN((yyvsp[0].node), 0, 0, &(yylsp[0]), &NULL_LOC, &NULL_LOC, &(yylsp[-5])), &(yyloc), &NULL_LOC, &NULL_LOC);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
-#line 12564 "parse.c"
+#line 12564 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 77: /* $@8: %empty  */
@@ -12568,7 +12568,7 @@ yyreduce:
                     {
                         value_expr(p, (yyvsp[-1].node));
                     }
-#line 12572 "parse.c"
+#line 12572 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 78: /* expr: arg "'in'" $@8 p_in_kwarg p_pvtbl p_pktbl p_top_expr_body  */
@@ -12582,7 +12582,7 @@ yyreduce:
                         (yyval.node) = NEW_CASE3((yyvsp[-6].node), NEW_IN((yyvsp[0].node), NEW_TRUE(&(yylsp[0])), NEW_FALSE(&(yylsp[0])), &(yylsp[0]), &(yylsp[-5]), &NULL_LOC, &NULL_LOC), &(yyloc), &NULL_LOC, &NULL_LOC);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
-#line 12586 "parse.c"
+#line 12586 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 80: /* def_name: fname  */
@@ -12595,7 +12595,7 @@ yyreduce:
                         p->ctxt.cant_return = 0;
                         (yyval.id) = (yyvsp[0].id);
                     }
-#line 12599 "parse.c"
+#line 12599 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 81: /* defn_head: k_def def_name  */
@@ -12606,7 +12606,7 @@ yyreduce:
                         (yyval.node_def_temp)->nd_def = NEW_DEFN((yyvsp[0].id), 0, &(yyloc));
                     /*% ripper: $:def_name %*/
                     }
-#line 12610 "parse.c"
+#line 12610 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 82: /* $@9: %empty  */
@@ -12614,7 +12614,7 @@ yyreduce:
                     {
                         SET_LEX_STATE(EXPR_FNAME);
                     }
-#line 12618 "parse.c"
+#line 12618 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 83: /* defs_head: k_def singleton dot_or_colon $@9 def_name  */
@@ -12626,7 +12626,7 @@ yyreduce:
                         (yyval.node_def_temp)->nd_def = NEW_DEFS((yyvsp[-3].node), (yyvsp[0].id), 0, &(yyloc));
                     /*% ripper: [$:singleton, $:dot_or_colon, $:def_name] %*/
                     }
-#line 12630 "parse.c"
+#line 12630 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 84: /* value_expr_expr: expr  */
@@ -12635,7 +12635,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 12639 "parse.c"
+#line 12639 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 86: /* expr_value: error  */
@@ -12643,19 +12643,19 @@ yyreduce:
                     {
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     }
-#line 12647 "parse.c"
+#line 12647 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 87: /* $@10: %empty  */
 #line 3541 "parse.y"
                 {COND_PUSH(1);}
-#line 12653 "parse.c"
+#line 12653 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 88: /* $@11: %empty  */
 #line 3541 "parse.y"
                                               {COND_POP();}
-#line 12659 "parse.c"
+#line 12659 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 89: /* expr_value_do: $@10 expr_value do $@11  */
@@ -12664,7 +12664,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-2].node);
                     /*% ripper: $:2 %*/
                     }
-#line 12668 "parse.c"
+#line 12668 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 92: /* value_expr_command_call: command_call  */
@@ -12673,7 +12673,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 12677 "parse.c"
+#line 12677 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 95: /* block_command: block_call call_op2 operation2 command_args  */
@@ -12682,7 +12682,7 @@ yyreduce:
                         (yyval.node) = new_qcall(p, (yyvsp[-2].id), (yyvsp[-3].node), (yyvsp[-1].id), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: method_add_arg!(call!($:1, $:2, $:3), $:4) %*/
                     }
-#line 12686 "parse.c"
+#line 12686 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 96: /* cmd_brace_block: "{ arg" brace_body '}'  */
@@ -12692,7 +12692,7 @@ yyreduce:
                         set_embraced_location((yyval.node), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: $:2 %*/
                     }
-#line 12696 "parse.c"
+#line 12696 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 97: /* fcall: "local variable or method"  */
@@ -12701,7 +12701,7 @@ yyreduce:
                         (yyval.node_fcall) = NEW_FCALL((yyvsp[0].id), 0, &(yyloc));
                     /*% ripper: $:1 %*/
                     }
-#line 12705 "parse.c"
+#line 12705 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 98: /* fcall: "constant"  */
@@ -12710,7 +12710,7 @@ yyreduce:
                         (yyval.node_fcall) = NEW_FCALL((yyvsp[0].id), 0, &(yyloc));
                     /*% ripper: $:1 %*/
                     }
-#line 12714 "parse.c"
+#line 12714 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 99: /* fcall: "method"  */
@@ -12719,7 +12719,7 @@ yyreduce:
                         (yyval.node_fcall) = NEW_FCALL((yyvsp[0].id), 0, &(yyloc));
                     /*% ripper: $:1 %*/
                     }
-#line 12723 "parse.c"
+#line 12723 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 100: /* command: fcall command_args  */
@@ -12730,7 +12730,7 @@ yyreduce:
                         (yyval.node) = (NODE *)(yyvsp[-1].node_fcall);
                     /*% ripper: command!($:1, $:2) %*/
                     }
-#line 12734 "parse.c"
+#line 12734 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 101: /* command: fcall command_args cmd_brace_block  */
@@ -12743,7 +12743,7 @@ yyreduce:
                         nd_set_last_loc((yyvsp[-2].node_fcall), (yylsp[-1]).end_pos);
                     /*% ripper: method_add_block!(command!($:1, $:2), $:3) %*/
                     }
-#line 12747 "parse.c"
+#line 12747 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 102: /* command: primary_value call_op operation2 command_args  */
@@ -12752,7 +12752,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, (yyvsp[-2].id), (yyvsp[-3].node), (yyvsp[-1].id), (yyvsp[0].node), 0, &(yylsp[-1]), &(yyloc));
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
-#line 12756 "parse.c"
+#line 12756 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 103: /* command: primary_value call_op operation2 command_args cmd_brace_block  */
@@ -12761,7 +12761,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, (yyvsp[-3].id), (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[-1].node), (yyvsp[0].node), &(yylsp[-2]), &(yyloc));
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
-#line 12765 "parse.c"
+#line 12765 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 104: /* command: primary_value "::" operation2 command_args  */
@@ -12770,7 +12770,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, idCOLON2, (yyvsp[-3].node), (yyvsp[-1].id), (yyvsp[0].node), 0, &(yylsp[-1]), &(yyloc));
                     /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
                     }
-#line 12774 "parse.c"
+#line 12774 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 105: /* command: primary_value "::" operation2 command_args cmd_brace_block  */
@@ -12779,7 +12779,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, idCOLON2, (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[-1].node), (yyvsp[0].node), &(yylsp[-2]), &(yyloc));
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                    }
-#line 12783 "parse.c"
+#line 12783 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 106: /* command: primary_value "::" "constant" '{' brace_body '}'  */
@@ -12789,7 +12789,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, idCOLON2, (yyvsp[-5].node), (yyvsp[-3].id), 0, (yyvsp[-1].node), &(yylsp[-3]), &(yyloc));
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, Qnil), $:5) %*/
                    }
-#line 12793 "parse.c"
+#line 12793 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 107: /* command: "'super'" command_args  */
@@ -12799,7 +12799,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[0].node));
                     /*% ripper: super!($:2) %*/
                     }
-#line 12803 "parse.c"
+#line 12803 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 108: /* command: k_yield command_args  */
@@ -12809,7 +12809,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[0].node));
                     /*% ripper: yield!($:2) %*/
                     }
-#line 12813 "parse.c"
+#line 12813 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 109: /* command: k_return call_args  */
@@ -12818,7 +12818,7 @@ yyreduce:
                         (yyval.node) = NEW_RETURN(ret_args(p, (yyvsp[0].node)), &(yyloc), &(yylsp[-1]));
                     /*% ripper: return!($:2) %*/
                     }
-#line 12822 "parse.c"
+#line 12822 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 110: /* command: "'break'" call_args  */
@@ -12829,7 +12829,7 @@ yyreduce:
                         (yyval.node) = add_block_exit(p, NEW_BREAK(args, &(yyloc), &(yylsp[-1])));
                     /*% ripper: break!($:2) %*/
                     }
-#line 12833 "parse.c"
+#line 12833 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 111: /* command: "'next'" call_args  */
@@ -12840,7 +12840,7 @@ yyreduce:
                         (yyval.node) = add_block_exit(p, NEW_NEXT(args, &(yyloc), &(yylsp[-1])));
                     /*% ripper: next!($:2) %*/
                     }
-#line 12844 "parse.c"
+#line 12844 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 113: /* mlhs: "(" mlhs_inner rparen  */
@@ -12849,7 +12849,7 @@ yyreduce:
                         (yyval.node_masgn) = (yyvsp[-1].node_masgn);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
-#line 12853 "parse.c"
+#line 12853 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 115: /* mlhs_inner: "(" mlhs_inner rparen  */
@@ -12858,7 +12858,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(NEW_LIST((NODE *)(yyvsp[-1].node_masgn), &(yyloc)), 0, &(yyloc));
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
-#line 12862 "parse.c"
+#line 12862 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 116: /* mlhs_basic: mlhs_head  */
@@ -12867,7 +12867,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[0].node), 0, &(yyloc));
                     /*% ripper: $:1 %*/
                     }
-#line 12871 "parse.c"
+#line 12871 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 117: /* mlhs_basic: mlhs_head mlhs_item  */
@@ -12876,7 +12876,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(list_append(p, (yyvsp[-1].node), (yyvsp[0].node)), 0, &(yyloc));
                     /*% ripper: mlhs_add!($:1, $:2) %*/
                     }
-#line 12880 "parse.c"
+#line 12880 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 118: /* mlhs_basic: mlhs_head "*" mlhs_node  */
@@ -12885,7 +12885,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
-#line 12889 "parse.c"
+#line 12889 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 119: /* mlhs_items_mlhs_item: mlhs_item  */
@@ -12894,7 +12894,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
                     }
-#line 12898 "parse.c"
+#line 12898 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 120: /* mlhs_items_mlhs_item: mlhs_items_mlhs_item ',' mlhs_item  */
@@ -12903,7 +12903,7 @@ yyreduce:
                         (yyval.node) = list_append(p, (yyvsp[-2].node), (yyvsp[0].node));
                     /*% ripper: mlhs_add!($:1, $:3) %*/
                     }
-#line 12907 "parse.c"
+#line 12907 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 121: /* mlhs_basic: mlhs_head "*" mlhs_node ',' mlhs_items_mlhs_item  */
@@ -12912,7 +12912,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[-4].node), NEW_POSTARG((yyvsp[-2].node),(yyvsp[0].node),&(yyloc)), &(yyloc));
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
                     }
-#line 12916 "parse.c"
+#line 12916 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 122: /* mlhs_basic: mlhs_head "*"  */
@@ -12921,7 +12921,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[-1].node), NODE_SPECIAL_NO_NAME_REST, &(yyloc));
                     /*% ripper: mlhs_add_star!($:1, Qnil) %*/
                     }
-#line 12925 "parse.c"
+#line 12925 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 123: /* mlhs_basic: mlhs_head "*" ',' mlhs_items_mlhs_item  */
@@ -12930,7 +12930,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[-3].node), NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, Qnil), $:4) %*/
                     }
-#line 12934 "parse.c"
+#line 12934 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 124: /* mlhs_basic: "*" mlhs_node  */
@@ -12939,7 +12939,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(0, (yyvsp[0].node), &(yyloc));
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:2) %*/
                     }
-#line 12943 "parse.c"
+#line 12943 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 125: /* mlhs_basic: "*" mlhs_node ',' mlhs_items_mlhs_item  */
@@ -12948,7 +12948,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(0, NEW_POSTARG((yyvsp[-2].node),(yyvsp[0].node),&(yyloc)), &(yyloc));
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:2), $:4) %*/
                     }
-#line 12952 "parse.c"
+#line 12952 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 126: /* mlhs_basic: "*"  */
@@ -12957,7 +12957,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &(yyloc));
                     /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
                     }
-#line 12961 "parse.c"
+#line 12961 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 127: /* mlhs_basic: "*" ',' mlhs_items_mlhs_item  */
@@ -12966,7 +12966,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $:3) %*/
                     }
-#line 12970 "parse.c"
+#line 12970 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 129: /* mlhs_item: "(" mlhs_inner rparen  */
@@ -12975,7 +12975,7 @@ yyreduce:
                         (yyval.node) = (NODE *)(yyvsp[-1].node_masgn);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
-#line 12979 "parse.c"
+#line 12979 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 130: /* mlhs_head: mlhs_item ','  */
@@ -12984,7 +12984,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[-1].node), &(yylsp[-1]));
                     /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
                     }
-#line 12988 "parse.c"
+#line 12988 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 131: /* mlhs_head: mlhs_head mlhs_item ','  */
@@ -12993,7 +12993,7 @@ yyreduce:
                         (yyval.node) = list_append(p, (yyvsp[-2].node), (yyvsp[-1].node));
                     /*% ripper: mlhs_add!($:1, $:2) %*/
                     }
-#line 12997 "parse.c"
+#line 12997 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 132: /* mlhs_node: user_variable  */
@@ -13002,7 +13002,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 13006 "parse.c"
+#line 13006 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 133: /* mlhs_node: keyword_variable  */
@@ -13011,7 +13011,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 13015 "parse.c"
+#line 13015 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 134: /* mlhs_node: primary_value '[' opt_call_args rbracket  */
@@ -13020,7 +13020,7 @@ yyreduce:
                         (yyval.node) = aryset(p, (yyvsp[-3].node), (yyvsp[-1].node), &(yyloc));
                     /*% ripper: aref_field!($:1, $:3) %*/
                     }
-#line 13024 "parse.c"
+#line 13024 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 135: /* mlhs_node: primary_value call_op "local variable or method"  */
@@ -13030,7 +13030,7 @@ yyreduce:
                         (yyval.node) = attrset(p, (yyvsp[-2].node), (yyvsp[-1].id), (yyvsp[0].id), &(yyloc));
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
-#line 13034 "parse.c"
+#line 13034 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 136: /* mlhs_node: primary_value call_op "constant"  */
@@ -13040,7 +13040,7 @@ yyreduce:
                         (yyval.node) = attrset(p, (yyvsp[-2].node), (yyvsp[-1].id), (yyvsp[0].id), &(yyloc));
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
-#line 13044 "parse.c"
+#line 13044 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 137: /* mlhs_node: primary_value "::" "local variable or method"  */
@@ -13049,7 +13049,7 @@ yyreduce:
                         (yyval.node) = attrset(p, (yyvsp[-2].node), idCOLON2, (yyvsp[0].id), &(yyloc));
                     /*% ripper: const_path_field!($:1, $:3) %*/
                     }
-#line 13053 "parse.c"
+#line 13053 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 138: /* mlhs_node: primary_value "::" "constant"  */
@@ -13058,7 +13058,7 @@ yyreduce:
                     /*% ripper: const_path_field!($:1, $:3) %*/
                         (yyval.node) = const_decl(p, NEW_COLON2((yyvsp[-2].node), (yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0])), &(yyloc));
                     }
-#line 13062 "parse.c"
+#line 13062 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 139: /* mlhs_node: ":: at EXPR_BEG" "constant"  */
@@ -13067,7 +13067,7 @@ yyreduce:
                     /*% ripper: top_const_field!($:2) %*/
                         (yyval.node) = const_decl(p, NEW_COLON3((yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0])), &(yyloc));
                     }
-#line 13071 "parse.c"
+#line 13071 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 140: /* mlhs_node: backref  */
@@ -13077,7 +13077,7 @@ yyreduce:
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper[error]: assign_error!(?e, var_field!($:1)) %*/
                     }
-#line 13081 "parse.c"
+#line 13081 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 141: /* lhs: user_variable  */
@@ -13086,7 +13086,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 13090 "parse.c"
+#line 13090 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 142: /* lhs: keyword_variable  */
@@ -13095,7 +13095,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 13099 "parse.c"
+#line 13099 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 143: /* lhs: primary_value '[' opt_call_args rbracket  */
@@ -13104,7 +13104,7 @@ yyreduce:
                         (yyval.node) = aryset(p, (yyvsp[-3].node), (yyvsp[-1].node), &(yyloc));
                     /*% ripper: aref_field!($:1, $:3) %*/
                     }
-#line 13108 "parse.c"
+#line 13108 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 144: /* lhs: primary_value call_op "local variable or method"  */
@@ -13113,7 +13113,7 @@ yyreduce:
                         (yyval.node) = attrset(p, (yyvsp[-2].node), (yyvsp[-1].id), (yyvsp[0].id), &(yyloc));
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
-#line 13117 "parse.c"
+#line 13117 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 145: /* lhs: primary_value call_op "constant"  */
@@ -13122,7 +13122,7 @@ yyreduce:
                         (yyval.node) = attrset(p, (yyvsp[-2].node), (yyvsp[-1].id), (yyvsp[0].id), &(yyloc));
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
-#line 13126 "parse.c"
+#line 13126 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 146: /* lhs: primary_value "::" "local variable or method"  */
@@ -13131,7 +13131,7 @@ yyreduce:
                         (yyval.node) = attrset(p, (yyvsp[-2].node), idCOLON2, (yyvsp[0].id), &(yyloc));
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
-#line 13135 "parse.c"
+#line 13135 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 147: /* lhs: primary_value "::" "constant"  */
@@ -13140,7 +13140,7 @@ yyreduce:
                     /*% ripper: const_path_field!($:1, $:3) %*/
                         (yyval.node) = const_decl(p, NEW_COLON2((yyvsp[-2].node), (yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0])), &(yyloc));
                     }
-#line 13144 "parse.c"
+#line 13144 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 148: /* lhs: ":: at EXPR_BEG" "constant"  */
@@ -13149,7 +13149,7 @@ yyreduce:
                     /*% ripper: top_const_field!($:2) %*/
                         (yyval.node) = const_decl(p, NEW_COLON3((yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0])), &(yyloc));
                     }
-#line 13153 "parse.c"
+#line 13153 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 149: /* lhs: backref  */
@@ -13159,7 +13159,7 @@ yyreduce:
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper[error]: assign_error!(?e, var_field!($:1)) %*/
                     }
-#line 13163 "parse.c"
+#line 13163 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 150: /* cname: "local variable or method"  */
@@ -13171,7 +13171,7 @@ yyreduce:
                     /*% %*/
                     /*% ripper[error]: class_name_error!(ERR_MESG(), $:1) %*/
                     }
-#line 13175 "parse.c"
+#line 13175 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 152: /* cpath: ":: at EXPR_BEG" cname  */
@@ -13180,7 +13180,7 @@ yyreduce:
                         (yyval.node) = NEW_COLON3((yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0]));
                     /*% ripper: top_const_ref!($:2) %*/
                     }
-#line 13184 "parse.c"
+#line 13184 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 153: /* cpath: cname  */
@@ -13189,7 +13189,7 @@ yyreduce:
                         (yyval.node) = NEW_COLON2(0, (yyvsp[0].id), &(yyloc), &NULL_LOC, &(yylsp[0]));
                     /*% ripper: const_ref!($:1) %*/
                     }
-#line 13193 "parse.c"
+#line 13193 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 154: /* cpath: primary_value "::" cname  */
@@ -13198,7 +13198,7 @@ yyreduce:
                         (yyval.node) = NEW_COLON2((yyvsp[-2].node), (yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0]));
                     /*% ripper: const_path_ref!($:1, $:3) %*/
                     }
-#line 13202 "parse.c"
+#line 13202 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 158: /* fname: op  */
@@ -13207,7 +13207,7 @@ yyreduce:
                         SET_LEX_STATE(EXPR_ENDFN);
                         (yyval.id) = (yyvsp[0].id);
                     }
-#line 13211 "parse.c"
+#line 13211 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 160: /* fitem: fname  */
@@ -13216,7 +13216,7 @@ yyreduce:
                         (yyval.node) = NEW_SYM(rb_id2str((yyvsp[0].id)), &(yyloc));
                     /*% ripper: symbol_literal!($:1) %*/
                     }
-#line 13220 "parse.c"
+#line 13220 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 162: /* undef_list: fitem  */
@@ -13225,13 +13225,13 @@ yyreduce:
                         (yyval.node) = NEW_UNDEF((yyvsp[0].node), &(yyloc));
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-#line 13229 "parse.c"
+#line 13229 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 163: /* $@12: %empty  */
 #line 3869 "parse.y"
                                  {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);}
-#line 13235 "parse.c"
+#line 13235 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 164: /* undef_list: undef_list ',' $@12 fitem  */
@@ -13241,187 +13241,187 @@ yyreduce:
                         rb_parser_ary_push_node(p, RNODE_UNDEF((yyvsp[-3].node))->nd_undefs, (yyvsp[0].node));
                     /*% ripper: rb_ary_push($:1, $:4) %*/
                     }
-#line 13245 "parse.c"
+#line 13245 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 165: /* op: '|'  */
 #line 3877 "parse.y"
            { (yyval.id) = '|'; }
-#line 13251 "parse.c"
+#line 13251 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 166: /* op: '^'  */
 #line 3878 "parse.y"
                        { (yyval.id) = '^'; }
-#line 13257 "parse.c"
+#line 13257 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 167: /* op: '&'  */
 #line 3879 "parse.y"
                        { (yyval.id) = '&'; }
-#line 13263 "parse.c"
+#line 13263 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 168: /* op: "<=>"  */
 #line 3880 "parse.y"
                         { (yyval.id) = tCMP; }
-#line 13269 "parse.c"
+#line 13269 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 169: /* op: "=="  */
 #line 3881 "parse.y"
                        { (yyval.id) = tEQ; }
-#line 13275 "parse.c"
+#line 13275 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 170: /* op: "==="  */
 #line 3882 "parse.y"
                         { (yyval.id) = tEQQ; }
-#line 13281 "parse.c"
+#line 13281 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 171: /* op: "=~"  */
 #line 3883 "parse.y"
                          { (yyval.id) = tMATCH; }
-#line 13287 "parse.c"
+#line 13287 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 172: /* op: "!~"  */
 #line 3884 "parse.y"
                           { (yyval.id) = tNMATCH; }
-#line 13293 "parse.c"
+#line 13293 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 173: /* op: '>'  */
 #line 3885 "parse.y"
                        { (yyval.id) = '>'; }
-#line 13299 "parse.c"
+#line 13299 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 174: /* op: ">="  */
 #line 3886 "parse.y"
                         { (yyval.id) = tGEQ; }
-#line 13305 "parse.c"
+#line 13305 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 175: /* op: '<'  */
 #line 3887 "parse.y"
                        { (yyval.id) = '<'; }
-#line 13311 "parse.c"
+#line 13311 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 176: /* op: "<="  */
 #line 3888 "parse.y"
                         { (yyval.id) = tLEQ; }
-#line 13317 "parse.c"
+#line 13317 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 177: /* op: "!="  */
 #line 3889 "parse.y"
                         { (yyval.id) = tNEQ; }
-#line 13323 "parse.c"
+#line 13323 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 178: /* op: "<<"  */
 #line 3890 "parse.y"
                          { (yyval.id) = tLSHFT; }
-#line 13329 "parse.c"
+#line 13329 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 179: /* op: ">>"  */
 #line 3891 "parse.y"
                          { (yyval.id) = tRSHFT; }
-#line 13335 "parse.c"
+#line 13335 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 180: /* op: '+'  */
 #line 3892 "parse.y"
                        { (yyval.id) = '+'; }
-#line 13341 "parse.c"
+#line 13341 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 181: /* op: '-'  */
 #line 3893 "parse.y"
                        { (yyval.id) = '-'; }
-#line 13347 "parse.c"
+#line 13347 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 182: /* op: '*'  */
 #line 3894 "parse.y"
                        { (yyval.id) = '*'; }
-#line 13353 "parse.c"
+#line 13353 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 183: /* op: "*"  */
 #line 3895 "parse.y"
                          { (yyval.id) = '*'; }
-#line 13359 "parse.c"
+#line 13359 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 184: /* op: '/'  */
 #line 3896 "parse.y"
                        { (yyval.id) = '/'; }
-#line 13365 "parse.c"
+#line 13365 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 185: /* op: '%'  */
 #line 3897 "parse.y"
                        { (yyval.id) = '%'; }
-#line 13371 "parse.c"
+#line 13371 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 186: /* op: "**"  */
 #line 3898 "parse.y"
                         { (yyval.id) = tPOW; }
-#line 13377 "parse.c"
+#line 13377 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 187: /* op: "**arg"  */
 #line 3899 "parse.y"
                          { (yyval.id) = tDSTAR; }
-#line 13383 "parse.c"
+#line 13383 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 188: /* op: '!'  */
 #line 3900 "parse.y"
                        { (yyval.id) = '!'; }
-#line 13389 "parse.c"
+#line 13389 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 189: /* op: '~'  */
 #line 3901 "parse.y"
                        { (yyval.id) = '~'; }
-#line 13395 "parse.c"
+#line 13395 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 190: /* op: "unary+"  */
 #line 3902 "parse.y"
                          { (yyval.id) = tUPLUS; }
-#line 13401 "parse.c"
+#line 13401 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 191: /* op: "unary-"  */
 #line 3903 "parse.y"
                           { (yyval.id) = tUMINUS; }
-#line 13407 "parse.c"
+#line 13407 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 192: /* op: "[]"  */
 #line 3904 "parse.y"
                          { (yyval.id) = tAREF; }
-#line 13413 "parse.c"
+#line 13413 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 193: /* op: "[]="  */
 #line 3905 "parse.y"
                          { (yyval.id) = tASET; }
-#line 13419 "parse.c"
+#line 13419 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 194: /* op: '`'  */
 #line 3906 "parse.y"
                        { (yyval.id) = '`'; }
-#line 13425 "parse.c"
+#line 13425 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 236: /* asgn_arg_rhs: lhs '=' lex_ctxt arg_rhs  */
@@ -13430,7 +13430,7 @@ yyreduce:
                         (yyval.node) = node_assign(p, (NODE *)(yyvsp[-3].node), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: assign!($:1, $:4) %*/
                     }
-#line 13434 "parse.c"
+#line 13434 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 238: /* op_asgn_arg_rhs: var_lhs "operator-assignment" lex_ctxt arg_rhs  */
@@ -13439,7 +13439,7 @@ yyreduce:
                         (yyval.node) = new_op_assign(p, (yyvsp[-3].node), (yyvsp[-2].id), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: opassign!($:1, $:2, $:4) %*/
                     }
-#line 13443 "parse.c"
+#line 13443 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 239: /* op_asgn_arg_rhs: primary_value '[' opt_call_args rbracket "operator-assignment" lex_ctxt arg_rhs  */
@@ -13448,7 +13448,7 @@ yyreduce:
                         (yyval.node) = new_ary_op_assign(p, (yyvsp[-6].node), (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[0].node), &(yylsp[-4]), &(yyloc), &NULL_LOC, &(yylsp[-5]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
                     }
-#line 13452 "parse.c"
+#line 13452 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 240: /* op_asgn_arg_rhs: primary_value call_op "local variable or method" "operator-assignment" lex_ctxt arg_rhs  */
@@ -13457,7 +13457,7 @@ yyreduce:
                         (yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), (yyvsp[-4].id), (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc), &(yylsp[-4]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-#line 13461 "parse.c"
+#line 13461 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 241: /* op_asgn_arg_rhs: primary_value call_op "constant" "operator-assignment" lex_ctxt arg_rhs  */
@@ -13466,7 +13466,7 @@ yyreduce:
                         (yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), (yyvsp[-4].id), (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc), &(yylsp[-4]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-#line 13470 "parse.c"
+#line 13470 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 242: /* op_asgn_arg_rhs: primary_value "::" "local variable or method" "operator-assignment" lex_ctxt arg_rhs  */
@@ -13475,7 +13475,7 @@ yyreduce:
                         (yyval.node) = new_attr_op_assign(p, (yyvsp[-5].node), idCOLON2, (yyvsp[-3].id), (yyvsp[-2].id), (yyvsp[0].node), &(yyloc), &(yylsp[-4]), &(yylsp[-3]), &(yylsp[-2]));
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-#line 13479 "parse.c"
+#line 13479 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 243: /* op_asgn_arg_rhs: primary_value "::" "constant" "operator-assignment" lex_ctxt arg_rhs  */
@@ -13485,7 +13485,7 @@ yyreduce:
                         (yyval.node) = new_const_op_assign(p, NEW_COLON2((yyvsp[-5].node), (yyvsp[-3].id), &loc, &(yylsp[-4]), &(yylsp[-3])), (yyvsp[-2].id), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
                     }
-#line 13489 "parse.c"
+#line 13489 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 244: /* op_asgn_arg_rhs: ":: at EXPR_BEG" "constant" "operator-assignment" lex_ctxt arg_rhs  */
@@ -13495,7 +13495,7 @@ yyreduce:
                         (yyval.node) = new_const_op_assign(p, NEW_COLON3((yyvsp[-3].id), &loc, &(yylsp[-4]), &(yylsp[-3])), (yyvsp[-2].id), (yyvsp[0].node), (yyvsp[-1].ctxt), &(yyloc));
                     /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
                     }
-#line 13499 "parse.c"
+#line 13499 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 245: /* op_asgn_arg_rhs: backref "operator-assignment" lex_ctxt arg_rhs  */
@@ -13505,7 +13505,7 @@ yyreduce:
                         (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
-#line 13509 "parse.c"
+#line 13509 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 247: /* range_expr_arg: arg ".." arg  */
@@ -13516,7 +13516,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT2((yyvsp[-2].node), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot2!($:1, $:3) %*/
                     }
-#line 13520 "parse.c"
+#line 13520 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 248: /* range_expr_arg: arg "..." arg  */
@@ -13527,7 +13527,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT3((yyvsp[-2].node), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
-#line 13531 "parse.c"
+#line 13531 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 249: /* range_expr_arg: arg ".."  */
@@ -13537,7 +13537,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT2((yyvsp[-1].node), new_nil_at(p, &(yylsp[0]).end_pos), &(yyloc), &(yylsp[0]));
                     /*% ripper: dot2!($:1, Qnil) %*/
                     }
-#line 13541 "parse.c"
+#line 13541 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 250: /* range_expr_arg: arg "..."  */
@@ -13547,7 +13547,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT3((yyvsp[-1].node), new_nil_at(p, &(yylsp[0]).end_pos), &(yyloc), &(yylsp[0]));
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
-#line 13551 "parse.c"
+#line 13551 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 251: /* range_expr_arg: "(.." arg  */
@@ -13557,7 +13557,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT2(new_nil_at(p, &(yylsp[-1]).beg_pos), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot2!(Qnil, $:2) %*/
                     }
-#line 13561 "parse.c"
+#line 13561 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 252: /* range_expr_arg: "(..." arg  */
@@ -13567,7 +13567,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT3(new_nil_at(p, &(yylsp[-1]).beg_pos), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
-#line 13571 "parse.c"
+#line 13571 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 254: /* arg: arg '+' arg  */
@@ -13576,7 +13576,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '+', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'+\''), $:3) %*/
                     }
-#line 13580 "parse.c"
+#line 13580 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 255: /* arg: arg '-' arg  */
@@ -13585,7 +13585,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '-', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'-\''), $:3) %*/
                     }
-#line 13589 "parse.c"
+#line 13589 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 256: /* arg: arg '*' arg  */
@@ -13594,7 +13594,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '*', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'*\''), $:3) %*/
                     }
-#line 13598 "parse.c"
+#line 13598 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 257: /* arg: arg '/' arg  */
@@ -13603,7 +13603,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '/', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'/\''), $:3) %*/
                     }
-#line 13607 "parse.c"
+#line 13607 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 258: /* arg: arg '%' arg  */
@@ -13612,7 +13612,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '%', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'%\''), $:3) %*/
                     }
-#line 13616 "parse.c"
+#line 13616 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 259: /* arg: arg "**" arg  */
@@ -13621,7 +13621,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idPow, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idPow), $:3) %*/
                     }
-#line 13625 "parse.c"
+#line 13625 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 260: /* arg: tUMINUS_NUM simple_numeric "**" arg  */
@@ -13630,7 +13630,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, call_bin_op(p, (yyvsp[-2].node), idPow, (yyvsp[0].node), &(yylsp[-2]), &(yyloc)), idUMinus, &(yylsp[-3]), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idUMinus), binary!($:2, ID2VAL(idPow), $:4)) %*/
                     }
-#line 13634 "parse.c"
+#line 13634 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 261: /* arg: "unary+" arg  */
@@ -13639,7 +13639,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, (yyvsp[0].node), idUPlus, &(yylsp[-1]), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idUPlus), $:2) %*/
                     }
-#line 13643 "parse.c"
+#line 13643 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 262: /* arg: "unary-" arg  */
@@ -13648,7 +13648,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, (yyvsp[0].node), idUMinus, &(yylsp[-1]), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idUMinus), $:2) %*/
                     }
-#line 13652 "parse.c"
+#line 13652 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 263: /* arg: arg '|' arg  */
@@ -13657,7 +13657,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '|', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'|\''), $:3) %*/
                     }
-#line 13661 "parse.c"
+#line 13661 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 264: /* arg: arg '^' arg  */
@@ -13666,7 +13666,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '^', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'^\''), $:3) %*/
                     }
-#line 13670 "parse.c"
+#line 13670 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 265: /* arg: arg '&' arg  */
@@ -13675,7 +13675,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), '&', (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL('\'&\''), $:3) %*/
                     }
-#line 13679 "parse.c"
+#line 13679 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 266: /* arg: arg "<=>" arg  */
@@ -13684,7 +13684,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idCmp, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idCmp), $:3) %*/
                     }
-#line 13688 "parse.c"
+#line 13688 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 268: /* arg: arg "==" arg  */
@@ -13693,7 +13693,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idEq, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idEq), $:3) %*/
                     }
-#line 13697 "parse.c"
+#line 13697 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 269: /* arg: arg "===" arg  */
@@ -13702,7 +13702,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idEqq, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idEqq), $:3) %*/
                     }
-#line 13706 "parse.c"
+#line 13706 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 270: /* arg: arg "!=" arg  */
@@ -13711,7 +13711,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idNeq, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idNeq), $:3) %*/
                     }
-#line 13715 "parse.c"
+#line 13715 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 271: /* arg: arg "=~" arg  */
@@ -13720,7 +13720,7 @@ yyreduce:
                         (yyval.node) = match_op(p, (yyvsp[-2].node), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idEqTilde), $:3) %*/
                     }
-#line 13724 "parse.c"
+#line 13724 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 272: /* arg: arg "!~" arg  */
@@ -13729,7 +13729,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idNeqTilde, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idNeqTilde), $:3) %*/
                     }
-#line 13733 "parse.c"
+#line 13733 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 273: /* arg: '!' arg  */
@@ -13738,7 +13738,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, method_cond(p, (yyvsp[0].node), &(yylsp[0])), '!', &(yylsp[-1]), &(yyloc));
                     /*% ripper: unary!(ID2VAL('\'!\''), $:2) %*/
                     }
-#line 13742 "parse.c"
+#line 13742 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 274: /* arg: '~' arg  */
@@ -13747,7 +13747,7 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, (yyvsp[0].node), '~', &(yylsp[-1]), &(yyloc));
                     /*% ripper: unary!(ID2VAL('\'~\''), $:2) %*/
                     }
-#line 13751 "parse.c"
+#line 13751 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 275: /* arg: arg "<<" arg  */
@@ -13756,7 +13756,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idLTLT, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idLTLT), $:3) %*/
                     }
-#line 13760 "parse.c"
+#line 13760 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 276: /* arg: arg ">>" arg  */
@@ -13765,7 +13765,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), idGTGT, (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idGTGT), $:3) %*/
                     }
-#line 13769 "parse.c"
+#line 13769 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 277: /* arg: arg "&&" arg  */
@@ -13774,7 +13774,7 @@ yyreduce:
                         (yyval.node) = logop(p, idANDOP, (yyvsp[-2].node), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idANDOP), $:3) %*/
                     }
-#line 13778 "parse.c"
+#line 13778 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 278: /* arg: arg "||" arg  */
@@ -13783,7 +13783,7 @@ yyreduce:
                         (yyval.node) = logop(p, idOROP, (yyvsp[-2].node), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL(idOROP), $:3) %*/
                     }
-#line 13787 "parse.c"
+#line 13787 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 279: /* arg: "'defined?'" option_'\n' begin_defined arg  */
@@ -13794,7 +13794,7 @@ yyreduce:
                         p->ctxt.has_trailing_semicolon = (yyvsp[-1].ctxt).has_trailing_semicolon;
                     /*% ripper: defined!($:4) %*/
                     }
-#line 13798 "parse.c"
+#line 13798 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 280: /* def_endless_method_endless_arg: defn_head f_opt_paren_args '=' endless_arg  */
@@ -13809,7 +13809,7 @@ yyreduce:
                     /*% ripper: def!($:head, $:args, $:$) %*/
                         local_pop(p);
                     }
-#line 13813 "parse.c"
+#line 13813 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 281: /* def_endless_method_endless_arg: defs_head f_opt_paren_args '=' endless_arg  */
@@ -13824,7 +13824,7 @@ yyreduce:
                     /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
                         local_pop(p);
                     }
-#line 13828 "parse.c"
+#line 13828 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 285: /* ternary: arg '?' arg option_'\n' ':' arg  */
@@ -13835,7 +13835,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[-5].node));
                     /*% ripper: ifop!($:1, $:3, $:6) %*/
                     }
-#line 13839 "parse.c"
+#line 13839 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 287: /* endless_arg: endless_arg "'rescue' modifier" after_rescue arg  */
@@ -13845,7 +13845,7 @@ yyreduce:
                         (yyval.node) = rescued_expr(p, (yyvsp[-3].node), (yyvsp[0].node), &(yylsp[-3]), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-#line 13849 "parse.c"
+#line 13849 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 288: /* endless_arg: "'not'" option_'\n' endless_arg  */
@@ -13854,31 +13854,31 @@ yyreduce:
                         (yyval.node) = call_uni_op(p, method_cond(p, (yyvsp[0].node), &(yylsp[0])), METHOD_NOT, &(yylsp[-2]), &(yyloc));
                     /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
                     }
-#line 13858 "parse.c"
+#line 13858 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 289: /* relop: '>'  */
 #line 4082 "parse.y"
               {(yyval.id) = '>';}
-#line 13864 "parse.c"
+#line 13864 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 290: /* relop: '<'  */
 #line 4083 "parse.y"
                        {(yyval.id) = '<';}
-#line 13870 "parse.c"
+#line 13870 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 291: /* relop: ">="  */
 #line 4084 "parse.y"
                        {(yyval.id) = idGE;}
-#line 13876 "parse.c"
+#line 13876 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 292: /* relop: "<="  */
 #line 4085 "parse.y"
                        {(yyval.id) = idLE;}
-#line 13882 "parse.c"
+#line 13882 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 293: /* rel_expr: arg relop arg  */
@@ -13887,7 +13887,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), (yyvsp[-1].id), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL($2), $:3) %*/
                     }
-#line 13891 "parse.c"
+#line 13891 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 294: /* rel_expr: rel_expr relop arg  */
@@ -13897,7 +13897,7 @@ yyreduce:
                         (yyval.node) = call_bin_op(p, (yyvsp[-2].node), (yyvsp[-1].id), (yyvsp[0].node), &(yylsp[-1]), &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL($2), $:3) %*/
                     }
-#line 13901 "parse.c"
+#line 13901 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 295: /* lex_ctxt: none  */
@@ -13905,7 +13905,7 @@ yyreduce:
                     {
                         (yyval.ctxt) = p->ctxt;
                     }
-#line 13909 "parse.c"
+#line 13909 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 296: /* begin_defined: lex_ctxt  */
@@ -13914,7 +13914,7 @@ yyreduce:
                         p->ctxt.in_defined = 1;
                         (yyval.ctxt) = (yyvsp[0].ctxt);
                     }
-#line 13918 "parse.c"
+#line 13918 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 297: /* after_rescue: lex_ctxt  */
@@ -13923,7 +13923,7 @@ yyreduce:
                         p->ctxt.in_rescue = after_rescue;
                         (yyval.ctxt) = (yyvsp[0].ctxt);
                     }
-#line 13927 "parse.c"
+#line 13927 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 298: /* value_expr_arg: arg  */
@@ -13932,7 +13932,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 13936 "parse.c"
+#line 13936 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 302: /* aref_args: args ',' assocs trailer  */
@@ -13941,7 +13941,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node) ? arg_append(p, (yyvsp[-3].node), new_hash(p, (yyvsp[-1].node), &(yylsp[-1])), &(yyloc)) : (yyvsp[-3].node);
                     /*% ripper: args_add!($:1, bare_assoc_hash!($:3)) %*/
                     }
-#line 13945 "parse.c"
+#line 13945 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 303: /* aref_args: assocs trailer  */
@@ -13950,7 +13950,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node) ? NEW_LIST(new_hash(p, (yyvsp[-1].node), &(yylsp[-1])), &(yyloc)) : 0;
                     /*% ripper: args_add!(args_new!, bare_assoc_hash!($:1)) %*/
                     }
-#line 13954 "parse.c"
+#line 13954 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 304: /* arg_rhs: arg  */
@@ -13959,7 +13959,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 13963 "parse.c"
+#line 13963 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 305: /* arg_rhs: arg "'rescue' modifier" after_rescue arg  */
@@ -13970,7 +13970,7 @@ yyreduce:
                         (yyval.node) = rescued_expr(p, (yyvsp[-3].node), (yyvsp[0].node), &(yylsp[-3]), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-#line 13974 "parse.c"
+#line 13974 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 306: /* paren_args: '(' opt_call_args rparen  */
@@ -13979,7 +13979,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node);
                     /*% ripper: arg_paren!($:2) %*/
                     }
-#line 13983 "parse.c"
+#line 13983 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 307: /* paren_args: '(' args ',' args_forward rparen  */
@@ -13993,7 +13993,7 @@ yyreduce:
                         /*% ripper: arg_paren!(args_add!($:2, $:4)) %*/
                         }
                     }
-#line 13997 "parse.c"
+#line 13997 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 308: /* paren_args: '(' args_forward rparen  */
@@ -14007,7 +14007,7 @@ yyreduce:
                         /*% ripper: arg_paren!($:2) %*/
                         }
                     }
-#line 14011 "parse.c"
+#line 14011 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 310: /* opt_paren_args: paren_args  */
@@ -14015,7 +14015,7 @@ yyreduce:
                     {
                         (yyval.node) = (yyvsp[0].node) ? (yyvsp[0].node) : NODE_SPECIAL_EMPTY_ARGS;
                     }
-#line 14019 "parse.c"
+#line 14019 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 314: /* opt_call_args: args ',' assocs ','  */
@@ -14024,7 +14024,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node) ? arg_append(p, (yyvsp[-3].node), new_hash(p, (yyvsp[-1].node), &(yylsp[-1])), &(yyloc)) : (yyvsp[-3].node);
                     /*% ripper: args_add!($:1, bare_assoc_hash!($:3)) %*/
                     }
-#line 14028 "parse.c"
+#line 14028 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 315: /* opt_call_args: assocs ','  */
@@ -14033,7 +14033,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node) ? NEW_LIST(new_hash(p, (yyvsp[-1].node), &(yylsp[-1])), &(yylsp[-1])) : 0;
                     /*% ripper: args_add!(args_new!, bare_assoc_hash!($:1)) %*/
                     }
-#line 14037 "parse.c"
+#line 14037 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 316: /* value_expr_command: command  */
@@ -14042,7 +14042,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 14046 "parse.c"
+#line 14046 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 317: /* call_args: value_expr_command  */
@@ -14051,7 +14051,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
-#line 14055 "parse.c"
+#line 14055 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 318: /* call_args: def_endless_method_endless_command  */
@@ -14060,7 +14060,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
-#line 14064 "parse.c"
+#line 14064 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 319: /* call_args: args opt_block_arg  */
@@ -14069,7 +14069,7 @@ yyreduce:
                         (yyval.node) = arg_blk_pass((yyvsp[-1].node), (yyvsp[0].node_block_pass));
                     /*% ripper: args_add_block!($:1, $:2) %*/
                     }
-#line 14073 "parse.c"
+#line 14073 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 320: /* call_args: assocs opt_block_arg  */
@@ -14079,7 +14079,7 @@ yyreduce:
                         (yyval.node) = arg_blk_pass((yyval.node), (yyvsp[0].node_block_pass));
                     /*% ripper: args_add_block!(args_add!(args_new!, bare_assoc_hash!($:1)), $:2) %*/
                     }
-#line 14083 "parse.c"
+#line 14083 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 321: /* call_args: args ',' assocs opt_block_arg  */
@@ -14089,7 +14089,7 @@ yyreduce:
                         (yyval.node) = arg_blk_pass((yyval.node), (yyvsp[0].node_block_pass));
                     /*% ripper: args_add_block!(args_add!($:1, bare_assoc_hash!($:3)), $:4) %*/
                     }
-#line 14093 "parse.c"
+#line 14093 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 323: /* $@13: %empty  */
@@ -14111,7 +14111,7 @@ yyreduce:
                         CMDARG_PUSH(1);
                         if (lookahead) CMDARG_PUSH(0);
                     }
-#line 14115 "parse.c"
+#line 14115 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 324: /* command_args: $@13 call_args  */
@@ -14134,7 +14134,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[0].node);
                     /*% ripper: $:2 %*/
                     }
-#line 14138 "parse.c"
+#line 14138 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 325: /* block_arg: "&" arg_value  */
@@ -14143,7 +14143,7 @@ yyreduce:
                         (yyval.node_block_pass) = NEW_BLOCK_PASS((yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: $:2 %*/
                     }
-#line 14147 "parse.c"
+#line 14147 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 326: /* block_arg: "&"  */
@@ -14153,7 +14153,7 @@ yyreduce:
                         (yyval.node_block_pass) = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &(yylsp[0])), &(yyloc), &(yylsp[0]));
                     /*% ripper: Qnil %*/
                     }
-#line 14157 "parse.c"
+#line 14157 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 327: /* opt_block_arg: ',' block_arg  */
@@ -14162,7 +14162,7 @@ yyreduce:
                         (yyval.node_block_pass) = (yyvsp[0].node_block_pass);
                     /*% ripper: $:2 %*/
                     }
-#line 14166 "parse.c"
+#line 14166 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 328: /* opt_block_arg: none  */
@@ -14171,7 +14171,7 @@ yyreduce:
                         (yyval.node_block_pass) = 0;
                     /*% ripper: Qfalse %*/
                     }
-#line 14175 "parse.c"
+#line 14175 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 329: /* args: arg_value  */
@@ -14180,7 +14180,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add!(args_new!, $:arg_value) %*/
                     }
-#line 14184 "parse.c"
+#line 14184 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 330: /* args: arg_splat  */
@@ -14189,7 +14189,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[0].node);
                     /*% ripper: args_add_star!(args_new!, $:arg_splat) %*/
                     }
-#line 14193 "parse.c"
+#line 14193 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 331: /* args: args ',' arg_value  */
@@ -14198,7 +14198,7 @@ yyreduce:
                         (yyval.node) = last_arg_append(p, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add!($:non_last_args, $:arg_value) %*/
                     }
-#line 14202 "parse.c"
+#line 14202 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 332: /* args: args ',' arg_splat  */
@@ -14207,7 +14207,7 @@ yyreduce:
                         (yyval.node) = rest_arg_append(p, (yyvsp[-2].node), RNODE_SPLAT((yyvsp[0].node))->nd_head, &(yyloc));
                     /*% ripper: args_add_star!($:non_last_args, $:arg_splat) %*/
                     }
-#line 14211 "parse.c"
+#line 14211 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 333: /* arg_splat: "*" arg_value  */
@@ -14216,7 +14216,7 @@ yyreduce:
                         (yyval.node) = NEW_SPLAT((yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: $:arg_value %*/
                     }
-#line 14220 "parse.c"
+#line 14220 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 334: /* arg_splat: "*"  */
@@ -14226,7 +14226,7 @@ yyreduce:
                         (yyval.node) = NEW_SPLAT(NEW_LVAR(idFWD_REST, &(yylsp[0])), &(yyloc), &(yylsp[0]));
                     /*% ripper: Qnil %*/
                     }
-#line 14230 "parse.c"
+#line 14230 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 337: /* mrhs: args ',' arg_value  */
@@ -14235,7 +14235,7 @@ yyreduce:
                         (yyval.node) = last_arg_append(p, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: mrhs_add!(mrhs_new_from_args!($:args), $:arg_value) %*/
                     }
-#line 14239 "parse.c"
+#line 14239 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 338: /* mrhs: args ',' "*" arg_value  */
@@ -14244,7 +14244,7 @@ yyreduce:
                         (yyval.node) = rest_arg_append(p, (yyvsp[-3].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: mrhs_add_star!(mrhs_new_from_args!($:args), $:arg_value) %*/
                     }
-#line 14248 "parse.c"
+#line 14248 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 339: /* mrhs: "*" arg_value  */
@@ -14253,7 +14253,7 @@ yyreduce:
                         (yyval.node) = NEW_SPLAT((yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: mrhs_add_star!(mrhs_new!, $:arg_value) %*/
                     }
-#line 14257 "parse.c"
+#line 14257 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 350: /* primary: "method"  */
@@ -14262,7 +14262,7 @@ yyreduce:
                     (yyval.node) = (NODE *)NEW_FCALL((yyvsp[0].id), 0, &(yyloc));
                 /*% ripper: method_add_arg!(fcall!($:1), args_new!) %*/
                 }
-#line 14266 "parse.c"
+#line 14266 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 351: /* $@14: %empty  */
@@ -14270,7 +14270,7 @@ yyreduce:
                 {
                     CMDARG_PUSH(0);
                 }
-#line 14274 "parse.c"
+#line 14274 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 352: /* primary: k_begin $@14 bodystmt k_end  */
@@ -14282,13 +14282,13 @@ yyreduce:
                     nd_set_line((yyval.node), (yylsp[-3]).end_pos.lineno);
                 /*% ripper: begin!($:3) %*/
                 }
-#line 14286 "parse.c"
+#line 14286 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 353: /* $@15: %empty  */
 #line 4387 "parse.y"
                                           {SET_LEX_STATE(EXPR_ENDARG);}
-#line 14292 "parse.c"
+#line 14292 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 354: /* primary: "( arg" compstmt_stmts $@15 ')'  */
@@ -14298,7 +14298,7 @@ yyreduce:
                     (yyval.node) = (yyvsp[-2].node);
                 /*% ripper: paren!($:2) %*/
                 }
-#line 14302 "parse.c"
+#line 14302 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 355: /* primary: "(" compstmt_stmts ')'  */
@@ -14308,7 +14308,7 @@ yyreduce:
                     (yyval.node) = NEW_BLOCK((yyvsp[-1].node), &(yyloc));
                 /*% ripper: paren!($:2) %*/
                 }
-#line 14312 "parse.c"
+#line 14312 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 356: /* primary: primary_value "::" "constant"  */
@@ -14317,7 +14317,7 @@ yyreduce:
                     (yyval.node) = NEW_COLON2((yyvsp[-2].node), (yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0]));
                 /*% ripper: const_path_ref!($:1, $:3) %*/
                 }
-#line 14321 "parse.c"
+#line 14321 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 357: /* primary: ":: at EXPR_BEG" "constant"  */
@@ -14326,7 +14326,7 @@ yyreduce:
                     (yyval.node) = NEW_COLON3((yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0]));
                 /*% ripper: top_const_ref!($:2) %*/
                 }
-#line 14330 "parse.c"
+#line 14330 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 358: /* primary: "[" aref_args ']'  */
@@ -14335,7 +14335,7 @@ yyreduce:
                     (yyval.node) = make_list((yyvsp[-1].node), &(yyloc));
                 /*% ripper: array!($:2) %*/
                 }
-#line 14339 "parse.c"
+#line 14339 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 359: /* primary: "{" assoc_list '}'  */
@@ -14345,7 +14345,7 @@ yyreduce:
                     RNODE_HASH((yyval.node))->nd_brace = TRUE;
                 /*% ripper: hash!($:2) %*/
                 }
-#line 14349 "parse.c"
+#line 14349 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 360: /* primary: k_return  */
@@ -14354,7 +14354,7 @@ yyreduce:
                     (yyval.node) = NEW_RETURN(0, &(yyloc), &(yylsp[0]));
                 /*% ripper: return0! %*/
                 }
-#line 14358 "parse.c"
+#line 14358 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 361: /* primary: k_yield '(' call_args rparen  */
@@ -14363,7 +14363,7 @@ yyreduce:
                     (yyval.node) = NEW_YIELD((yyvsp[-1].node), &(yyloc), &(yylsp[-3]), &(yylsp[-2]), &(yylsp[0]));
                 /*% ripper: yield!(paren!($:3)) %*/
                 }
-#line 14367 "parse.c"
+#line 14367 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 362: /* primary: k_yield '(' rparen  */
@@ -14372,7 +14372,7 @@ yyreduce:
                     (yyval.node) = NEW_YIELD(0, &(yyloc), &(yylsp[-2]), &(yylsp[-1]), &(yylsp[0]));
                 /*% ripper: yield!(paren!(args_new!)) %*/
                 }
-#line 14376 "parse.c"
+#line 14376 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 363: /* primary: k_yield  */
@@ -14381,7 +14381,7 @@ yyreduce:
                     (yyval.node) = NEW_YIELD(0, &(yyloc), &(yylsp[0]), &NULL_LOC, &NULL_LOC);
                 /*% ripper: yield0! %*/
                 }
-#line 14385 "parse.c"
+#line 14385 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 364: /* primary: "'defined?'" option_'\n' '(' begin_defined expr rparen  */
@@ -14392,7 +14392,7 @@ yyreduce:
                     p->ctxt.has_trailing_semicolon = (yyvsp[-2].ctxt).has_trailing_semicolon;
                 /*% ripper: defined!($:5) %*/
                 }
-#line 14396 "parse.c"
+#line 14396 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 365: /* primary: "'not'" '(' expr rparen  */
@@ -14401,7 +14401,7 @@ yyreduce:
                     (yyval.node) = call_uni_op(p, method_cond(p, (yyvsp[-1].node), &(yylsp[-1])), METHOD_NOT, &(yylsp[-3]), &(yyloc));
                 /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
                 }
-#line 14405 "parse.c"
+#line 14405 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 366: /* primary: "'not'" '(' rparen  */
@@ -14410,7 +14410,7 @@ yyreduce:
                     (yyval.node) = call_uni_op(p, method_cond(p, NEW_NIL(&(yylsp[-1])), &(yylsp[-1])), METHOD_NOT, &(yylsp[-2]), &(yyloc));
                 /*% ripper: unary!(ID2VAL(idNOT), Qnil) %*/
                 }
-#line 14414 "parse.c"
+#line 14414 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 367: /* primary: fcall brace_block  */
@@ -14419,7 +14419,7 @@ yyreduce:
                     (yyval.node) = method_add_block(p, (NODE *)(yyvsp[-1].node_fcall), (yyvsp[0].node), &(yyloc));
                 /*% ripper: method_add_block!(method_add_arg!(fcall!($:1), args_new!), $:2) %*/
                 }
-#line 14423 "parse.c"
+#line 14423 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 369: /* primary: method_call brace_block  */
@@ -14429,7 +14429,7 @@ yyreduce:
                     (yyval.node) = method_add_block(p, (yyvsp[-1].node), (yyvsp[0].node), &(yyloc));
                 /*% ripper: method_add_block!($:1, $:2) %*/
                 }
-#line 14433 "parse.c"
+#line 14433 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 371: /* primary: k_if expr_value then compstmt_stmts if_tail k_end  */
@@ -14442,7 +14442,7 @@ yyreduce:
                     fixpos((yyval.node), (yyvsp[-4].node));
                 /*% ripper: if!($:2, $:4, $:5) %*/
                 }
-#line 14446 "parse.c"
+#line 14446 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 372: /* primary: k_unless expr_value then compstmt_stmts opt_else k_end  */
@@ -14452,7 +14452,7 @@ yyreduce:
                     fixpos((yyval.node), (yyvsp[-4].node));
                 /*% ripper: unless!($:2, $:4, $:5) %*/
                 }
-#line 14456 "parse.c"
+#line 14456 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 373: /* primary: k_while expr_value_do compstmt_stmts k_end  */
@@ -14463,7 +14463,7 @@ yyreduce:
                     fixpos((yyval.node), (yyvsp[-2].node));
                 /*% ripper: while!($:2, $:3) %*/
                 }
-#line 14467 "parse.c"
+#line 14467 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 374: /* primary: k_until expr_value_do compstmt_stmts k_end  */
@@ -14474,7 +14474,7 @@ yyreduce:
                     fixpos((yyval.node), (yyvsp[-2].node));
                 /*% ripper: until!($:2, $:3) %*/
                 }
-#line 14478 "parse.c"
+#line 14478 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 375: /* @16: %empty  */
@@ -14483,7 +14483,7 @@ yyreduce:
                     (yyval.labels) = p->case_labels;
                     p->case_labels = CHECK_LITERAL_WHEN;
                 }
-#line 14487 "parse.c"
+#line 14487 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 376: /* primary: k_case expr_value option_terms @16 case_body k_end  */
@@ -14495,7 +14495,7 @@ yyreduce:
                     fixpos((yyval.node), (yyvsp[-4].node));
                 /*% ripper: case!($:2, $:5) %*/
                 }
-#line 14499 "parse.c"
+#line 14499 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 377: /* @17: %empty  */
@@ -14504,7 +14504,7 @@ yyreduce:
                     (yyval.labels) = p->case_labels;
                     p->case_labels = 0;
                 }
-#line 14508 "parse.c"
+#line 14508 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 378: /* primary: k_case option_terms @17 case_body k_end  */
@@ -14515,7 +14515,7 @@ yyreduce:
                     (yyval.node) = NEW_CASE2((yyvsp[-1].node), &(yyloc), &(yylsp[-4]), &(yylsp[0]));
                 /*% ripper: case!(Qnil, $:4) %*/
                 }
-#line 14519 "parse.c"
+#line 14519 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 379: /* primary: k_case expr_value option_terms p_case_body k_end  */
@@ -14524,19 +14524,19 @@ yyreduce:
                     (yyval.node) = NEW_CASE3((yyvsp[-3].node), (yyvsp[-1].node), &(yyloc), &(yylsp[-4]), &(yylsp[0]));
                 /*% ripper: case!($:2, $:4) %*/
                 }
-#line 14528 "parse.c"
+#line 14528 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 380: /* $@18: %empty  */
 #line 4544 "parse.y"
               {COND_PUSH(1);}
-#line 14534 "parse.c"
+#line 14534 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 381: /* $@19: %empty  */
 #line 4544 "parse.y"
                                             {COND_POP();}
-#line 14540 "parse.c"
+#line 14540 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 382: /* primary: k_for for_var "'in'" $@18 expr_value do $@19 compstmt_stmts k_end  */
@@ -14582,7 +14582,7 @@ yyreduce:
                     fixpos((yyval.node), (yyvsp[-7].node));
                 /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                 }
-#line 14586 "parse.c"
+#line 14586 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 383: /* $@20: %empty  */
@@ -14590,7 +14590,7 @@ yyreduce:
                 {
                     begin_definition("class", &(yylsp[-2]), &(yylsp[-1]));
                 }
-#line 14594 "parse.c"
+#line 14594 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 384: /* primary: k_class cpath superclass $@20 bodystmt k_end  */
@@ -14611,7 +14611,7 @@ yyreduce:
                     p->ctxt.cant_return = (yyvsp[-5].ctxt).cant_return;
                     p->ctxt.shareable_constant_value = (yyvsp[-5].ctxt).shareable_constant_value;
                 }
-#line 14615 "parse.c"
+#line 14615 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 385: /* $@21: %empty  */
@@ -14619,7 +14619,7 @@ yyreduce:
                 {
                     begin_definition("", &(yylsp[-2]), &(yylsp[-1]));
                 }
-#line 14623 "parse.c"
+#line 14623 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 386: /* primary: k_class "<<" expr_value $@21 term bodystmt k_end  */
@@ -14636,7 +14636,7 @@ yyreduce:
                     p->ctxt.cant_return = (yyvsp[-6].ctxt).cant_return;
                     p->ctxt.shareable_constant_value = (yyvsp[-6].ctxt).shareable_constant_value;
                 }
-#line 14640 "parse.c"
+#line 14640 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 387: /* $@22: %empty  */
@@ -14644,7 +14644,7 @@ yyreduce:
                 {
                     begin_definition("module", &(yylsp[-1]), &(yylsp[0]));
                 }
-#line 14648 "parse.c"
+#line 14648 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 388: /* primary: k_module cpath $@22 bodystmt k_end  */
@@ -14660,7 +14660,7 @@ yyreduce:
                     p->ctxt.cant_return = (yyvsp[-4].ctxt).cant_return;
                     p->ctxt.shareable_constant_value = (yyvsp[-4].ctxt).shareable_constant_value;
                 }
-#line 14664 "parse.c"
+#line 14664 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 389: /* $@23: %empty  */
@@ -14668,7 +14668,7 @@ yyreduce:
                 {
                     push_end_expect_token_locations(p, &(yylsp[-1]).beg_pos);
                 }
-#line 14672 "parse.c"
+#line 14672 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 390: /* primary: defn_head f_arglist $@23 bodystmt k_end  */
@@ -14681,7 +14681,7 @@ yyreduce:
                 /*% ripper: def!($:head, $:args, $:bodystmt) %*/
                     local_pop(p);
                 }
-#line 14685 "parse.c"
+#line 14685 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 391: /* $@24: %empty  */
@@ -14689,7 +14689,7 @@ yyreduce:
                 {
                     push_end_expect_token_locations(p, &(yylsp[-1]).beg_pos);
                 }
-#line 14693 "parse.c"
+#line 14693 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 392: /* primary: defs_head f_arglist $@24 bodystmt k_end  */
@@ -14702,7 +14702,7 @@ yyreduce:
                 /*% ripper: defs!(*$:head[0..2], $:args, $:bodystmt) %*/
                     local_pop(p);
                 }
-#line 14706 "parse.c"
+#line 14706 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 393: /* primary: "'break'"  */
@@ -14711,7 +14711,7 @@ yyreduce:
                     (yyval.node) = add_block_exit(p, NEW_BREAK(0, &(yyloc), &(yylsp[0])));
                 /*% ripper: break!(args_new!) %*/
                 }
-#line 14715 "parse.c"
+#line 14715 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 394: /* primary: "'next'"  */
@@ -14720,7 +14720,7 @@ yyreduce:
                     (yyval.node) = add_block_exit(p, NEW_NEXT(0, &(yyloc), &(yylsp[0])));
                 /*% ripper: next!(args_new!) %*/
                 }
-#line 14724 "parse.c"
+#line 14724 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 395: /* primary: "'redo'"  */
@@ -14729,7 +14729,7 @@ yyreduce:
                     (yyval.node) = add_block_exit(p, NEW_REDO(&(yyloc), &(yylsp[0])));
                 /*% ripper: redo! %*/
                 }
-#line 14733 "parse.c"
+#line 14733 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 396: /* primary: "'retry'"  */
@@ -14746,7 +14746,7 @@ yyreduce:
                     (yyval.node) = NEW_RETRY(&(yyloc));
                 /*% ripper: retry! %*/
                 }
-#line 14750 "parse.c"
+#line 14750 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 397: /* value_expr_primary: primary  */
@@ -14755,7 +14755,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 14759 "parse.c"
+#line 14759 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 399: /* k_begin: "'begin'"  */
@@ -14764,7 +14764,7 @@ yyreduce:
                         token_info_push(p, "begin", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14768 "parse.c"
+#line 14768 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 400: /* k_if: "'if'"  */
@@ -14784,7 +14784,7 @@ yyreduce:
                         }
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14788 "parse.c"
+#line 14788 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 401: /* k_unless: "'unless'"  */
@@ -14793,7 +14793,7 @@ yyreduce:
                         token_info_push(p, "unless", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14797 "parse.c"
+#line 14797 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 402: /* k_while: "'while'" allow_exits  */
@@ -14803,7 +14803,7 @@ yyreduce:
                         token_info_push(p, "while", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[-1]).beg_pos);
                     }
-#line 14807 "parse.c"
+#line 14807 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 403: /* k_until: "'until'" allow_exits  */
@@ -14813,7 +14813,7 @@ yyreduce:
                         token_info_push(p, "until", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[-1]).beg_pos);
                     }
-#line 14817 "parse.c"
+#line 14817 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 404: /* k_case: "'case'"  */
@@ -14822,7 +14822,7 @@ yyreduce:
                         token_info_push(p, "case", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14826 "parse.c"
+#line 14826 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 405: /* k_for: "'for'" allow_exits  */
@@ -14832,7 +14832,7 @@ yyreduce:
                         token_info_push(p, "for", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[-1]).beg_pos);
                     }
-#line 14836 "parse.c"
+#line 14836 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 406: /* k_class: "'class'"  */
@@ -14843,7 +14843,7 @@ yyreduce:
                         p->ctxt.in_rescue = before_rescue;
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14847 "parse.c"
+#line 14847 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 407: /* k_module: "'module'"  */
@@ -14854,7 +14854,7 @@ yyreduce:
                         p->ctxt.in_rescue = before_rescue;
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14858 "parse.c"
+#line 14858 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 408: /* k_def: "'def'"  */
@@ -14864,7 +14864,7 @@ yyreduce:
                         (yyval.node_def_temp) = NEW_DEF_TEMP(&(yyloc));
                         p->ctxt.in_argdef = 1;
                     }
-#line 14868 "parse.c"
+#line 14868 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 409: /* k_do: "'do'"  */
@@ -14873,7 +14873,7 @@ yyreduce:
                         token_info_push(p, "do", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14877 "parse.c"
+#line 14877 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 410: /* k_do_block: "'do' for block"  */
@@ -14882,7 +14882,7 @@ yyreduce:
                         token_info_push(p, "do", &(yyloc));
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 14886 "parse.c"
+#line 14886 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 411: /* k_rescue: "'rescue'"  */
@@ -14892,7 +14892,7 @@ yyreduce:
                         (yyval.ctxt) = p->ctxt;
                         p->ctxt.in_rescue = after_rescue;
                     }
-#line 14896 "parse.c"
+#line 14896 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 412: /* k_ensure: "'ensure'"  */
@@ -14901,7 +14901,7 @@ yyreduce:
                         token_info_warn(p, "ensure", p->token_info, 1, &(yyloc));
                         (yyval.ctxt) = p->ctxt;
                     }
-#line 14905 "parse.c"
+#line 14905 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 413: /* k_when: "'when'"  */
@@ -14909,7 +14909,7 @@ yyreduce:
                     {
                         token_info_warn(p, "when", p->token_info, 0, &(yyloc));
                     }
-#line 14913 "parse.c"
+#line 14913 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 414: /* k_else: "'else'"  */
@@ -14926,7 +14926,7 @@ yyreduce:
                             if (!e.nonspc) *ptinfo_beg = e;
                         }
                     }
-#line 14930 "parse.c"
+#line 14930 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 415: /* k_elsif: "'elsif'"  */
@@ -14935,7 +14935,7 @@ yyreduce:
                         WARN_EOL("elsif");
                         token_info_warn(p, "elsif", p->token_info, 1, &(yyloc));
                     }
-#line 14939 "parse.c"
+#line 14939 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 416: /* k_end: "'end'"  */
@@ -14944,7 +14944,7 @@ yyreduce:
                         token_info_pop(p, "end", &(yyloc));
                         pop_end_expect_token_locations(p);
                     }
-#line 14948 "parse.c"
+#line 14948 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 417: /* k_end: "dummy end"  */
@@ -14952,7 +14952,7 @@ yyreduce:
                     {
                         compile_error(p, "syntax error, unexpected end-of-input");
                     }
-#line 14956 "parse.c"
+#line 14956 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 418: /* k_return: "'return'"  */
@@ -14961,7 +14961,7 @@ yyreduce:
                         if (p->ctxt.cant_return && !dyna_in_block(p))
                             yyerror1(&(yylsp[0]), "Invalid return in class/module body");
                     }
-#line 14965 "parse.c"
+#line 14965 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 419: /* k_yield: "'yield'"  */
@@ -14970,13 +14970,13 @@ yyreduce:
                         if (!p->ctxt.in_defined && !p->ctxt.in_def && !compile_for_eval)
                             yyerror1(&(yylsp[0]), "Invalid yield");
                     }
-#line 14974 "parse.c"
+#line 14974 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 424: /* do: "'do' for condition"  */
 #line 4886 "parse.y"
                                   { (yyval.id) = keyword_do_cond; }
-#line 14980 "parse.c"
+#line 14980 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 426: /* if_tail: k_elsif expr_value then compstmt_stmts if_tail  */
@@ -14986,7 +14986,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[-3].node));
                     /*% ripper: elsif!($:2, $:4, $:5) %*/
                     }
-#line 14990 "parse.c"
+#line 14990 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 428: /* opt_else: k_else compstmt_stmts  */
@@ -14995,7 +14995,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[0].node);
                     /*% ripper: else!($:2) %*/
                     }
-#line 14999 "parse.c"
+#line 14999 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 431: /* f_marg: f_norm_arg  */
@@ -15004,7 +15004,7 @@ yyreduce:
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                         mark_lvar_used(p, (yyval.node));
                     }
-#line 15008 "parse.c"
+#line 15008 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 432: /* f_marg: "(" f_margs rparen  */
@@ -15013,7 +15013,7 @@ yyreduce:
                         (yyval.node) = (NODE *)(yyvsp[-1].node_masgn);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
-#line 15017 "parse.c"
+#line 15017 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 433: /* mlhs_items_f_marg: f_marg  */
@@ -15022,7 +15022,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: mlhs_add!(mlhs_new!, $:1) %*/
                     }
-#line 15026 "parse.c"
+#line 15026 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 434: /* mlhs_items_f_marg: mlhs_items_f_marg ',' f_marg  */
@@ -15031,7 +15031,7 @@ yyreduce:
                         (yyval.node) = list_append(p, (yyvsp[-2].node), (yyvsp[0].node));
                     /*% ripper: mlhs_add!($:1, $:3) %*/
                     }
-#line 15035 "parse.c"
+#line 15035 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 435: /* f_margs: mlhs_items_f_marg  */
@@ -15040,7 +15040,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[0].node), 0, &(yyloc));
                     /*% ripper: $:1 %*/
                     }
-#line 15044 "parse.c"
+#line 15044 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 436: /* f_margs: mlhs_items_f_marg ',' f_rest_marg  */
@@ -15049,7 +15049,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
-#line 15053 "parse.c"
+#line 15053 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 437: /* f_margs: mlhs_items_f_marg ',' f_rest_marg ',' mlhs_items_f_marg  */
@@ -15058,7 +15058,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN((yyvsp[-4].node), NEW_POSTARG((yyvsp[-2].node), (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
                     }
-#line 15062 "parse.c"
+#line 15062 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 438: /* f_margs: f_rest_marg  */
@@ -15067,7 +15067,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(0, (yyvsp[0].node), &(yyloc));
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:1) %*/
                     }
-#line 15071 "parse.c"
+#line 15071 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 439: /* f_margs: f_rest_marg ',' mlhs_items_f_marg  */
@@ -15076,7 +15076,7 @@ yyreduce:
                         (yyval.node_masgn) = NEW_MASGN(0, NEW_POSTARG((yyvsp[-2].node), (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:1), $:3) %*/
                     }
-#line 15080 "parse.c"
+#line 15080 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 440: /* f_rest_marg: "*" f_norm_arg  */
@@ -15086,7 +15086,7 @@ yyreduce:
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                         mark_lvar_used(p, (yyval.node));
                     }
-#line 15090 "parse.c"
+#line 15090 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 441: /* f_rest_marg: "*"  */
@@ -15095,7 +15095,7 @@ yyreduce:
                         (yyval.node) = NODE_SPECIAL_NO_NAME_REST;
                     /*% ripper: Qnil %*/
                     }
-#line 15099 "parse.c"
+#line 15099 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 443: /* f_any_kwrest: f_no_kwarg  */
@@ -15104,13 +15104,13 @@ yyreduce:
                         (yyval.id) = idNil;
                     /*% ripper: ID2VAL(idNil) %*/
                     }
-#line 15108 "parse.c"
+#line 15108 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 444: /* $@25: %empty  */
 #line 4973 "parse.y"
         {p->ctxt.in_argdef = 0;}
-#line 15114 "parse.c"
+#line 15114 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 446: /* f_kw_primary_value: f_label primary_value  */
@@ -15120,7 +15120,7 @@ yyreduce:
                         (yyval.node_kw_arg) = new_kw_arg(p, assignable(p, (yyvsp[-1].id), (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: [$:$, $:value] %*/
                     }
-#line 15124 "parse.c"
+#line 15124 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 447: /* f_kw_primary_value: f_label  */
@@ -15130,7 +15130,7 @@ yyreduce:
                         (yyval.node_kw_arg) = new_kw_arg(p, assignable(p, (yyvsp[0].id), NODE_SPECIAL_REQUIRED_KEYWORD, &(yyloc)), &(yyloc));
                     /*% ripper: [$:$, 0] %*/
                     }
-#line 15134 "parse.c"
+#line 15134 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 448: /* f_kwarg_primary_value: f_kw_primary_value  */
@@ -15139,7 +15139,7 @@ yyreduce:
                         (yyval.node_kw_arg) = (yyvsp[0].node_kw_arg);
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-#line 15143 "parse.c"
+#line 15143 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 449: /* f_kwarg_primary_value: f_kwarg_primary_value ',' f_kw_primary_value  */
@@ -15148,7 +15148,7 @@ yyreduce:
                         (yyval.node_kw_arg) = kwd_append((yyvsp[-2].node_kw_arg), (yyvsp[0].node_kw_arg));
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 15152 "parse.c"
+#line 15152 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 450: /* args_tail_basic_primary_value: f_kwarg_primary_value ',' f_kwrest opt_f_block_arg  */
@@ -15157,7 +15157,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, (yyvsp[-3].node_kw_arg), (yyvsp[-1].id), (yyvsp[0].id), &(yylsp[-1]));
                     /*% ripper: [$:1, $:3, $:4] %*/
                     }
-#line 15161 "parse.c"
+#line 15161 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 451: /* args_tail_basic_primary_value: f_kwarg_primary_value opt_f_block_arg  */
@@ -15166,7 +15166,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, (yyvsp[-1].node_kw_arg), 0, (yyvsp[0].id), &(yylsp[-1]));
                     /*% ripper: [$:1, Qnil, $:2] %*/
                     }
-#line 15170 "parse.c"
+#line 15170 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 452: /* args_tail_basic_primary_value: f_any_kwrest opt_f_block_arg  */
@@ -15175,7 +15175,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, 0, (yyvsp[-1].id), (yyvsp[0].id), &(yylsp[-1]));
                     /*% ripper: [Qnil, $:1, $:2] %*/
                     }
-#line 15179 "parse.c"
+#line 15179 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 453: /* args_tail_basic_primary_value: f_block_arg  */
@@ -15184,7 +15184,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, 0, 0, (yyvsp[0].id), &(yylsp[0]));
                     /*% ripper: [Qnil, Qnil, $:1] %*/
                     }
-#line 15188 "parse.c"
+#line 15188 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 455: /* excessed_comma: ','  */
@@ -15194,7 +15194,7 @@ yyreduce:
                         (yyval.id) = NODE_SPECIAL_EXCESSIVE_COMMA;
                     /*% ripper: excessed_comma! %*/
                     }
-#line 15198 "parse.c"
+#line 15198 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 456: /* f_opt_primary_value: f_arg_asgn f_eq primary_value  */
@@ -15204,7 +15204,7 @@ yyreduce:
                         (yyval.node_opt_arg) = NEW_OPT_ARG(assignable(p, (yyvsp[-2].id), (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: [$:$, $:3] %*/
                     }
-#line 15208 "parse.c"
+#line 15208 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 457: /* f_opt_arg_primary_value: f_opt_primary_value  */
@@ -15213,7 +15213,7 @@ yyreduce:
                         (yyval.node_opt_arg) = (yyvsp[0].node_opt_arg);
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-#line 15217 "parse.c"
+#line 15217 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 458: /* f_opt_arg_primary_value: f_opt_arg_primary_value ',' f_opt_primary_value  */
@@ -15222,7 +15222,7 @@ yyreduce:
                         (yyval.node_opt_arg) = opt_arg_append((yyvsp[-2].node_opt_arg), (yyvsp[0].node_opt_arg));
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 15226 "parse.c"
+#line 15226 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 459: /* opt_args_tail_block_args_tail: ',' block_args_tail  */
@@ -15231,7 +15231,7 @@ yyreduce:
                         (yyval.node_args) = (yyvsp[0].node_args);
                     /*% ripper: $:2 %*/
                     }
-#line 15235 "parse.c"
+#line 15235 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 460: /* opt_args_tail_block_args_tail: %empty  */
@@ -15240,7 +15240,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, 0, 0, 0, &(yylsp[0]));
                     /*% ripper: [Qnil, Qnil, Qnil] %*/
                     }
-#line 15244 "parse.c"
+#line 15244 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 461: /* block_param: f_arg ',' f_opt_arg_primary_value ',' f_rest_arg opt_args_tail_block_args_tail  */
@@ -15249,7 +15249,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-5].node_args_aux), (yyvsp[-3].node_opt_arg), (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, $:5, Qnil, *$:6[0..2]) %*/
                     }
-#line 15253 "parse.c"
+#line 15253 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 462: /* block_param: f_arg ',' f_opt_arg_primary_value ',' f_rest_arg ',' f_arg opt_args_tail_block_args_tail  */
@@ -15258,7 +15258,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-7].node_args_aux), (yyvsp[-5].node_opt_arg), (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, $:5, $:7, *$:8[0..2]) %*/
                     }
-#line 15262 "parse.c"
+#line 15262 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 463: /* block_param: f_arg ',' f_opt_arg_primary_value opt_args_tail_block_args_tail  */
@@ -15267,7 +15267,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-3].node_args_aux), (yyvsp[-1].node_opt_arg), 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, Qnil, Qnil, *$:4[0..2]) %*/
                     }
-#line 15271 "parse.c"
+#line 15271 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 464: /* block_param: f_arg ',' f_opt_arg_primary_value ',' f_arg opt_args_tail_block_args_tail  */
@@ -15276,7 +15276,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-5].node_args_aux), (yyvsp[-3].node_opt_arg), 0, (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, Qnil, $:5, *$:6[0..2]) %*/
                     }
-#line 15280 "parse.c"
+#line 15280 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 465: /* block_param: f_arg ',' f_rest_arg opt_args_tail_block_args_tail  */
@@ -15285,7 +15285,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-3].node_args_aux), 0, (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, $:3, Qnil, *$:4[0..2]) %*/
                     }
-#line 15289 "parse.c"
+#line 15289 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 466: /* block_param: f_arg excessed_comma  */
@@ -15295,7 +15295,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-1].node_args_aux), 0, (yyvsp[0].id), 0, (yyval.node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, $:2, Qnil, Qnil, Qnil, Qnil) %*/
                     }
-#line 15299 "parse.c"
+#line 15299 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 467: /* block_param: f_arg ',' f_rest_arg ',' f_arg opt_args_tail_block_args_tail  */
@@ -15304,7 +15304,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-5].node_args_aux), 0, (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, $:3, $:5, *$:6[0..2]) %*/
                     }
-#line 15308 "parse.c"
+#line 15308 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 468: /* block_param: f_arg opt_args_tail_block_args_tail  */
@@ -15313,7 +15313,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-1].node_args_aux), 0, 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, Qnil, Qnil, *$:2[0..2]) %*/
                     }
-#line 15317 "parse.c"
+#line 15317 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 469: /* block_param: f_opt_arg_primary_value ',' f_rest_arg opt_args_tail_block_args_tail  */
@@ -15322,7 +15322,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-3].node_opt_arg), (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, $:3, Qnil, *$:4[0..2]) %*/
                     }
-#line 15326 "parse.c"
+#line 15326 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 470: /* block_param: f_opt_arg_primary_value ',' f_rest_arg ',' f_arg opt_args_tail_block_args_tail  */
@@ -15331,7 +15331,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-5].node_opt_arg), (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, $:3, $:5, *$:6[0..2]) %*/
                     }
-#line 15335 "parse.c"
+#line 15335 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 471: /* block_param: f_opt_arg_primary_value opt_args_tail_block_args_tail  */
@@ -15340,7 +15340,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-1].node_opt_arg), 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, Qnil, Qnil, *$:2[0..2]) %*/
                     }
-#line 15344 "parse.c"
+#line 15344 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 472: /* block_param: f_opt_arg_primary_value ',' f_arg opt_args_tail_block_args_tail  */
@@ -15349,7 +15349,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-3].node_opt_arg), 0, (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, Qnil, $:3, *$:4[0..2]) %*/
                     }
-#line 15353 "parse.c"
+#line 15353 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 473: /* block_param: f_rest_arg opt_args_tail_block_args_tail  */
@@ -15358,7 +15358,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, Qnil, $:1, Qnil, *$:2[0..2]) %*/
                     }
-#line 15362 "parse.c"
+#line 15362 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 474: /* block_param: f_rest_arg ',' f_arg opt_args_tail_block_args_tail  */
@@ -15367,7 +15367,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, Qnil, $:1, $:3, *$:4[0..2]) %*/
                     }
-#line 15371 "parse.c"
+#line 15371 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 475: /* block_param: block_args_tail  */
@@ -15376,7 +15376,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, *$:1[0..2]) %*/
                     }
-#line 15380 "parse.c"
+#line 15380 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 477: /* opt_block_param_def: block_param_def  */
@@ -15384,7 +15384,7 @@ yyreduce:
                         {
                             p->command_start = TRUE;
                         }
-#line 15388 "parse.c"
+#line 15388 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 478: /* block_param_def: '|' opt_block_param opt_bv_decl '|'  */
@@ -15395,7 +15395,7 @@ yyreduce:
                         (yyval.node_args) = (yyvsp[-2].node_args);
                     /*% ripper: block_var!($:2, $:3) %*/
                     }
-#line 15399 "parse.c"
+#line 15399 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 479: /* opt_block_param: %empty  */
@@ -15404,7 +15404,7 @@ yyreduce:
                         (yyval.node_args) = 0;
                     /*% ripper: params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil) %*/
                     }
-#line 15408 "parse.c"
+#line 15408 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 481: /* opt_bv_decl: option_'\n'  */
@@ -15413,7 +15413,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper: Qfalse %*/
                     }
-#line 15417 "parse.c"
+#line 15417 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 482: /* opt_bv_decl: option_'\n' ';' bv_decls option_'\n'  */
@@ -15422,7 +15422,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper: $:3 %*/
                     }
-#line 15426 "parse.c"
+#line 15426 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 485: /* bvar: "local variable or method"  */
@@ -15431,7 +15431,7 @@ yyreduce:
                         new_bv(p, (yyvsp[0].id));
                     /*% ripper: $:1 %*/
                     }
-#line 15435 "parse.c"
+#line 15435 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 487: /* max_numparam: %empty  */
@@ -15440,7 +15440,7 @@ yyreduce:
                         (yyval.num) = p->max_numparam;
                         p->max_numparam = 0;
                     }
-#line 15444 "parse.c"
+#line 15444 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 488: /* numparam: %empty  */
@@ -15448,7 +15448,7 @@ yyreduce:
              {
                         (yyval.node) = numparam_push(p);
                     }
-#line 15452 "parse.c"
+#line 15452 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 489: /* it_id: %empty  */
@@ -15457,7 +15457,7 @@ yyreduce:
                         (yyval.id) = p->it_id;
                         p->it_id = 0;
                     }
-#line 15461 "parse.c"
+#line 15461 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 490: /* @26: %empty  */
@@ -15466,7 +15466,7 @@ yyreduce:
                         token_info_push(p, "->", &(yylsp[0]));
                         (yyval.vars) = dyna_push(p);
                     }
-#line 15470 "parse.c"
+#line 15470 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 491: /* $@27: %empty  */
@@ -15474,7 +15474,7 @@ yyreduce:
                     {
                         CMDARG_PUSH(0);
                     }
-#line 15478 "parse.c"
+#line 15478 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 492: /* lambda: "->" @26 max_numparam numparam it_id allow_exits f_larglist $@27 lambda_body  */
@@ -15500,7 +15500,7 @@ yyreduce:
                         numparam_pop(p, (yyvsp[-5].node));
                         dyna_pop(p, (yyvsp[-7].vars));
                     }
-#line 15504 "parse.c"
+#line 15504 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 493: /* f_larglist: '(' f_args opt_bv_decl ')'  */
@@ -15511,7 +15511,7 @@ yyreduce:
                         p->max_numparam = ORDINAL_PARAM;
                     /*% ripper: paren!($:2) %*/
                     }
-#line 15515 "parse.c"
+#line 15515 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 494: /* f_larglist: f_args  */
@@ -15522,7 +15522,7 @@ yyreduce:
                             p->max_numparam = ORDINAL_PARAM;
                         (yyval.node_args) = (yyvsp[0].node_args);
                     }
-#line 15526 "parse.c"
+#line 15526 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 495: /* lambda_body: tLAMBEG compstmt_stmts '}'  */
@@ -15532,7 +15532,7 @@ yyreduce:
                         (yyval.locations_lambda_body) = new_locations_lambda_body(p, (yyvsp[-1].node), &(yylsp[-1]), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: $:2 %*/
                     }
-#line 15536 "parse.c"
+#line 15536 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 496: /* $@28: %empty  */
@@ -15540,7 +15540,7 @@ yyreduce:
                     {
                         push_end_expect_token_locations(p, &(yylsp[0]).beg_pos);
                     }
-#line 15544 "parse.c"
+#line 15544 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 497: /* lambda_body: "'do' for lambda" $@28 bodystmt k_end  */
@@ -15549,7 +15549,7 @@ yyreduce:
                         (yyval.locations_lambda_body) = new_locations_lambda_body(p, (yyvsp[-1].node), &(yylsp[-1]), &(yylsp[-3]), &(yylsp[0]));
                     /*% ripper: $:3 %*/
                     }
-#line 15553 "parse.c"
+#line 15553 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 498: /* do_block: k_do_block do_body k_end  */
@@ -15559,7 +15559,7 @@ yyreduce:
                         set_embraced_location((yyval.node), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: $:2 %*/
                     }
-#line 15563 "parse.c"
+#line 15563 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 499: /* block_call: command do_block  */
@@ -15575,7 +15575,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[-1].node));
                     /*% ripper: method_add_block!($:1, $:2) %*/
                     }
-#line 15579 "parse.c"
+#line 15579 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 500: /* block_call: block_call call_op2 operation2 opt_paren_args  */
@@ -15589,7 +15589,7 @@ yyreduce:
                         /*% ripper: method_add_arg!($:$, $:4) %*/
                         }
                     }
-#line 15593 "parse.c"
+#line 15593 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 501: /* block_call: block_call call_op2 operation2 opt_paren_args brace_block  */
@@ -15599,7 +15599,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, (yyvsp[-3].id), (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[-1].node), (yyvsp[0].node), &(yylsp[-2]), &(yyloc));
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
-#line 15603 "parse.c"
+#line 15603 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 502: /* block_call: block_call call_op2 operation2 command_args do_block  */
@@ -15608,7 +15608,7 @@ yyreduce:
                         (yyval.node) = new_command_qcall(p, (yyvsp[-3].id), (yyvsp[-4].node), (yyvsp[-2].id), (yyvsp[-1].node), (yyvsp[0].node), &(yylsp[-2]), &(yyloc));
                     /*% ripper: method_add_block!(command_call!($:1, $:2, $:3, $:4), $:5) %*/
                     }
-#line 15612 "parse.c"
+#line 15612 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 503: /* block_call: block_call call_op2 paren_args  */
@@ -15618,7 +15618,7 @@ yyreduce:
                         nd_set_line((yyval.node), (yylsp[-1]).end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
-#line 15622 "parse.c"
+#line 15622 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 504: /* method_call: fcall paren_args  */
@@ -15629,7 +15629,7 @@ yyreduce:
                         nd_set_last_loc((yyvsp[-1].node_fcall), (yylsp[0]).end_pos);
                     /*% ripper: method_add_arg!(fcall!($:1), $:2) %*/
                     }
-#line 15633 "parse.c"
+#line 15633 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 505: /* method_call: primary_value call_op operation2 opt_paren_args  */
@@ -15644,7 +15644,7 @@ yyreduce:
                         /*% ripper: method_add_arg!($:$, $:4) %*/
                         }
                     }
-#line 15648 "parse.c"
+#line 15648 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 506: /* method_call: primary_value "::" operation2 paren_args  */
@@ -15654,7 +15654,7 @@ yyreduce:
                         nd_set_line((yyval.node), (yylsp[-1]).end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, $:3), $:4) %*/
                     }
-#line 15658 "parse.c"
+#line 15658 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 507: /* method_call: primary_value "::" operation3  */
@@ -15663,7 +15663,7 @@ yyreduce:
                         (yyval.node) = new_qcall(p, idCOLON2, (yyvsp[-2].node), (yyvsp[0].id), 0, &(yylsp[0]), &(yyloc));
                     /*% ripper: call!($:1, $:2, $:3) %*/
                     }
-#line 15667 "parse.c"
+#line 15667 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 508: /* method_call: primary_value call_op2 paren_args  */
@@ -15673,7 +15673,7 @@ yyreduce:
                         nd_set_line((yyval.node), (yylsp[-1]).end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
-#line 15677 "parse.c"
+#line 15677 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 509: /* method_call: "'super'" paren_args  */
@@ -15687,7 +15687,7 @@ yyreduce:
                         (yyval.node) = NEW_SUPER((yyvsp[0].node), &(yyloc), &(yylsp[-1]), &lparen_loc, &rparen_loc);
                     /*% ripper: super!($:2) %*/
                     }
-#line 15691 "parse.c"
+#line 15691 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 510: /* method_call: "'super'"  */
@@ -15696,7 +15696,7 @@ yyreduce:
                         (yyval.node) = NEW_ZSUPER(&(yyloc));
                     /*% ripper: zsuper! %*/
                     }
-#line 15700 "parse.c"
+#line 15700 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 511: /* method_call: primary_value '[' opt_call_args rbracket  */
@@ -15706,7 +15706,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[-3].node));
                     /*% ripper: aref!($:1, $:3) %*/
                     }
-#line 15710 "parse.c"
+#line 15710 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 512: /* brace_block: '{' brace_body '}'  */
@@ -15716,7 +15716,7 @@ yyreduce:
                         set_embraced_location((yyval.node), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: $:2 %*/
                     }
-#line 15720 "parse.c"
+#line 15720 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 513: /* brace_block: k_do do_body k_end  */
@@ -15726,13 +15726,13 @@ yyreduce:
                         set_embraced_location((yyval.node), &(yylsp[-2]), &(yylsp[0]));
                     /*% ripper: $:2 %*/
                     }
-#line 15730 "parse.c"
+#line 15730 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 514: /* @29: %empty  */
 #line 5319 "parse.y"
              {(yyval.vars) = dyna_push(p);}
-#line 15736 "parse.c"
+#line 15736 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 515: /* brace_body: @29 max_numparam numparam it_id allow_exits opt_block_param_def compstmt_stmts  */
@@ -15749,7 +15749,7 @@ yyreduce:
                         numparam_pop(p, (yyvsp[-4].node));
                         dyna_pop(p, (yyvsp[-6].vars));
                     }
-#line 15753 "parse.c"
+#line 15753 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 516: /* @30: %empty  */
@@ -15758,7 +15758,7 @@ yyreduce:
                         (yyval.vars) = dyna_push(p);
                         CMDARG_PUSH(0);
                     }
-#line 15762 "parse.c"
+#line 15762 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 517: /* do_body: @30 max_numparam numparam it_id allow_exits opt_block_param_def bodystmt  */
@@ -15776,7 +15776,7 @@ yyreduce:
                         numparam_pop(p, (yyvsp[-4].node));
                         dyna_pop(p, (yyvsp[-6].vars));
                     }
-#line 15780 "parse.c"
+#line 15780 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 518: /* case_args: arg_value  */
@@ -15786,7 +15786,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add!(args_new!, $:arg_value) %*/
                     }
-#line 15790 "parse.c"
+#line 15790 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 519: /* case_args: "*" arg_value  */
@@ -15795,7 +15795,7 @@ yyreduce:
                         (yyval.node) = NEW_SPLAT((yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: args_add_star!(args_new!, $:arg_value) %*/
                     }
-#line 15799 "parse.c"
+#line 15799 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 520: /* case_args: case_args ',' arg_value  */
@@ -15805,7 +15805,7 @@ yyreduce:
                         (yyval.node) = last_arg_append(p, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add!($:non_last_args, $:arg_value) %*/
                     }
-#line 15809 "parse.c"
+#line 15809 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 521: /* case_args: case_args ',' "*" arg_value  */
@@ -15814,7 +15814,7 @@ yyreduce:
                         (yyval.node) = rest_arg_append(p, (yyvsp[-3].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: args_add_star!($:non_last_args, $:arg_value) %*/
                     }
-#line 15818 "parse.c"
+#line 15818 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 522: /* case_body: k_when case_args then compstmt_stmts cases  */
@@ -15824,19 +15824,19 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[-3].node));
                     /*% ripper: when!($:2, $:4, $:5) %*/
                     }
-#line 15828 "parse.c"
+#line 15828 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 525: /* p_pvtbl: %empty  */
 #line 5395 "parse.y"
            {(yyval.tbl) = p->pvtbl; p->pvtbl = st_init_numtable();}
-#line 15834 "parse.c"
+#line 15834 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 526: /* p_pktbl: %empty  */
 #line 5396 "parse.y"
            {(yyval.tbl) = p->pktbl; p->pktbl = 0;}
-#line 15840 "parse.c"
+#line 15840 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 527: /* p_in_kwarg: %empty  */
@@ -15849,7 +15849,7 @@ yyreduce:
                         p->ctxt.in_alt_pattern = 0;
                         p->ctxt.capture_in_pattern = 0;
                     }
-#line 15853 "parse.c"
+#line 15853 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 528: /* $@31: %empty  */
@@ -15861,7 +15861,7 @@ yyreduce:
                         p->ctxt.in_alt_pattern = (yyvsp[-4].ctxt).in_alt_pattern;
                         p->ctxt.capture_in_pattern = (yyvsp[-4].ctxt).capture_in_pattern;
                     }
-#line 15865 "parse.c"
+#line 15865 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 529: /* p_case_body: "'in'" p_in_kwarg p_pvtbl p_pktbl p_top_expr then $@31 compstmt_stmts p_cases  */
@@ -15870,7 +15870,7 @@ yyreduce:
                         (yyval.node) = NEW_IN((yyvsp[-4].node), (yyvsp[-1].node), (yyvsp[0].node), &(yyloc), &(yylsp[-8]), &(yylsp[-3]), &NULL_LOC);
                     /*% ripper: in!($:expr, $:compstmt, $:cases) %*/
                     }
-#line 15874 "parse.c"
+#line 15874 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 533: /* p_top_expr: p_top_expr_body "'if' modifier" expr_value  */
@@ -15880,7 +15880,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[0].node));
                     /*% ripper: if_mod!($:3, $:1) %*/
                     }
-#line 15884 "parse.c"
+#line 15884 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 534: /* p_top_expr: p_top_expr_body "'unless' modifier" expr_value  */
@@ -15890,7 +15890,7 @@ yyreduce:
                         fixpos((yyval.node), (yyvsp[0].node));
                     /*% ripper: unless_mod!($:3, $:1) %*/
                     }
-#line 15894 "parse.c"
+#line 15894 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 536: /* p_top_expr_body: p_expr ','  */
@@ -15900,7 +15900,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern(p, 0, (yyvsp[-1].node), (yyval.node), &(yyloc));
                     /*% ripper: aryptn!(Qnil, [$:1], Qnil, Qnil) %*/
                     }
-#line 15904 "parse.c"
+#line 15904 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 537: /* p_top_expr_body: p_expr ',' p_args  */
@@ -15910,7 +15910,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-2]).beg_pos);
                     /*% ripper: aryptn!(Qnil, aryptn_pre_args(p, $:1, $:3[0]), *$:3[1..2]) %*/
                     }
-#line 15914 "parse.c"
+#line 15914 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 538: /* p_top_expr_body: p_find  */
@@ -15919,7 +15919,7 @@ yyreduce:
                         (yyval.node) = new_find_pattern(p, 0, (yyvsp[0].node), &(yyloc));
                     /*% ripper: fndptn!(Qnil, *$:1[0..2]) %*/
                     }
-#line 15923 "parse.c"
+#line 15923 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 539: /* p_top_expr_body: p_args_tail  */
@@ -15928,7 +15928,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern(p, 0, 0, (yyvsp[0].node), &(yyloc));
                     /*% ripper: aryptn!(Qnil, *$:1[0..2]) %*/
                     }
-#line 15932 "parse.c"
+#line 15932 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 540: /* p_top_expr_body: p_kwargs  */
@@ -15937,7 +15937,7 @@ yyreduce:
                         (yyval.node) = new_hash_pattern(p, 0, (yyvsp[0].node), &(yyloc));
                     /*% ripper: hshptn!(Qnil, *$:1[0..1]) %*/
                     }
-#line 15941 "parse.c"
+#line 15941 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 542: /* p_as: p_expr "=>" p_variable  */
@@ -15948,7 +15948,7 @@ yyreduce:
                         (yyval.node) = new_hash(p, n, &(yyloc));
                     /*% ripper: binary!($:1, ID2VAL((id_assoc)), $:3) %*/
                     }
-#line 15952 "parse.c"
+#line 15952 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 544: /* $@32: %empty  */
@@ -15956,7 +15956,7 @@ yyreduce:
                     {
                         p->ctxt.in_alt_pattern = 1;
                     }
-#line 15960 "parse.c"
+#line 15960 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 545: /* p_alt: p_alt '|' $@32 p_expr_basic  */
@@ -15969,7 +15969,7 @@ yyreduce:
                         (yyval.node) = NEW_OR((yyvsp[-3].node), (yyvsp[0].node), &(yyloc), &(yylsp[-2]));
                     /*% ripper: binary!($:left, ID2VAL(idOr), $:right) %*/
                     }
-#line 15973 "parse.c"
+#line 15973 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 547: /* p_lparen: '(' p_pktbl  */
@@ -15978,7 +15978,7 @@ yyreduce:
                         (yyval.tbl) = (yyvsp[0].tbl);
                     /*% ripper: $:2 %*/
                     }
-#line 15982 "parse.c"
+#line 15982 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 548: /* p_lbracket: '[' p_pktbl  */
@@ -15987,7 +15987,7 @@ yyreduce:
                         (yyval.tbl) = (yyvsp[0].tbl);
                     /*% ripper: $:2 %*/
                     }
-#line 15991 "parse.c"
+#line 15991 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 551: /* p_expr_basic: p_const p_lparen p_args rparen  */
@@ -15998,7 +15998,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-3]).beg_pos);
                     /*% ripper: aryptn!($:p_const, *$:p_args[0..2]) %*/
                     }
-#line 16002 "parse.c"
+#line 16002 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 552: /* p_expr_basic: p_const p_lparen p_find rparen  */
@@ -16009,7 +16009,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-3]).beg_pos);
                     /*% ripper: fndptn!($:p_const, *$:p_find[0..2]) %*/
                     }
-#line 16013 "parse.c"
+#line 16013 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 553: /* p_expr_basic: p_const p_lparen p_kwargs rparen  */
@@ -16020,7 +16020,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-3]).beg_pos);
                     /*% ripper: hshptn!($:p_const, *$:p_kwargs[0..1]) %*/
                     }
-#line 16024 "parse.c"
+#line 16024 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 554: /* p_expr_basic: p_const '(' rparen  */
@@ -16030,7 +16030,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern(p, (yyvsp[-2].node), 0, (yyval.node), &(yyloc));
                         /*% ripper: aryptn!($:p_const, Qnil, Qnil, Qnil) %*/
                     }
-#line 16034 "parse.c"
+#line 16034 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 555: /* p_expr_basic: p_const p_lbracket p_args rbracket  */
@@ -16041,7 +16041,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-3]).beg_pos);
                     /*% ripper: aryptn!($:p_const, *$:p_args[0..2]) %*/
                     }
-#line 16045 "parse.c"
+#line 16045 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 556: /* p_expr_basic: p_const p_lbracket p_find rbracket  */
@@ -16052,7 +16052,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-3]).beg_pos);
                     /*% ripper: fndptn!($:p_const, *$:p_find[0..2]) %*/
                     }
-#line 16056 "parse.c"
+#line 16056 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 557: /* p_expr_basic: p_const p_lbracket p_kwargs rbracket  */
@@ -16063,7 +16063,7 @@ yyreduce:
                         nd_set_first_loc((yyval.node), (yylsp[-3]).beg_pos);
                     /*% ripper: hshptn!($:p_const, *$:p_kwargs[0..1]) %*/
                     }
-#line 16067 "parse.c"
+#line 16067 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 558: /* p_expr_basic: p_const '[' rbracket  */
@@ -16073,7 +16073,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern(p, (yyvsp[-2].node), 0, (yyval.node), &(yyloc));
                     /*% ripper: aryptn!($:1, Qnil, Qnil, Qnil) %*/
                     }
-#line 16077 "parse.c"
+#line 16077 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 559: /* p_expr_basic: "[" p_args rbracket  */
@@ -16082,7 +16082,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern(p, 0, 0, (yyvsp[-1].node), &(yyloc));
                     /*% ripper: aryptn!(Qnil, *$:p_args[0..2]) %*/
                     }
-#line 16086 "parse.c"
+#line 16086 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 560: /* p_expr_basic: "[" p_find rbracket  */
@@ -16091,7 +16091,7 @@ yyreduce:
                         (yyval.node) = new_find_pattern(p, 0, (yyvsp[-1].node), &(yyloc));
                     /*% ripper: fndptn!(Qnil, *$:p_find[0..2]) %*/
                     }
-#line 16095 "parse.c"
+#line 16095 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 561: /* p_expr_basic: "[" rbracket  */
@@ -16101,7 +16101,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern(p, 0, 0, (yyval.node), &(yyloc));
                     /*% ripper: aryptn!(Qnil, Qnil, Qnil, Qnil) %*/
                     }
-#line 16105 "parse.c"
+#line 16105 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 562: /* $@33: %empty  */
@@ -16109,7 +16109,7 @@ yyreduce:
                     {
                         p->ctxt.in_kwarg = 0;
                     }
-#line 16113 "parse.c"
+#line 16113 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 563: /* p_expr_basic: "{" p_pktbl lex_ctxt $@33 p_kwargs rbrace  */
@@ -16120,7 +16120,7 @@ yyreduce:
                         (yyval.node) = new_hash_pattern(p, 0, (yyvsp[-1].node), &(yyloc));
                     /*% ripper: hshptn!(Qnil, *$:p_kwargs[0..1]) %*/
                     }
-#line 16124 "parse.c"
+#line 16124 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 564: /* p_expr_basic: "{" rbrace  */
@@ -16130,7 +16130,7 @@ yyreduce:
                         (yyval.node) = new_hash_pattern(p, 0, (yyval.node), &(yyloc));
                     /*% ripper: hshptn!(Qnil, Qnil, Qnil) %*/
                     }
-#line 16134 "parse.c"
+#line 16134 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 565: /* p_expr_basic: "(" p_pktbl p_expr rparen  */
@@ -16140,7 +16140,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node);
                     /*% ripper: $:p_expr %*/
                     }
-#line 16144 "parse.c"
+#line 16144 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 566: /* p_args: p_expr  */
@@ -16150,7 +16150,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, pre_args, 0, 0, 0, &(yyloc));
                     /*% ripper: [[$:1], Qnil, Qnil] %*/
                     }
-#line 16154 "parse.c"
+#line 16154 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 567: /* p_args: p_args_head  */
@@ -16159,7 +16159,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, (yyvsp[0].node), 1, 0, 0, &(yyloc));
                     /*% ripper: [$:1, Qnil, Qnil] %*/
                     }
-#line 16163 "parse.c"
+#line 16163 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 568: /* p_args: p_args_head p_arg  */
@@ -16168,7 +16168,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, list_concat((yyvsp[-1].node), (yyvsp[0].node)), 0, 0, 0, &(yyloc));
                     /*% ripper: [rb_ary_concat($:1, $:2), Qnil, Qnil] %*/
                     }
-#line 16172 "parse.c"
+#line 16172 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 569: /* p_args: p_args_head p_rest  */
@@ -16177,7 +16177,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, (yyvsp[-1].node), 1, (yyvsp[0].node), 0, &(yyloc));
                     /*% ripper: [$:1, $:2, Qnil] %*/
                     }
-#line 16181 "parse.c"
+#line 16181 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 570: /* p_args: p_args_head p_rest ',' p_args_post  */
@@ -16186,7 +16186,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, (yyvsp[-3].node), 1, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: [$:1, $:2, $:4] %*/
                     }
-#line 16190 "parse.c"
+#line 16190 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 573: /* p_args_head: p_args_head p_arg ','  */
@@ -16195,7 +16195,7 @@ yyreduce:
                         (yyval.node) = list_concat((yyvsp[-2].node), (yyvsp[-1].node));
                     /*% ripper: rb_ary_concat($:1, $:2) %*/
                     }
-#line 16199 "parse.c"
+#line 16199 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 574: /* p_args_tail: p_rest  */
@@ -16204,7 +16204,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, 0, 1, (yyvsp[0].node), 0, &(yyloc));
                     /*% ripper: [Qnil, $:1, Qnil] %*/
                     }
-#line 16208 "parse.c"
+#line 16208 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 575: /* p_args_tail: p_rest ',' p_args_post  */
@@ -16213,7 +16213,7 @@ yyreduce:
                         (yyval.node) = new_array_pattern_tail(p, 0, 1, (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: [Qnil, $:1, $:3] %*/
                     }
-#line 16217 "parse.c"
+#line 16217 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 576: /* p_find: p_rest ',' p_args_post ',' p_rest  */
@@ -16222,7 +16222,7 @@ yyreduce:
                         (yyval.node) = new_find_pattern_tail(p, (yyvsp[-4].node), (yyvsp[-2].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: [$:1, $:3, $:5] %*/
                     }
-#line 16226 "parse.c"
+#line 16226 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 577: /* p_rest: "*" "local variable or method"  */
@@ -16232,7 +16232,7 @@ yyreduce:
                     /*% ripper: var_field!($:2) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 16236 "parse.c"
+#line 16236 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 578: /* p_rest: "*"  */
@@ -16241,7 +16241,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: var_field!(Qnil) %*/
                     }
-#line 16245 "parse.c"
+#line 16245 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 580: /* p_args_post: p_args_post ',' p_arg  */
@@ -16250,7 +16250,7 @@ yyreduce:
                         (yyval.node) = list_concat((yyvsp[-2].node), (yyvsp[0].node));
                     /*% ripper: rb_ary_concat($:1, $:3) %*/
                     }
-#line 16254 "parse.c"
+#line 16254 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 581: /* p_arg: p_expr  */
@@ -16259,7 +16259,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: [$:1] %*/
                     }
-#line 16263 "parse.c"
+#line 16263 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 582: /* p_kwargs: p_kwarg ',' p_any_kwrest  */
@@ -16268,7 +16268,7 @@ yyreduce:
                         (yyval.node) =  new_hash_pattern_tail(p, new_unique_key_hash(p, (yyvsp[-2].node), &(yyloc)), (yyvsp[0].id), &(yyloc));
                     /*% ripper: [$:1, $:3] %*/
                     }
-#line 16272 "parse.c"
+#line 16272 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 583: /* p_kwargs: p_kwarg  */
@@ -16277,7 +16277,7 @@ yyreduce:
                         (yyval.node) =  new_hash_pattern_tail(p, new_unique_key_hash(p, (yyvsp[0].node), &(yyloc)), 0, &(yyloc));
                     /*% ripper: [$:1, Qnil] %*/
                     }
-#line 16281 "parse.c"
+#line 16281 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 584: /* p_kwargs: p_kwarg ','  */
@@ -16286,7 +16286,7 @@ yyreduce:
                         (yyval.node) =  new_hash_pattern_tail(p, new_unique_key_hash(p, (yyvsp[-1].node), &(yyloc)), 0, &(yyloc));
                     /*% ripper: [$:1, Qnil] %*/
                     }
-#line 16290 "parse.c"
+#line 16290 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 585: /* p_kwargs: p_any_kwrest  */
@@ -16295,7 +16295,7 @@ yyreduce:
                         (yyval.node) =  new_hash_pattern_tail(p, new_hash(p, 0, &(yyloc)), (yyvsp[0].id), &(yyloc));
                     /*% ripper: [[], $:1] %*/
                     }
-#line 16299 "parse.c"
+#line 16299 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 587: /* p_kwarg: p_kwarg ',' p_kw  */
@@ -16304,7 +16304,7 @@ yyreduce:
                         (yyval.node) = list_concat((yyvsp[-2].node), (yyvsp[0].node));
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 16308 "parse.c"
+#line 16308 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 588: /* p_kw: p_kw_label p_expr  */
@@ -16314,7 +16314,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST(NEW_SYM(rb_id2str((yyvsp[-1].id)), &(yylsp[-1])), &(yyloc)), (yyvsp[0].node));
                     /*% ripper: [$:1, $:2] %*/
                     }
-#line 16318 "parse.c"
+#line 16318 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 589: /* p_kw: p_kw_label  */
@@ -16328,7 +16328,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST(NEW_SYM(rb_id2str((yyvsp[0].id)), &(yyloc)), &(yyloc)), assignable(p, (yyvsp[0].id), 0, &(yyloc)));
                     /*% ripper: [$:1, Qnil] %*/
                     }
-#line 16332 "parse.c"
+#line 16332 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 591: /* p_kw_label: "string literal" string_contents tLABEL_END  */
@@ -16345,7 +16345,7 @@ yyreduce:
                         }
                     /*% ripper: $:2 %*/
                     }
-#line 16349 "parse.c"
+#line 16349 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 592: /* p_kwrest: kwrest_mark "local variable or method"  */
@@ -16354,7 +16354,7 @@ yyreduce:
                         (yyval.id) = (yyvsp[0].id);
                     /*% ripper: var_field!($:2) %*/
                     }
-#line 16358 "parse.c"
+#line 16358 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 593: /* p_kwrest: kwrest_mark  */
@@ -16363,7 +16363,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper: Qnil %*/
                     }
-#line 16367 "parse.c"
+#line 16367 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 594: /* p_kwnorest: kwrest_mark "'nil'"  */
@@ -16371,7 +16371,7 @@ yyreduce:
                     {
                         (yyval.id) = 0;
                     }
-#line 16375 "parse.c"
+#line 16375 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 596: /* p_any_kwrest: p_kwnorest  */
@@ -16380,7 +16380,7 @@ yyreduce:
                         (yyval.id) = idNil;
                     /*% ripper: var_field!(ID2VAL(idNil)) %*/
                     }
-#line 16384 "parse.c"
+#line 16384 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 598: /* range_expr_p_primitive: p_primitive ".." p_primitive  */
@@ -16391,7 +16391,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT2((yyvsp[-2].node), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot2!($:1, $:3) %*/
                     }
-#line 16395 "parse.c"
+#line 16395 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 599: /* range_expr_p_primitive: p_primitive "..." p_primitive  */
@@ -16402,7 +16402,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT3((yyvsp[-2].node), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
-#line 16406 "parse.c"
+#line 16406 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 600: /* range_expr_p_primitive: p_primitive ".."  */
@@ -16412,7 +16412,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT2((yyvsp[-1].node), new_nil_at(p, &(yylsp[0]).end_pos), &(yyloc), &(yylsp[0]));
                     /*% ripper: dot2!($:1, Qnil) %*/
                     }
-#line 16416 "parse.c"
+#line 16416 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 601: /* range_expr_p_primitive: p_primitive "..."  */
@@ -16422,7 +16422,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT3((yyvsp[-1].node), new_nil_at(p, &(yylsp[0]).end_pos), &(yyloc), &(yylsp[0]));
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
-#line 16426 "parse.c"
+#line 16426 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 602: /* range_expr_p_primitive: "(.." p_primitive  */
@@ -16432,7 +16432,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT2(new_nil_at(p, &(yylsp[-1]).beg_pos), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot2!(Qnil, $:2) %*/
                     }
-#line 16436 "parse.c"
+#line 16436 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 603: /* range_expr_p_primitive: "(..." p_primitive  */
@@ -16442,7 +16442,7 @@ yyreduce:
                         (yyval.node) = NEW_DOT3(new_nil_at(p, &(yylsp[-1]).beg_pos), (yyvsp[0].node), &(yyloc), &(yylsp[-1]));
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
-#line 16446 "parse.c"
+#line 16446 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 616: /* p_primitive: keyword_variable  */
@@ -16451,7 +16451,7 @@ yyreduce:
                         if (!((yyval.node) = gettable(p, (yyvsp[0].id), &(yyloc)))) (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper: var_ref!($:1) %*/
                     }
-#line 16455 "parse.c"
+#line 16455 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 618: /* p_variable: "local variable or method"  */
@@ -16461,7 +16461,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 16465 "parse.c"
+#line 16465 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 619: /* p_var_ref: '^' "local variable or method"  */
@@ -16477,7 +16477,7 @@ yyreduce:
                         (yyval.node) = n;
                     /*% ripper: var_ref!($:2) %*/
                     }
-#line 16481 "parse.c"
+#line 16481 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 620: /* p_var_ref: '^' nonlocal_var  */
@@ -16486,7 +16486,7 @@ yyreduce:
                         if (!((yyval.node) = gettable(p, (yyvsp[0].id), &(yyloc)))) (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper: var_ref!($:2) %*/
                     }
-#line 16490 "parse.c"
+#line 16490 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 621: /* p_expr_ref: '^' "(" expr_value rparen  */
@@ -16495,7 +16495,7 @@ yyreduce:
                         (yyval.node) = NEW_BLOCK((yyvsp[-1].node), &(yyloc));
                     /*% ripper: begin!($:3) %*/
                     }
-#line 16499 "parse.c"
+#line 16499 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 622: /* p_const: ":: at EXPR_BEG" cname  */
@@ -16504,7 +16504,7 @@ yyreduce:
                         (yyval.node) = NEW_COLON3((yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0]));
                     /*% ripper: top_const_ref!($:2) %*/
                     }
-#line 16508 "parse.c"
+#line 16508 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 623: /* p_const: p_const "::" cname  */
@@ -16513,7 +16513,7 @@ yyreduce:
                         (yyval.node) = NEW_COLON2((yyvsp[-2].node), (yyvsp[0].id), &(yyloc), &(yylsp[-1]), &(yylsp[0]));
                     /*% ripper: const_path_ref!($:1, $:3) %*/
                     }
-#line 16517 "parse.c"
+#line 16517 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 624: /* p_const: "constant"  */
@@ -16522,7 +16522,7 @@ yyreduce:
                         (yyval.node) = gettable(p, (yyvsp[0].id), &(yyloc));
                     /*% ripper: var_ref!($:1) %*/
                    }
-#line 16526 "parse.c"
+#line 16526 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 625: /* opt_rescue: k_rescue exc_list exc_var then compstmt_stmts opt_rescue  */
@@ -16545,7 +16545,7 @@ yyreduce:
                         }
                     /*% ripper: rescue!($:2, $:3, $:5, $:6) %*/
                     }
-#line 16549 "parse.c"
+#line 16549 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 627: /* exc_list: arg_value  */
@@ -16554,7 +16554,7 @@ yyreduce:
                         (yyval.node) = NEW_LIST((yyvsp[0].node), &(yyloc));
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-#line 16558 "parse.c"
+#line 16558 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 628: /* exc_list: mrhs  */
@@ -16562,7 +16562,7 @@ yyreduce:
                     {
                         if (!((yyval.node) = splat_array((yyvsp[0].node)))) (yyval.node) = (yyvsp[0].node);
                     }
-#line 16566 "parse.c"
+#line 16566 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 630: /* exc_var: "=>" lhs  */
@@ -16571,7 +16571,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[0].node);
                     /*% ripper: $:2 %*/
                     }
-#line 16575 "parse.c"
+#line 16575 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 632: /* opt_ensure: k_ensure stmts option_terms  */
@@ -16582,7 +16582,7 @@ yyreduce:
                         void_expr(p, void_stmts(p, (yyval.node)));
                     /*% ripper: ensure!($:2) %*/
                     }
-#line 16586 "parse.c"
+#line 16586 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 636: /* strings: string  */
@@ -16596,7 +16596,7 @@ yyreduce:
                         }
                     /*% ripper: $:1 %*/
                     }
-#line 16600 "parse.c"
+#line 16600 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 639: /* string: string string1  */
@@ -16605,7 +16605,7 @@ yyreduce:
                         (yyval.node) = literal_concat(p, (yyvsp[-1].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: string_concat!($:1, $:2) %*/
                     }
-#line 16609 "parse.c"
+#line 16609 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 640: /* string1: "string literal" string_contents "terminator"  */
@@ -16620,7 +16620,7 @@ yyreduce:
                         }
                     /*% ripper: string_literal!($:$) %*/
                     }
-#line 16624 "parse.c"
+#line 16624 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 641: /* xstring: "backtick literal" xstring_contents "terminator"  */
@@ -16634,7 +16634,7 @@ yyreduce:
                         }
                     /*% ripper: xstring_literal!($:$) %*/
                     }
-#line 16638 "parse.c"
+#line 16638 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 642: /* regexp: "regexp literal" regexp_contents tREGEXP_END  */
@@ -16643,7 +16643,7 @@ yyreduce:
                         (yyval.node) = new_regexp(p, (yyvsp[-1].node), (yyvsp[0].num), &(yyloc), &(yylsp[-2]), &(yylsp[-1]), &(yylsp[0]));
                     /*% ripper: regexp_literal!($:2, $:3) %*/
                     }
-#line 16647 "parse.c"
+#line 16647 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 645: /* words_tWORDS_BEG_word_list: "word list" nonempty_list_' ' word_list "terminator"  */
@@ -16652,7 +16652,7 @@ yyreduce:
                         (yyval.node) = make_list((yyvsp[-1].node), &(yyloc));
                     /*% ripper: array!($:3) %*/
                     }
-#line 16656 "parse.c"
+#line 16656 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 647: /* word_list: %empty  */
@@ -16661,7 +16661,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: words_new! %*/
                     }
-#line 16665 "parse.c"
+#line 16665 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 648: /* word_list: word_list word nonempty_list_' '  */
@@ -16670,7 +16670,7 @@ yyreduce:
                         (yyval.node) = list_append(p, (yyvsp[-2].node), evstr2dstr(p, (yyvsp[-1].node)));
                     /*% ripper: words_add!($:1, $:2) %*/
                     }
-#line 16674 "parse.c"
+#line 16674 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 650: /* word: word string_content  */
@@ -16679,7 +16679,7 @@ yyreduce:
                         (yyval.node) = literal_concat(p, (yyvsp[-1].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: word_add!($:1, $:2) %*/
                     }
-#line 16683 "parse.c"
+#line 16683 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 651: /* words_tSYMBOLS_BEG_symbol_list: "symbol list" nonempty_list_' ' symbol_list "terminator"  */
@@ -16688,7 +16688,7 @@ yyreduce:
                         (yyval.node) = make_list((yyvsp[-1].node), &(yyloc));
                     /*% ripper: array!($:3) %*/
                     }
-#line 16692 "parse.c"
+#line 16692 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 653: /* symbol_list: %empty  */
@@ -16697,7 +16697,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: symbols_new! %*/
                     }
-#line 16701 "parse.c"
+#line 16701 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 654: /* symbol_list: symbol_list word nonempty_list_' '  */
@@ -16706,7 +16706,7 @@ yyreduce:
                         (yyval.node) = symbol_append(p, (yyvsp[-2].node), evstr2dstr(p, (yyvsp[-1].node)));
                     /*% ripper: symbols_add!($:1, $:2) %*/
                     }
-#line 16710 "parse.c"
+#line 16710 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 655: /* words_tQWORDS_BEG_qword_list: "verbatim word list" nonempty_list_' ' qword_list "terminator"  */
@@ -16715,7 +16715,7 @@ yyreduce:
                         (yyval.node) = make_list((yyvsp[-1].node), &(yyloc));
                     /*% ripper: array!($:3) %*/
                     }
-#line 16719 "parse.c"
+#line 16719 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 657: /* words_tQSYMBOLS_BEG_qsym_list: "verbatim symbol list" nonempty_list_' ' qsym_list "terminator"  */
@@ -16724,7 +16724,7 @@ yyreduce:
                         (yyval.node) = make_list((yyvsp[-1].node), &(yyloc));
                     /*% ripper: array!($:3) %*/
                     }
-#line 16728 "parse.c"
+#line 16728 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 659: /* qword_list: %empty  */
@@ -16733,7 +16733,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: qwords_new! %*/
                     }
-#line 16737 "parse.c"
+#line 16737 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 660: /* qword_list: qword_list "literal content" nonempty_list_' '  */
@@ -16742,7 +16742,7 @@ yyreduce:
                         (yyval.node) = list_append(p, (yyvsp[-2].node), (yyvsp[-1].node));
                     /*% ripper: qwords_add!($:1, $:2) %*/
                     }
-#line 16746 "parse.c"
+#line 16746 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 661: /* qsym_list: %empty  */
@@ -16751,7 +16751,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: qsymbols_new! %*/
                     }
-#line 16755 "parse.c"
+#line 16755 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 662: /* qsym_list: qsym_list "literal content" nonempty_list_' '  */
@@ -16760,7 +16760,7 @@ yyreduce:
                         (yyval.node) = symbol_append(p, (yyvsp[-2].node), (yyvsp[-1].node));
                     /*% ripper: qsymbols_add!($:1, $:2) %*/
                     }
-#line 16764 "parse.c"
+#line 16764 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 663: /* string_contents: %empty  */
@@ -16769,7 +16769,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: string_content! %*/
                     }
-#line 16773 "parse.c"
+#line 16773 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 664: /* string_contents: string_contents string_content  */
@@ -16778,7 +16778,7 @@ yyreduce:
                         (yyval.node) = literal_concat(p, (yyvsp[-1].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: string_add!($:1, $:2) %*/
                     }
-#line 16782 "parse.c"
+#line 16782 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 665: /* xstring_contents: %empty  */
@@ -16787,7 +16787,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: xstring_new! %*/
                     }
-#line 16791 "parse.c"
+#line 16791 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 666: /* xstring_contents: xstring_contents string_content  */
@@ -16796,7 +16796,7 @@ yyreduce:
                         (yyval.node) = literal_concat(p, (yyvsp[-1].node), (yyvsp[0].node), &(yyloc));
                     /*% ripper: xstring_add!($:1, $:2) %*/
                     }
-#line 16800 "parse.c"
+#line 16800 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 667: /* regexp_contents: %empty  */
@@ -16805,7 +16805,7 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: regexp_new! %*/
                     }
-#line 16809 "parse.c"
+#line 16809 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 668: /* regexp_contents: regexp_contents string_content  */
@@ -16833,7 +16833,7 @@ yyreduce:
                         }
                     /*% ripper: regexp_add!($:1, $:2) %*/
                     }
-#line 16837 "parse.c"
+#line 16837 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 670: /* @34: %empty  */
@@ -16844,7 +16844,7 @@ yyreduce:
                         p->lex.strterm = 0;
                         SET_LEX_STATE(EXPR_BEG);
                     }
-#line 16848 "parse.c"
+#line 16848 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 671: /* string_content: tSTRING_DVAR @34 string_dvar  */
@@ -16855,7 +16855,7 @@ yyreduce:
                         nd_set_line((yyval.node), (yylsp[0]).end_pos.lineno);
                     /*% ripper: string_dvar!($:3) %*/
                     }
-#line 16859 "parse.c"
+#line 16859 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 672: /* @35: %empty  */
@@ -16868,7 +16868,7 @@ yyreduce:
                         p->lex.strterm = 0;
                         SET_LEX_STATE(EXPR_BEG);
                     }
-#line 16872 "parse.c"
+#line 16872 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 673: /* @36: %empty  */
@@ -16877,7 +16877,7 @@ yyreduce:
                         (yyval.num) = p->lex.brace_nest;
                         p->lex.brace_nest = 0;
                     }
-#line 16881 "parse.c"
+#line 16881 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 674: /* @37: %empty  */
@@ -16886,7 +16886,7 @@ yyreduce:
                         (yyval.num) = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }
-#line 16890 "parse.c"
+#line 16890 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 675: /* string_content: "'#{'" @35 @36 @37 compstmt_stmts string_dend  */
@@ -16903,7 +16903,7 @@ yyreduce:
                         (yyval.node) = new_evstr(p, (yyvsp[-1].node), &(yyloc), &(yylsp[-5]), &(yylsp[0]));
                     /*% ripper: string_embexpr!($:compstmt) %*/
                     }
-#line 16907 "parse.c"
+#line 16907 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 678: /* string_dvar: nonlocal_var  */
@@ -16912,7 +16912,7 @@ yyreduce:
                         if (!((yyval.node) = gettable(p, (yyvsp[0].id), &(yyloc)))) (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper: var_ref!($:1) %*/
                     }
-#line 16916 "parse.c"
+#line 16916 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 682: /* ssym: "symbol literal" sym  */
@@ -16930,7 +16930,7 @@ yyreduce:
                         (yyval.node) = NEW_SYM(str, &(yyloc));
                     /*% ripper: symbol_literal!(symbol!($:2)) %*/
                     }
-#line 16934 "parse.c"
+#line 16934 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 685: /* dsym: "symbol literal" string_contents "terminator"  */
@@ -16940,7 +16940,7 @@ yyreduce:
                         (yyval.node) = dsym_node(p, (yyvsp[-1].node), &(yyloc));
                     /*% ripper: dyna_symbol!($:2) %*/
                     }
-#line 16944 "parse.c"
+#line 16944 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 687: /* numeric: tUMINUS_NUM simple_numeric  */
@@ -16950,49 +16950,49 @@ yyreduce:
                         negate_lit(p, (yyval.node));
                     /*% ripper: unary!(ID2VAL(idUMinus), $:2) %*/
                     }
-#line 16954 "parse.c"
+#line 16954 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 698: /* keyword_variable: "'nil'"  */
 #line 6209 "parse.y"
                               {(yyval.id) = KWD2EID(nil, (yyvsp[0].id));}
-#line 16960 "parse.c"
+#line 16960 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 699: /* keyword_variable: "'self'"  */
 #line 6210 "parse.y"
                                {(yyval.id) = KWD2EID(self, (yyvsp[0].id));}
-#line 16966 "parse.c"
+#line 16966 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 700: /* keyword_variable: "'true'"  */
 #line 6211 "parse.y"
                                {(yyval.id) = KWD2EID(true, (yyvsp[0].id));}
-#line 16972 "parse.c"
+#line 16972 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 701: /* keyword_variable: "'false'"  */
 #line 6212 "parse.y"
                                 {(yyval.id) = KWD2EID(false, (yyvsp[0].id));}
-#line 16978 "parse.c"
+#line 16978 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 702: /* keyword_variable: "'__FILE__'"  */
 #line 6213 "parse.y"
                                   {(yyval.id) = KWD2EID(_FILE__, (yyvsp[0].id));}
-#line 16984 "parse.c"
+#line 16984 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 703: /* keyword_variable: "'__LINE__'"  */
 #line 6214 "parse.y"
                                   {(yyval.id) = KWD2EID(_LINE__, (yyvsp[0].id));}
-#line 16990 "parse.c"
+#line 16990 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 704: /* keyword_variable: "'__ENCODING__'"  */
 #line 6215 "parse.y"
                                       {(yyval.id) = KWD2EID(_ENCODING__, (yyvsp[0].id));}
-#line 16996 "parse.c"
+#line 16996 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 705: /* var_ref: user_variable  */
@@ -17006,7 +17006,7 @@ yyreduce:
                         /*% ripper: vcall!($:1) %*/
                         }
                     }
-#line 17010 "parse.c"
+#line 17010 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 706: /* var_ref: keyword_variable  */
@@ -17015,7 +17015,7 @@ yyreduce:
                         if (!((yyval.node) = gettable(p, (yyvsp[0].id), &(yyloc)))) (yyval.node) = NEW_ERROR(&(yyloc));
                     /*% ripper: var_ref!($:1) %*/
                     }
-#line 17019 "parse.c"
+#line 17019 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 707: /* var_lhs: user_variable  */
@@ -17024,7 +17024,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 17028 "parse.c"
+#line 17028 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 708: /* var_lhs: keyword_variable  */
@@ -17033,7 +17033,7 @@ yyreduce:
                     /*% ripper: var_field!($:1) %*/
                         (yyval.node) = assignable(p, (yyvsp[0].id), 0, &(yyloc));
                     }
-#line 17037 "parse.c"
+#line 17037 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 711: /* $@38: %empty  */
@@ -17042,7 +17042,7 @@ yyreduce:
                         SET_LEX_STATE(EXPR_BEG);
                         p->command_start = TRUE;
                     }
-#line 17046 "parse.c"
+#line 17046 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 712: /* superclass: '<' $@38 expr_value term  */
@@ -17051,7 +17051,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node);
                     /*% ripper: $:3 %*/
                     }
-#line 17055 "parse.c"
+#line 17055 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 715: /* f_opt_paren_args: none  */
@@ -17062,7 +17062,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, 0, 0, (yyval.node_args), &(yylsp[-1]));
                     /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil) %*/
                     }
-#line 17066 "parse.c"
+#line 17066 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 716: /* f_paren_args: '(' f_args rparen  */
@@ -17074,7 +17074,7 @@ yyreduce:
                         p->command_start = TRUE;
                         p->ctxt.in_argdef = 0;
                     }
-#line 17078 "parse.c"
+#line 17078 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 718: /* @39: %empty  */
@@ -17085,7 +17085,7 @@ yyreduce:
                         p->ctxt.in_argdef = 1;
                         SET_LEX_STATE(p->lex.state|EXPR_LABEL); /* force for args */
                     }
-#line 17089 "parse.c"
+#line 17089 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 719: /* f_arglist: @39 f_args term  */
@@ -17098,7 +17098,7 @@ yyreduce:
                         p->command_start = TRUE;
                     /*% ripper: $:2 %*/
                     }
-#line 17102 "parse.c"
+#line 17102 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 720: /* f_kw_arg_value: f_label arg_value  */
@@ -17108,7 +17108,7 @@ yyreduce:
                         (yyval.node_kw_arg) = new_kw_arg(p, assignable(p, (yyvsp[-1].id), (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: [$:$, $:value] %*/
                     }
-#line 17112 "parse.c"
+#line 17112 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 721: /* f_kw_arg_value: f_label  */
@@ -17118,7 +17118,7 @@ yyreduce:
                         (yyval.node_kw_arg) = new_kw_arg(p, assignable(p, (yyvsp[0].id), NODE_SPECIAL_REQUIRED_KEYWORD, &(yyloc)), &(yyloc));
                     /*% ripper: [$:$, 0] %*/
                     }
-#line 17122 "parse.c"
+#line 17122 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 722: /* f_kwarg_arg_value: f_kw_arg_value  */
@@ -17127,7 +17127,7 @@ yyreduce:
                         (yyval.node_kw_arg) = (yyvsp[0].node_kw_arg);
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-#line 17131 "parse.c"
+#line 17131 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 723: /* f_kwarg_arg_value: f_kwarg_arg_value ',' f_kw_arg_value  */
@@ -17136,7 +17136,7 @@ yyreduce:
                         (yyval.node_kw_arg) = kwd_append((yyvsp[-2].node_kw_arg), (yyvsp[0].node_kw_arg));
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 17140 "parse.c"
+#line 17140 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 724: /* args_tail_basic_arg_value: f_kwarg_arg_value ',' f_kwrest opt_f_block_arg  */
@@ -17145,7 +17145,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, (yyvsp[-3].node_kw_arg), (yyvsp[-1].id), (yyvsp[0].id), &(yylsp[-1]));
                     /*% ripper: [$:1, $:3, $:4] %*/
                     }
-#line 17149 "parse.c"
+#line 17149 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 725: /* args_tail_basic_arg_value: f_kwarg_arg_value opt_f_block_arg  */
@@ -17154,7 +17154,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, (yyvsp[-1].node_kw_arg), 0, (yyvsp[0].id), &(yylsp[-1]));
                     /*% ripper: [$:1, Qnil, $:2] %*/
                     }
-#line 17158 "parse.c"
+#line 17158 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 726: /* args_tail_basic_arg_value: f_any_kwrest opt_f_block_arg  */
@@ -17163,7 +17163,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, 0, (yyvsp[-1].id), (yyvsp[0].id), &(yylsp[-1]));
                     /*% ripper: [Qnil, $:1, $:2] %*/
                     }
-#line 17167 "parse.c"
+#line 17167 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 727: /* args_tail_basic_arg_value: f_block_arg  */
@@ -17172,7 +17172,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, 0, 0, (yyvsp[0].id), &(yylsp[0]));
                     /*% ripper: [Qnil, Qnil, $:1] %*/
                     }
-#line 17176 "parse.c"
+#line 17176 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 729: /* args_tail: args_forward  */
@@ -17191,7 +17191,7 @@ yyreduce:
                         (yyval.node_args)->nd_ainfo.forwarding = 1;
                     /*% ripper: [Qnil, $:1, Qnil] %*/
                     }
-#line 17195 "parse.c"
+#line 17195 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 730: /* f_opt_arg_value: f_arg_asgn f_eq arg_value  */
@@ -17201,7 +17201,7 @@ yyreduce:
                         (yyval.node_opt_arg) = NEW_OPT_ARG(assignable(p, (yyvsp[-2].id), (yyvsp[0].node), &(yyloc)), &(yyloc));
                     /*% ripper: [$:$, $:3] %*/
                     }
-#line 17205 "parse.c"
+#line 17205 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 731: /* f_opt_arg_arg_value: f_opt_arg_value  */
@@ -17210,7 +17210,7 @@ yyreduce:
                         (yyval.node_opt_arg) = (yyvsp[0].node_opt_arg);
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-#line 17214 "parse.c"
+#line 17214 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 732: /* f_opt_arg_arg_value: f_opt_arg_arg_value ',' f_opt_arg_value  */
@@ -17219,7 +17219,7 @@ yyreduce:
                         (yyval.node_opt_arg) = opt_arg_append((yyvsp[-2].node_opt_arg), (yyvsp[0].node_opt_arg));
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 17223 "parse.c"
+#line 17223 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 733: /* opt_args_tail_args_tail: ',' args_tail  */
@@ -17228,7 +17228,7 @@ yyreduce:
                         (yyval.node_args) = (yyvsp[0].node_args);
                     /*% ripper: $:2 %*/
                     }
-#line 17232 "parse.c"
+#line 17232 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 734: /* opt_args_tail_args_tail: %empty  */
@@ -17237,7 +17237,7 @@ yyreduce:
                         (yyval.node_args) = new_args_tail(p, 0, 0, 0, &(yylsp[0]));
                     /*% ripper: [Qnil, Qnil, Qnil] %*/
                     }
-#line 17241 "parse.c"
+#line 17241 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 735: /* f_args: f_arg ',' f_opt_arg_arg_value ',' f_rest_arg opt_args_tail_args_tail  */
@@ -17246,7 +17246,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-5].node_args_aux), (yyvsp[-3].node_opt_arg), (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, $:5, Qnil, *$:6[0..2]) %*/
                     }
-#line 17250 "parse.c"
+#line 17250 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 736: /* f_args: f_arg ',' f_opt_arg_arg_value ',' f_rest_arg ',' f_arg opt_args_tail_args_tail  */
@@ -17255,7 +17255,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-7].node_args_aux), (yyvsp[-5].node_opt_arg), (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, $:5, $:7, *$:8[0..2]) %*/
                     }
-#line 17259 "parse.c"
+#line 17259 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 737: /* f_args: f_arg ',' f_opt_arg_arg_value opt_args_tail_args_tail  */
@@ -17264,7 +17264,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-3].node_args_aux), (yyvsp[-1].node_opt_arg), 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, Qnil, Qnil, *$:4[0..2]) %*/
                     }
-#line 17268 "parse.c"
+#line 17268 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 738: /* f_args: f_arg ',' f_opt_arg_arg_value ',' f_arg opt_args_tail_args_tail  */
@@ -17273,7 +17273,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-5].node_args_aux), (yyvsp[-3].node_opt_arg), 0, (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, $:3, Qnil, $:5, *$:6[0..2]) %*/
                     }
-#line 17277 "parse.c"
+#line 17277 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 739: /* f_args: f_arg ',' f_rest_arg opt_args_tail_args_tail  */
@@ -17282,7 +17282,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-3].node_args_aux), 0, (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, $:3, Qnil, *$:4[0..2]) %*/
                     }
-#line 17286 "parse.c"
+#line 17286 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 740: /* f_args: f_arg ',' f_rest_arg ',' f_arg opt_args_tail_args_tail  */
@@ -17291,7 +17291,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-5].node_args_aux), 0, (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, $:3, $:5, *$:6[0..2]) %*/
                     }
-#line 17295 "parse.c"
+#line 17295 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 741: /* f_args: f_arg opt_args_tail_args_tail  */
@@ -17300,7 +17300,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, (yyvsp[-1].node_args_aux), 0, 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!($:1, Qnil, Qnil, Qnil, *$:2[0..2]) %*/
                     }
-#line 17304 "parse.c"
+#line 17304 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 742: /* f_args: f_opt_arg_arg_value ',' f_rest_arg opt_args_tail_args_tail  */
@@ -17309,7 +17309,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-3].node_opt_arg), (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, $:3, Qnil, *$:4[0..2]) %*/
                     }
-#line 17313 "parse.c"
+#line 17313 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 743: /* f_args: f_opt_arg_arg_value ',' f_rest_arg ',' f_arg opt_args_tail_args_tail  */
@@ -17318,7 +17318,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-5].node_opt_arg), (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, $:3, $:5, *$:6[0..2]) %*/
                     }
-#line 17322 "parse.c"
+#line 17322 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 744: /* f_args: f_opt_arg_arg_value opt_args_tail_args_tail  */
@@ -17327,7 +17327,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-1].node_opt_arg), 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, Qnil, Qnil, *$:2[0..2]) %*/
                     }
-#line 17331 "parse.c"
+#line 17331 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 745: /* f_args: f_opt_arg_arg_value ',' f_arg opt_args_tail_args_tail  */
@@ -17336,7 +17336,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, (yyvsp[-3].node_opt_arg), 0, (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, $:1, Qnil, $:3, *$:4[0..2]) %*/
                     }
-#line 17340 "parse.c"
+#line 17340 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 746: /* f_args: f_rest_arg opt_args_tail_args_tail  */
@@ -17345,7 +17345,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, (yyvsp[-1].id), 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, Qnil, $:1, Qnil, *$:2[0..2]) %*/
                     }
-#line 17349 "parse.c"
+#line 17349 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 747: /* f_args: f_rest_arg ',' f_arg opt_args_tail_args_tail  */
@@ -17354,7 +17354,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, (yyvsp[-3].id), (yyvsp[-1].node_args_aux), (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, Qnil, $:1, $:3, *$:4[0..2]) %*/
                     }
-#line 17358 "parse.c"
+#line 17358 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 748: /* f_args: args_tail  */
@@ -17363,7 +17363,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, 0, 0, (yyvsp[0].node_args), &(yyloc));
                     /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, *$:1[0..2]) %*/
                     }
-#line 17367 "parse.c"
+#line 17367 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 749: /* f_args: %empty  */
@@ -17373,7 +17373,7 @@ yyreduce:
                         (yyval.node_args) = new_args(p, 0, 0, 0, 0, (yyval.node_args), &(yylsp[0]));
                     /*% ripper: params!(Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil) %*/
                     }
-#line 17377 "parse.c"
+#line 17377 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 750: /* args_forward: "(..."  */
@@ -17382,7 +17382,7 @@ yyreduce:
                         (yyval.id) = idFWD_KWREST;
                     /*% ripper: args_forward! %*/
                     }
-#line 17386 "parse.c"
+#line 17386 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 751: /* f_bad_arg: "constant"  */
@@ -17395,7 +17395,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
                     }
-#line 17399 "parse.c"
+#line 17399 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 752: /* f_bad_arg: "instance variable"  */
@@ -17408,7 +17408,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
                     }
-#line 17412 "parse.c"
+#line 17412 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 753: /* f_bad_arg: "global variable"  */
@@ -17421,7 +17421,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
                     }
-#line 17425 "parse.c"
+#line 17425 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 754: /* f_bad_arg: "class variable"  */
@@ -17434,7 +17434,7 @@ yyreduce:
                         (yyval.id) = 0;
                     /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
                     }
-#line 17438 "parse.c"
+#line 17438 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 756: /* f_norm_arg: "local variable or method"  */
@@ -17446,7 +17446,7 @@ yyreduce:
                         }
                         p->max_numparam = ORDINAL_PARAM;
                     }
-#line 17450 "parse.c"
+#line 17450 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 757: /* f_arg_asgn: f_norm_arg  */
@@ -17455,7 +17455,7 @@ yyreduce:
                         arg_var(p, (yyvsp[0].id));
                         (yyval.id) = (yyvsp[0].id);
                     }
-#line 17459 "parse.c"
+#line 17459 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 758: /* f_arg_item: f_arg_asgn  */
@@ -17464,7 +17464,7 @@ yyreduce:
                         (yyval.node_args_aux) = NEW_ARGS_AUX((yyvsp[0].id), 1, &NULL_LOC);
                     /*% ripper: $:1 %*/
                     }
-#line 17468 "parse.c"
+#line 17468 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 759: /* f_arg_item: "(" f_margs rparen  */
@@ -17485,7 +17485,7 @@ yyreduce:
                         (yyval.node_args_aux)->nd_next = (NODE *)(yyvsp[-1].node_masgn);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
-#line 17489 "parse.c"
+#line 17489 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 761: /* f_arg: f_arg ',' f_arg_item  */
@@ -17497,7 +17497,7 @@ yyreduce:
                         rb_discard_node(p, (NODE *)(yyvsp[0].node_args_aux));
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 17501 "parse.c"
+#line 17501 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 762: /* f_label: "label"  */
@@ -17519,7 +17519,7 @@ yyreduce:
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
                     }
-#line 17523 "parse.c"
+#line 17523 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 765: /* f_no_kwarg: p_kwnorest  */
@@ -17527,7 +17527,7 @@ yyreduce:
                     {
                     /*% ripper: nokw_param!(Qnil) %*/
                     }
-#line 17531 "parse.c"
+#line 17531 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 766: /* f_kwrest: kwrest_mark "local variable or method"  */
@@ -17537,7 +17537,7 @@ yyreduce:
                         (yyval.id) = (yyvsp[0].id);
                     /*% ripper: kwrest_param!($:2) %*/
                     }
-#line 17541 "parse.c"
+#line 17541 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 767: /* f_kwrest: kwrest_mark  */
@@ -17547,7 +17547,7 @@ yyreduce:
                         (yyval.id) = idFWD_KWREST;
                     /*% ripper: kwrest_param!(Qnil) %*/
                     }
-#line 17551 "parse.c"
+#line 17551 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 770: /* f_rest_arg: restarg_mark "local variable or method"  */
@@ -17557,7 +17557,7 @@ yyreduce:
                         (yyval.id) = (yyvsp[0].id);
                     /*% ripper: rest_param!($:2) %*/
                     }
-#line 17561 "parse.c"
+#line 17561 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 771: /* f_rest_arg: restarg_mark  */
@@ -17567,7 +17567,7 @@ yyreduce:
                         (yyval.id) = idFWD_REST;
                     /*% ripper: rest_param!(Qnil) %*/
                     }
-#line 17571 "parse.c"
+#line 17571 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 774: /* f_block_arg: blkarg_mark "local variable or method"  */
@@ -17577,7 +17577,7 @@ yyreduce:
                         (yyval.id) = (yyvsp[0].id);
                     /*% ripper: blockarg!($:2) %*/
                     }
-#line 17581 "parse.c"
+#line 17581 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 775: /* f_block_arg: blkarg_mark  */
@@ -17587,7 +17587,7 @@ yyreduce:
                         (yyval.id) = idFWD_BLOCK;
                     /*% ripper: blockarg!(Qnil) %*/
                     }
-#line 17591 "parse.c"
+#line 17591 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 776: /* opt_f_block_arg: ',' f_block_arg  */
@@ -17596,7 +17596,7 @@ yyreduce:
                         (yyval.id) = (yyvsp[0].id);
                     /*% ripper: $:2 %*/
                     }
-#line 17600 "parse.c"
+#line 17600 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 778: /* value_expr_singleton_expr: singleton_expr  */
@@ -17605,7 +17605,7 @@ yyreduce:
                         value_expr(p, (yyvsp[0].node));
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 17609 "parse.c"
+#line 17609 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 779: /* singleton: value_expr_singleton_expr  */
@@ -17637,7 +17637,7 @@ yyreduce:
                         }
                         (yyval.node) = (yyvsp[0].node);
                     }
-#line 17641 "parse.c"
+#line 17641 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 781: /* $@40: %empty  */
@@ -17646,7 +17646,7 @@ yyreduce:
                         SET_LEX_STATE(EXPR_BEG);
                         p->ctxt.in_argdef = 0;
                     }
-#line 17650 "parse.c"
+#line 17650 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 782: /* singleton_expr: '(' $@40 expr rparen  */
@@ -17656,7 +17656,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node);
                     /*% ripper: paren!($:3) %*/
                     }
-#line 17660 "parse.c"
+#line 17660 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 784: /* assoc_list: assocs trailer  */
@@ -17665,7 +17665,7 @@ yyreduce:
                         (yyval.node) = (yyvsp[-1].node);
                     /*% ripper: assoclist_from_args!($:1) %*/
                     }
-#line 17669 "parse.c"
+#line 17669 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 786: /* assocs: assocs ',' assoc  */
@@ -17692,7 +17692,7 @@ yyreduce:
                         (yyval.node) = assocs;
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
-#line 17696 "parse.c"
+#line 17696 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 787: /* assoc: arg_value "=>" arg_value  */
@@ -17701,7 +17701,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST((yyvsp[-2].node), &(yyloc)), (yyvsp[0].node));
                     /*% ripper: assoc_new!($:1, $:3) %*/
                     }
-#line 17705 "parse.c"
+#line 17705 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 788: /* assoc: "label" arg_value  */
@@ -17710,7 +17710,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST(NEW_SYM(rb_id2str((yyvsp[-1].id)), &(yylsp[-1])), &(yyloc)), (yyvsp[0].node));
                     /*% ripper: assoc_new!($:1, $:2) %*/
                     }
-#line 17714 "parse.c"
+#line 17714 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 789: /* assoc: "label"  */
@@ -17721,7 +17721,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST(NEW_SYM(rb_id2str((yyvsp[0].id)), &(yylsp[0])), &(yyloc)), val);
                     /*% ripper: assoc_new!($:1, Qnil) %*/
                     }
-#line 17725 "parse.c"
+#line 17725 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 790: /* assoc: "string literal" string_contents tLABEL_END arg_value  */
@@ -17731,7 +17731,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST(dsym_node(p, (yyvsp[-2].node), &loc), &loc), (yyvsp[0].node));
                     /*% ripper: assoc_new!(dyna_symbol!($:2), $:4) %*/
                     }
-#line 17735 "parse.c"
+#line 17735 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 791: /* assoc: "**arg" arg_value  */
@@ -17740,7 +17740,7 @@ yyreduce:
                         (yyval.node) = list_append(p, NEW_LIST(0, &(yyloc)), (yyvsp[0].node));
                     /*% ripper: assoc_splat!($:2) %*/
                     }
-#line 17744 "parse.c"
+#line 17744 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 792: /* assoc: "**arg"  */
@@ -17751,7 +17751,7 @@ yyreduce:
                                          NEW_LVAR(idFWD_KWREST, &(yyloc)));
                     /*% ripper: assoc_splat!(Qnil) %*/
                     }
-#line 17755 "parse.c"
+#line 17755 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 811: /* term: ';'  */
@@ -17763,7 +17763,7 @@ yyreduce:
                             p->ctxt.has_trailing_semicolon = 1;
                         }
                     }
-#line 17767 "parse.c"
+#line 17767 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 812: /* term: '\n'  */
@@ -17772,13 +17772,13 @@ yyreduce:
                         (yyloc).end_pos = (yyloc).beg_pos;
                         token_flush(p);
                     }
-#line 17776 "parse.c"
+#line 17776 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 814: /* terms: terms ';'  */
 #line 6752 "parse.y"
                             {yyerrok;}
-#line 17782 "parse.c"
+#line 17782 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
   case 815: /* none: %empty  */
@@ -17787,11 +17787,11 @@ yyreduce:
                         (yyval.node) = 0;
                     /*% ripper: Qnil %*/
                     }
-#line 17791 "parse.c"
+#line 17791 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
     break;
 
 
-#line 17795 "parse.c"
+#line 17795 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
       default: break;
     }
@@ -17812,7 +17812,7 @@ yyreduce:
         /* %after-reduce function. */
 #line 2666 "parse.y"
         {after_reduce(yylen, p);}
-#line 17816 "parse.c"
+#line 17816 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
   yylen = 0;
 
@@ -17918,7 +17918,7 @@ yyerrorlab:
         /* %after-pop-stack function. */
 #line 2668 "parse.y"
         {after_pop_stack(yylen, p);}
-#line 17922 "parse.c"
+#line 17922 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
   yylen = 0;
   YY_STACK_PRINT (yyss, yyssp, p);
@@ -17958,7 +17958,7 @@ yyerrlab1:
         /* %after-pop-stack function. */
 #line 2668 "parse.y"
         {after_pop_stack(1, p);}
-#line 17962 "parse.c"
+#line 17962 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp, p);
@@ -17977,7 +17977,7 @@ yyerrlab1:
         /* %after-shift-error-token code. */
 #line 2667 "parse.y"
         {after_shift_error_token(p);}
-#line 17981 "parse.c"
+#line 17981 "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.c"
 
 
   yystate = yyn;

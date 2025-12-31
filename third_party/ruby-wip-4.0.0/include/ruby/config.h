@@ -1,4 +1,8 @@
 #ifndef INCLUDE_RUBY_CONFIG_H
+#define HAVE_ARC4RANDOM_BUF 1
+#define HAVE_RB_FD_INIT 1
+#define HAVE_RB_IO_CLOSED_P 1
+#define HAVE_SANITIZER_ASAN_INTERFACE_H 1
 #define INCLUDE_RUBY_CONFIG_H 1
 /* Cosmopolitan Ruby Configuration */
 /* Generated for Cosmopolitan Libc - Actually Portable Executables */
@@ -7,10 +11,6 @@
 /* MUST include errno wrapper FIRST to override Cosmopolitan's runtime errno constants */
 #include "errno_wrapper.h"
 
-/* Ruby 4.0.0: rb_io_mode_t is now defined in ruby/io.h as enum rb_io_mode */
-#define HAVE_TYPE_RB_IO_MODE_T 1
-
-/* confdefs.h */
 #define HAVE_STDIO_H 1
 #define HAVE_STDLIB_H 1
 #define HAVE_STRING_H 1
@@ -47,8 +47,6 @@
 #define HAVE_LIBPTHREAD 1
 #define THREAD_IMPL_H "thread_pthread.h"
 #define THREAD_IMPL_SRC "thread_pthread.c"
-#define HAVE_LIBCRYPT 1
-#define HAVE_LIBDL 1
 #define HAVE_DIRENT_H 1
 #define HAVE__BOOL 1
 #define HAVE_STDBOOL_H 1
@@ -82,8 +80,6 @@
 #define HAVE_TIME_H 1
 #define HAVE_UCONTEXT_H 1
 #define HAVE_UTIME_H 1
-/* #define HAVE_SYS_EVENT_H 1 */ /* Cosmopolitan doesn't support kqueue/kevent */
-#define HAVE_STDCKDINT_H 1
 #define HAVE_STDATOMIC_H 1
 #define HAVE_X86INTRIN_H 1
 #if defined(__x86_64__)
@@ -211,11 +207,8 @@
 #define SIZEOF_STRUCT_STAT_ST_DEV SIZEOF_DEV_T
 #define SIZEOF_STRUCT_STAT_ST_RDEV SIZEOF_DEV_T
 #define HAVE_STRUCT_STAT_ST_ATIM 1
-#define HAVE_STRUCT_STAT_ST_ATIMENSEC 1
 #define HAVE_STRUCT_STAT_ST_MTIM 1
-#define HAVE_STRUCT_STAT_ST_MTIMENSEC 1
 #define HAVE_STRUCT_STAT_ST_CTIM 1
-#define HAVE_STRUCT_STAT_ST_CTIMENSEC 1
 #define HAVE_STRUCT_TIMEVAL 1
 #define SIZEOF_STRUCT_TIMEVAL_TV_SEC SIZEOF_TIME_T
 #define HAVE_STRUCT_TIMESPEC 1
@@ -246,11 +239,9 @@
 #define SIZEOF_INTPTR_T 8
 #define HAVE_UINTPTR_T 1
 #define SIZEOF_UINTPTR_T 8
-#define PRI_PTR_PREFIX "l"
 #define HAVE_SSIZE_T 1
 #define SIZEOF_SSIZE_T 8
-#define PRI_64_PREFIX "l"
-#define GETGROUPS_T unsigned int /* Cosmopolitan uses unsigned */
+#define GETGROUPS_T gid_t
 #define HAVE_ALLOCA_H 1
 #define HAVE_ALLOCA 1
 #define HAVE_DUP 1
@@ -290,7 +281,7 @@
 #define HAVE_CLOCK_GETTIME 1
 #define HAVE_COPY_FILE_RANGE 1
 #define HAVE_COSH 1
-/* #define HAVE_CRYPT_R 1 */ /* Cosmopolitan doesn't have thread-safe crypt_r() */
+/* #undef HAVE_CRYPT_R */
 #define HAVE_DIRFD 1
 #define HAVE_DL_ITERATE_PHDR 1
 #define HAVE_DLOPEN 1
@@ -340,7 +331,6 @@
 #define HAVE_GMTIME_R 1
 #define HAVE_INITGROUPS 1
 #define HAVE_IOCTL 1
-#define HAVE_ISSETUGID 1
 #define HAVE_KILL 1
 #define HAVE_KILLPG 1
 #define HAVE_LCHMOD 1
@@ -417,8 +407,8 @@
 #define HAVE_UTIMES 1
 #define HAVE_WAIT4 1
 #define HAVE_WAITPID 1
-#define HAVE_CRYPT_H 1
-#define HAVE_STRUCT_CRYPT_DATA_INITIALIZED 1
+/* #undef HAVE_CRYPT_H */
+/* #undef HAVE_STRUCT_CRYPT_DATA_INITIALIZED */
 #define HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN 1
 #define HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED 1
 #define HAVE_BUILTIN___BUILTIN_BSWAP16 1
@@ -483,8 +473,16 @@
 #define EXTSTATIC 1
 #define DLEXT_MAXLEN 3
 #define DLEXT ".so"
+#define HAVE_EVENTFD 1
+#define HAVE_LIBRT 1
+#define HAVE_LIBZ 1
+#define HAVE_TERMIOS_H 1
+#define HAVE_TIMER_CREATE 1
+#define HAVE_TIMER_SETTIME 1
+#define HAVE_TRUNCATE64 1
 #define SOEXT ".so"
 #define HAVE__SETJMP 1
+#define NEGATIVE_TIME_T 1
 #define RUBY_SETJMP(env) __builtin_setjmp((env))
 #define RUBY_LONGJMP(env,val) __builtin_longjmp((env),val)
 #define USE_MODULAR_GC 0
@@ -492,14 +490,6 @@
 #define USE_RJIT 0
 #define RUBY_PLATFORM "x86_64-cosmo"
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
-
-/* ========================================================================
- * COSMOPOLITAN COMPATIBILITY WRAPPERS
- * ======================================================================== */
-/* Cosmopolitan provides mremap as cosmo_mremap() */
-#ifdef HAVE_MREMAP
+#define SLIM_STATIC 1
 #define mremap cosmo_mremap
-void *cosmo_mremap(void *, size_t, size_t, int, ...);
-#endif
-
 #endif /* INCLUDE_RUBY_CONFIG_H */

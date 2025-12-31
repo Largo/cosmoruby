@@ -17,6 +17,12 @@ o/$(MODE)/third_party/ruby/ext/io/console/%.o: private	\
 		-Ithird_party/ruby				\
 		-DRUBY_EXPORT					\
 		-DRUBY_COSMOPOLITAN				\
+		-DHAVE_TERMIOS_H				\
+		-DHAVE_UNISTD_H					\
+		-DHAVE_FCNTL_H					\
+		-DHAVE_SYS_IOCTL_H				\
+		-DHAVE_RB_IO_DESCRIPTOR				\
+		-DHAVE_RB_IO_CLOSED_P				\
 		-Wno-deprecated-declarations
 
 $(THIRD_PARTY_RUBY_EXT_IO_CONSOLE_OBJS): third_party/ruby/ext/io/console/BUILD.mk

@@ -351,7 +351,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_node_id_for_location
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     exception = begin
                   raise
@@ -369,7 +369,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_node_id_for_backtrace_location_of_method_definition
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     begin
       add(1)
@@ -382,7 +382,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_node_id_for_backtrace_location_of_lambda
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     v = -> {}
     begin
@@ -396,7 +396,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_node_id_for_backtrace_location_of_lambda_method
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     v = lambda {}
     begin
@@ -416,7 +416,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method
-    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
@@ -447,7 +447,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     backtrace_location, lineno = sample_backtrace_location
     node = RubyVM::AbstractSyntaxTree.of(backtrace_location)
@@ -460,7 +460,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
@@ -491,8 +491,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval_with_keep_script_lines
-    omit if ParserSupport.prism_enabled?
-    pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
+    pend "Incompatible with RUBY_ISEQ_DUMP_DEBUG mode" if ENV['RUBY_ISEQ_DUMP_DEBUG']
 
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = true
@@ -523,7 +523,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
@@ -543,8 +543,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval_with_keep_script_lines
-    omit if ParserSupport.prism_enabled?
-    pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
+    pend "Incompatible with RUBY_ISEQ_DUMP_DEBUG mode" if ENV['RUBY_ISEQ_DUMP_DEBUG']
 
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = true
@@ -837,7 +837,7 @@ dummy
   end
 
   def test_keep_script_lines_for_of
-    omit if ParserSupport.prism_enabled?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled?
 
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
@@ -850,7 +850,7 @@ dummy
   end
 
   def test_keep_script_lines_for_of_with_existing_SCRIPT_LINES__that_has__FILE__as_a_key
-    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     # This test confirms that the bug that previously occurred because of
     # `AbstractSyntaxTree.of`s unnecessary dependence on SCRIPT_LINES__ does not reproduce.
@@ -919,7 +919,7 @@ dummy
   end
 
   def test_e_option
-    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
+    omit "RubyVM::AST is not available with Prism parser" if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":DEFN"], [])

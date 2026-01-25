@@ -403,8 +403,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
             GETASTER(width);
             if (width < 0) {
                 flags |= FMINUS;
+                /* Check for INT_MIN overflow before negation */
+                if (width == INT_MIN) rb_raise(rb_eArgError, "width too big");
                 width = -width;
-                if (width < 0) rb_raise(rb_eArgError, "width too big");
             }
             p++;
             goto retry;

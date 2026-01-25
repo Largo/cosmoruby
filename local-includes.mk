@@ -15,7 +15,7 @@ include test/third_party/cosmo_plugin/BUILD.mk
 ifeq ($(wildcard build/bootstrap/mtdeps),)
 $(error Missing build/bootstrap/mtdeps. Run third_party/ruby/cosmo_configure.sh --bootstrap)
 else
-MKDEPS := build/bootstrap/mtdeps
+MKDEPS := build/bootstrap/mtdeps -P ruby_shims/
 endif
 
 # Core Makefile computes SRCS/HDRS/INCS/BINS before loading this file, so

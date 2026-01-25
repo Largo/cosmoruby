@@ -38,10 +38,17 @@ endif
 # - ruby.compile.mk: CFLAGS, .o compilation rules (changes trigger rebuild)
 # - ruby.link.mk: LDFLAGS, binary link rules (changes only trigger relink)
 
+# Check that cosmo_configure.sh has been run at least once
+RUBY_SENTINEL := third_party/ruby/.cosmo_configured
+ifeq ($(wildcard $(RUBY_SENTINEL)),)
+$(error Ruby not configured! Run: bash third_party/ruby/cosmo_configure.sh)
+endif
+
 include third_party/ruby/ruby.env.mk
 include third_party/ruby/ruby.codegen.mk
 include third_party/ruby/ruby.deps.mk
 include third_party/ruby/ruby.compile.mk
+include third_party/ruby/yjit/BUILD.mk
 include third_party/ruby/ruby.link.mk
 
 .PHONY: ruby_verify ruby_verify_build ruby_missing

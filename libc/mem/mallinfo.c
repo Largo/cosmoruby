@@ -16,9 +16,16 @@
 │ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR             │
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 struct mallinfo mallinfo(void) {
+#if defined(COSMO_USE_MIMALLOC) && COSMO_USE_MIMALLOC
+  /* mimalloc doesn't have a direct mallinfo equivalent.
+   * Return zeroed struct - use mi_stats_print() for detailed info. */
+  struct mallinfo info = {0};
+  return info;
+#else
   return dlmallinfo();
+#endif
 }

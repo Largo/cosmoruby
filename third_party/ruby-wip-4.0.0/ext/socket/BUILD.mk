@@ -44,7 +44,7 @@ o/$(MODE)/third_party/ruby/ext/socket/%.o: private	\
 		-DRUBY_COSMOPOLITAN			\
 		-DINET6
 
-$(THIRD_PARTY_RUBY_EXT_SOCKET_OBJS): third_party/ruby/ext/socket/BUILD.mk
+$(THIRD_PARTY_RUBY_EXT_SOCKET_OBJS): $(THIRD_PARTY_RUBY_EXT_SOCKET_HDRS) third_party/ruby/ext/socket/BUILD.mk
 
 .PHONY: o/$(MODE)/third_party/ruby/ext/socket
 o/$(MODE)/third_party/ruby/ext/socket: $(THIRD_PARTY_RUBY_EXT_SOCKET_A)

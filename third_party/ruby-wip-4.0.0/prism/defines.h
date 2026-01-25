@@ -169,7 +169,7 @@
  * ```
  */
 #ifdef PRISM_XALLOCATOR
-    #include "prism_xallocator.h"
+    #error "PRISM_XALLOCATOR defined but prism_xallocator.h not found - Ruby 4.0.0 port requires conditional include handling"
 #else
     #ifndef xmalloc
         /**

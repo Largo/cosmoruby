@@ -127,6 +127,9 @@ static const size_t kPage = 4096;
 static const size_t kNearStep = 0x1000000;       // 16MB
 static const size_t kNearMaxDistance = 0x70000000; // 1.75GB
 
+// Shared allocation hint for GOT, PLT, and sections to keep them clustered
+static void *g_alloc_hint = NULL;
+
 static int ReadFile(const char *path, uint8_t **data_out, size_t *size_out) {
   int fd = open(path, O_RDONLY);
   if (fd == -1) return -1;
@@ -281,19 +284,18 @@ static int EnsureGotCap(struct cosmo_plugin *p, size_t need) {
   size_t nc = MAX(need, p->gotcap ? p->gotcap * 2 : 16);
   size_t new_size = ROUNDUP(nc * sizeof(*p->got), kPage);
 
-  // Calculate hint based on exports location for PC32/GOTPCREL reachability
-  static void *got_hint = NULL;
-  if (!got_hint) {
+  // Initialize shared hint based on exports location for PC32/GOTPCREL reachability
+  if (!g_alloc_hint) {
     const struct cosmo_export *exports = cosmo_get_exports(NULL);
     if (exports && g_export_cache_n > 0) {
       uintptr_t anchor = (uintptr_t)exports[0].addr;
-      got_hint = (void *)(anchor + 0x20000000);  // ~512MB offset
+      g_alloc_hint = (void *)(anchor + 0x10000000);  // ~256MB offset
     } else {
-      got_hint = (void *)0x20000000;
+      g_alloc_hint = (void *)0x10000000;
     }
   }
 
-  uint64_t *n = MapNear((uintptr_t)got_hint, new_size, PROT_READ | PROT_WRITE);
+  uint64_t *n = MapNear((uintptr_t)g_alloc_hint, new_size, PROT_READ | PROT_WRITE);
   if (n == MAP_FAILED) return -1;
 
   // Copy old data if exists
@@ -303,8 +305,8 @@ static int EnsureGotCap(struct cosmo_plugin *p, size_t need) {
     munmap(p->got, old_size);
   }
 
-  // Update hint for next allocation
-  got_hint = (void *)((uintptr_t)n + new_size + 0x100000);
+  // Update shared hint for next allocation
+  g_alloc_hint = (void *)((uintptr_t)n + new_size + 0x100000);
 
   p->got = n;
   p->gotcap = nc;
@@ -379,13 +381,25 @@ static int EnsurePltCap(struct cosmo_plugin *p, size_t need) {
   size_t new_cap = MAX(need, (size_t)PLT_INITIAL_STUBS);
   size_t new_size = new_cap * PLT_STUB_SIZE;
 
+  // Initialize shared hint if needed
+  if (!g_alloc_hint) {
+    const struct cosmo_export *exports = cosmo_get_exports(NULL);
+    if (exports && g_export_cache_n > 0) {
+      uintptr_t anchor = (uintptr_t)exports[0].addr;
+      g_alloc_hint = (void *)(anchor + 0x10000000);  // ~256MB offset
+    } else {
+      g_alloc_hint = (void *)0x10000000;
+    }
+  }
+
   if (!p->plt) {
-    p->plt = mmap(NULL, new_size, PROT_READ | PROT_WRITE | PROT_EXEC,
-                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    p->plt = MapNear((uintptr_t)g_alloc_hint, new_size, PROT_READ | PROT_WRITE | PROT_EXEC);
     if (p->plt == MAP_FAILED) {
       p->plt = NULL;
       return -1;
     }
+    // Update shared hint for next allocation
+    g_alloc_hint = (void *)((uintptr_t)p->plt + new_size + 0x100000);
   }
   p->pltcap = new_cap;
   return 0;
@@ -559,16 +573,15 @@ static int AllocateSections(struct plugin_object *o) {
   if (!o->sections) return -1;
 
   // Allocate near the host exports for PC32/GOTPCREL reachability (±2GB limit)
-  // Calculate hint based on where exports actually are
-  static void *hint_addr = NULL;
-  if (!hint_addr) {
+  // Initialize shared hint if needed
+  if (!g_alloc_hint) {
     const struct cosmo_export *exports = cosmo_get_exports(NULL);
     if (exports && g_export_cache_n > 0) {
       // Use first export address as anchor point, offset by ~256MB
       uintptr_t anchor = (uintptr_t)exports[0].addr;
-      hint_addr = (void *)(anchor + 0x10000000);
+      g_alloc_hint = (void *)(anchor + 0x10000000);
     } else {
-      hint_addr = (void *)0x10000000;  // Fallback
+      g_alloc_hint = (void *)0x10000000;  // Fallback
     }
   }
 
@@ -580,15 +593,15 @@ static int AllocateSections(struct plugin_object *o) {
     size_t rounded = ROUNDUP(size, kPage);
     int prot = PROT_READ | PROT_WRITE;
 
-    // Try hint address first for better PC32 locality
-    uint8_t *mem = MapNear((uintptr_t)hint_addr, rounded, prot);
+    // Use shared hint for better PC32 locality across all allocations
+    uint8_t *mem = MapNear((uintptr_t)g_alloc_hint, rounded, prot);
     if (mem == MAP_FAILED) {
       perror("mmap");
       return -1;
     }
 
-    // Update hint for next section
-    hint_addr = (void *)((uintptr_t)mem + rounded + 0x100000);
+    // Update shared hint for next allocation
+    g_alloc_hint = (void *)((uintptr_t)mem + rounded + 0x100000);
 
     if (sh->sh_type == SHT_PROGBITS) {
       memcpy(mem, o->elf + sh->sh_offset, sh->sh_size);

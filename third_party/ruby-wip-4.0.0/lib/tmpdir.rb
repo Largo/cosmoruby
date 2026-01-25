@@ -7,7 +7,8 @@
 
 require 'fileutils'
 begin
-  require 'etc.so'
+  require 'rbconfig'
+  require 'etc.' + RbConfig::CONFIG["DLEXT"]
 rescue LoadError # rescue LoadError for miniruby
 end
 

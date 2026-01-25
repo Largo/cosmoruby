@@ -1260,7 +1260,7 @@ eom
   end
 
   def test_fluent_and
-    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
+    omit "Fluent syntax test not compatible with Prism parser" if /\+PRISM\b/ =~ RUBY_DESCRIPTION
 
     assert_valid_syntax("a\n" "&& foo")
     assert_valid_syntax("a\n" "and foo")
@@ -1285,7 +1285,7 @@ eom
   end
 
   def test_fluent_or
-    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
+    omit "Fluent syntax test not compatible with Prism parser" if /\+PRISM\b/ =~ RUBY_DESCRIPTION
 
     assert_valid_syntax("a\n" "|| foo")
     assert_valid_syntax("a\n" "or foo")

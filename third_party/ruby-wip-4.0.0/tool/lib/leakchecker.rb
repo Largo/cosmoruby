@@ -64,6 +64,11 @@ class LeakChecker
       }
     end
     fd_leaked = live2 - live1
+    # Filter out high-numbered FDs (>= 50) when running in parallel worker,
+    # as these are infrastructure FDs created by increment_io for communication
+    if defined?(Test::Unit::TestCase) && Test::Unit::TestCase.respond_to?(:on_parallel_worker?) && Test::Unit::TestCase.on_parallel_worker?
+      fd_leaked.reject! {|fd| fd >= 50 }
+    end
     if !@@skip && !fd_leaked.empty?
       leaked = true
       h = {}

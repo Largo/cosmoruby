@@ -13,6 +13,7 @@
 #include "vm_debug.h"
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static inline size_t
 rb_cosmo_collect_paths(const char **paths, size_t max)
@@ -171,6 +172,29 @@ rb_cosmo_configure_load_path(void)
 }
 
 /**
+ * Define RUBY_COSMO_PACKAGED constant based on runtime detection.
+ * Returns true if this binary has Ruby stdlib embedded in /zip/.
+ *
+ * /zip/ is a per-process virtual filesystem embedded in this APE binary.
+ * We check for both:
+ *   1. /zip/.cosmo_ruby_packaged - explicit marker created by package_ruby.sh
+ *   2. /zip/lib/ruby - the actual stdlib directory
+ * Both must exist for the binary to be considered "packaged".
+ */
+static inline void
+rb_cosmo_define_packaged_constant(void)
+{
+    int has_marker = (access("/zip/.cosmo_ruby_packaged", F_OK) == 0);
+    int has_stdlib = (access("/zip/lib/ruby", F_OK) == 0);
+
+    if (has_marker && has_stdlib) {
+        rb_define_global_const("RUBY_COSMO_PACKAGED", Qtrue);
+    } else {
+        rb_define_global_const("RUBY_COSMO_PACKAGED", Qfalse);
+    }
+}
+
+/**
  * Common Ruby VM initialization and execution.
  * Takes argc/argv and runs the Ruby code.
  */
@@ -179,6 +203,7 @@ rb_main_run(int argc, char **argv)
 {
     RUBY_INIT_STACK;
     ruby_init();
+    rb_cosmo_define_packaged_constant();
     rb_cosmo_configure_load_path();
     void *node = ruby_options(argc, argv);
     rb_cosmo_configure_load_path();
@@ -193,12 +218,13 @@ static int
 rb_cosmo_main(int argc, char **argv, int (*rb_main)(int, char **))
 {
     /* setlocale(LC_CTYPE, ""); - skipped on Cosmopolitan */
-    rb_cosmo_seed_rubylib_env();
-    char **argv_alloc = rb_cosmo_inject_include_paths(&argc, &argv);
+    /* NOTE: We intentionally do NOT call rb_cosmo_seed_rubylib_env() or
+     * rb_cosmo_inject_include_paths() here. The core load paths are already
+     * defined in loadpath.c via -DRUBY_COSMO_LOADPATH_PREFIX. Adding them
+     * via RUBYLIB and -I flags would create duplicates.
+     * The extensions path is added separately by rb_cosmo_configure_load_path(). */
     ruby_sysinit(&argc, &argv);
-    int rc = rb_main(argc, argv);
-    free(argv_alloc);
-    return rc;
+    return rb_main(argc, argv);
 }
 
 #endif /* RUBY_COSMO_MAIN_H */

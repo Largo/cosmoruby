@@ -160,6 +160,8 @@ class TestFileExhaustive < Test::Unit::TestCase
       @fifo = nil
     end
     @fifo
+  rescue NotImplementedError
+    @fifo = nil
   end
 
   def socket

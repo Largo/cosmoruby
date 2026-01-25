@@ -28,6 +28,8 @@ $(THIRD_PARTY_RUBY_A_OBJS): private				\
             -Ithird_party/zlib					\
             -DRUBY_EXPORT					\
             -DRUBY_COSMOPOLITAN					\
+            -include third_party/ruby/include/ruby/cosmo.h	\
+            -UHAVE_DLADDR					\
             -Wno-deprecated-declarations			\
             -Wno-unused-value					\
             -Wno-return-type					\
@@ -36,16 +38,24 @@ $(THIRD_PARTY_RUBY_A_OBJS): private				\
 #            -ffunction-sections					\
 #            -fdata-sections
 
-# Force recompilation of all Ruby files when config.h changes
-# This is critical because config.h defines DLEXT, EXTSTATIC, SLIM_STATIC
-# which affect compiled code behavior (especially rb_provide() calls)
-$(THIRD_PARTY_RUBY_A_OBJS): third_party/ruby/include/ruby/config.h
+# Force recompilation of all Ruby files when mode-specific config changes
+# config.mode.h defines DLEXT, EXTSTATIC, SLIM_STATIC which affect compiled code
+# behavior (especially rb_provide() calls). config.h is static and won't trigger rebuilds.
+$(THIRD_PARTY_RUBY_A_OBJS): third_party/ruby/include/ruby/config.mode.h
 
-# Extension object files also depend on config.h
-o/$(MODE)/third_party/ruby/ext/%.o: third_party/ruby/include/ruby/config.h
+# Extension object files also depend on config.mode.h
+o/$(MODE)/third_party/ruby/ext/%.o: third_party/ruby/include/ruby/config.mode.h
 
-# Encoding object files also depend on config.h
-o/$(MODE)/third_party/ruby/enc/%.o: third_party/ruby/include/ruby/config.h
+# Encoding object files also depend on config.mode.h
+o/$(MODE)/third_party/ruby/enc/%.o: third_party/ruby/include/ruby/config.mode.h
+
+# All encoding files need -fPIC for plugin mode loading
+o/$(MODE)/third_party/ruby/enc/%.o: private \
+    CFLAGS += -fPIC
+
+# All transcoder files need -fPIC for plugin mode loading
+o/$(MODE)/third_party/ruby/enc/trans/%.o: private \
+    CFLAGS += -fPIC
 
 # Core encodings (ascii, utf_8, us_ascii) must export OnigEncoding* symbols
 # for early initialization in encoding.c, so do NOT define ONIG_ENC_REGISTER
@@ -165,9 +175,10 @@ o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\
 
 o/$(MODE)/third_party/ruby/loadpath.o: private			\
     CFLAGS +=							\
-            -DRUBY_COSMO_LOADPATH_PREFIX=\"/zip\"		\
-            -DRUBY_COSMO_DEV_LIB=\"$(abspath third_party/ruby/lib)\" \
-            -DRUBY_COSMO_DEV_MONITOR=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+            -DRUBY_COSMO_LOADPATH_PREFIX=\"/zip\"
+            # Dev paths removed to prevent duplicate constant warnings when using packaged ruby.com
+            # -DRUBY_COSMO_DEV_LIB=\"$(abspath third_party/ruby/lib)\" \
+            # -DRUBY_COSMO_DEV_MONITOR=\"$(abspath third_party/ruby/ext/monitor/lib)\"
 
 # miniruby.zipless - uses filesystem paths only
 o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: third_party/ruby/miniruby.main.c
@@ -181,6 +192,14 @@ o/$(MODE)/third_party/ruby/ruby.main.zipless.o: third_party/ruby/ruby.main.c
 o/$(MODE)/third_party/ruby/irb.main.zipless.o: third_party/ruby/irb.main.c
 	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) $(OUTPUT_OPTION) $<
 	@$(COMPILE) -AFIXUPOBJ -wT$@ $(FIXUPOBJ) $@
+
+# Header dependencies for main entry points (ruby_cosmo_main.h is included by all)
+o/$(MODE)/third_party/ruby/miniruby.main.o: third_party/ruby/ruby_cosmo_main.h
+o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: third_party/ruby/ruby_cosmo_main.h
+o/$(MODE)/third_party/ruby/ruby.main.o: third_party/ruby/ruby_cosmo_main.h
+o/$(MODE)/third_party/ruby/ruby.main.zipless.o: third_party/ruby/ruby_cosmo_main.h
+o/$(MODE)/third_party/ruby/irb.main.o: third_party/ruby/ruby_cosmo_main.h
+o/$(MODE)/third_party/ruby/irb.main.zipless.o: third_party/ruby/ruby_cosmo_main.h
 
 # zipless entry points share filesystem load path definitions
 o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\

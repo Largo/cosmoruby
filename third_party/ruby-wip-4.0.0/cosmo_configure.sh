@@ -7,6 +7,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RBCONFIG="$ROOT/third_party/ruby/lib/rbconfig.rb"
 CONFIG_H="$ROOT/third_party/ruby/include/ruby/config.h"
+MODE_CONFIG_H="$ROOT/third_party/ruby/include/ruby/config.mode.h"
+MODE_RBCONFIG="$ROOT/third_party/ruby/lib/rbconfig.mode.rb"
+SENTINEL="$ROOT/third_party/ruby/.cosmo_configured"
 MODE="plugin" # default
 BOOTSTRAP=false
 SLIM_STATIC=false
@@ -61,73 +64,151 @@ echo "cosmo_configure: MODE=${MODE} (using $RUBY_BIN)"
   echo "cosmo_configure: bootstrap copies placed in build/bootstrap/"
 }
 
-"$RUBY_BIN" - "$RBCONFIG" "$CONFIG_H" "$MODE" "$SLIM_STATIC" <<'RUBY'
-rbconfig, configh, mode, slim_static = ARGV.map { |p| p }
-rbconfig = File.realpath(rbconfig)
-configh = File.realpath(configh)
-slim_static = slim_static == "true"
+# Initialise static configs on first run (add includes/requires)
+if [[ ! -f "$SENTINEL" ]]; then
+  echo "cosmo_configure: first run - initialising static configs"
 
-def rewrite(path)
-  text = File.read(path)
-  new = yield(text)
-  return false if new == text
-  File.write(path, new)
-  true
+  "$RUBY_BIN" - "$CONFIG_H" "$MODE_CONFIG_H" <<'RUBY_INIT_CONFIG_H'
+configh, mode_configh = ARGV
+configh = File.realpath(configh)
+
+# Check if config.h already includes config.mode.h
+text = File.read(configh)
+unless text.include?('#include "config.mode.h"')
+  # Find the line with SLIM_STATIC and remove it (will be in config.mode.h)
+  text = text.sub(/#define\s+SLIM_STATIC\s+\d+\n/, "")
+  # Find the line with EXTSTATIC and remove it
+  text = text.sub(/#define\s+EXTSTATIC\s+\d+\n/, "")
+  # Find the line with DLEXT and remove it
+  text = text.sub(/#define\s+DLEXT\s+".*?"\n/, "")
+  # Find the line with SOEXT and remove it
+  text = text.sub(/#define\s+SOEXT\s+".*?"\n/, "")
+
+  # Cosmopolitan-specific fixes:
+  # Add HAVE_UNAME and HAVE_SYS_UTSNAME_H after HAVE_WORKING_FORK
+  text = text.sub(/(#define HAVE_WORKING_FORK 1\n)/, "\\1#define HAVE_UNAME 1\n#define HAVE_SYS_UTSNAME_H 1\n")
+
+  # Comment out HAVE_MKNOD (Cosmopolitan doesn't support mknod for FIFOs)
+  text = text.sub(/#define HAVE_MKNOD 1\n/, "/* #undef HAVE_MKNOD -- Cosmopolitan doesn't support mknod for FIFOs (returns ENOSYS) */\n")
+
+  # Comment out CANNOT_FORK_WITH_PTHREAD (Cosmopolitan supports fork with pthreads)
+  text = text.sub(/#define CANNOT_FORK_WITH_PTHREAD 1\n/, "/* Cosmopolitan supports fork() with pthreads */\n/* #define CANNOT_FORK_WITH_PTHREAD 1 */\n")
+
+  # Add the include before the final #endif
+  text = text.sub(/(#endif\s*\/\*\s*INCLUDE_RUBY_CONFIG_H\s*\*\/\s*)$/, "#include \"config.mode.h\"\n\\1")
+  File.write(configh, text)
+  puts "cosmo_configure: added #include \"config.mode.h\" to config.h"
+else
+  puts "cosmo_configure: config.h already includes config.mode.h"
 end
+RUBY_INIT_CONFIG_H
+
+  "$RUBY_BIN" - "$RBCONFIG" "$MODE_RBCONFIG" <<'RUBY_INIT_RBCONFIG'
+rbconfig, mode_rbconfig = ARGV
+rbconfig = File.realpath(rbconfig)
+
+# Check if rbconfig.rb already requires rbconfig.mode
+text = File.read(rbconfig)
+unless text.include?("require_relative 'rbconfig.mode'")
+  # Remove the dynamic config lines (they'll be in rbconfig.mode.rb)
+  text = text.sub(/^\s*CONFIG\["SOEXT"\]\s*=.*\n/, "")
+  text = text.sub(/^\s*CONFIG\["EXTSTATIC"\]\s*=.*\n/, "")
+  text = text.sub(/^\s*CONFIG\["SLIM_STATIC"\]\s*=.*\n/, "")
+  text = text.sub(/^\s*CONFIG\["DLEXT"\]\s*=.*\n/, "")
+
+  # Add require before the CONFIG.each_value expansion (before line ~329)
+  # Find the "CONFIG.each_value do |val|" line and add require before it
+  text = text.sub(/(^\s*CONFIG\.each_value do \|val\|)/m, "require_relative 'rbconfig.mode'\n\\1")
+  File.write(rbconfig, text)
+  puts "cosmo_configure: added require_relative 'rbconfig.mode' to rbconfig.rb"
+else
+  puts "cosmo_configure: rbconfig.rb already requires rbconfig.mode"
+end
+RUBY_INIT_RBCONFIG
+
+  echo "cosmo_configure: static initialisation complete"
+fi
+
+# Generate mode-specific files (always regenerated on each run)
+"$RUBY_BIN" - "$MODE_CONFIG_H" "$MODE_RBCONFIG" "$RBCONFIG" "$MODE" "$SLIM_STATIC" <<'RUBY_GEN_MODE'
+mode_configh, mode_rbconfig, rbconfig_main, mode, slim_static = ARGV
+# Use expand_path instead of realpath since mode files may not exist yet
+mode_configh = File.expand_path(mode_configh)
+mode_rbconfig = File.expand_path(mode_rbconfig)
+rbconfig_main = File.expand_path(rbconfig_main)
+slim_static = slim_static == "true"
 
 plugin_mode = mode == "plugin"
 slim_value = slim_static ? "yes" : "no"
 slim_define = slim_static ? 1 : 0
 
-changed = false
+# Generate config.mode.h
+dlext = plugin_mode ? ".a" : ".so"
+soext = plugin_mode ? ".a" : ".so"
+extstatic = plugin_mode ? 0 : 1
 
-changed |= rewrite(rbconfig) do |t|
-  dlextext = plugin_mode ? "a" : "so"
-  t = t.sub(/CONFIG\["DLEXT"\]\s*=\s*".*?"/, "CONFIG[\"DLEXT\"] = \"#{dlextext}\"")
-  t = t.sub(/'--with-static-linked-ext'\s*/, "") if plugin_mode
-  extstatic = plugin_mode ? "no" : "yes"
-  if t !~ /CONFIG\["EXTSTATIC"\]/
-    t = t.sub(/^  CONFIG\["DLEXT"\].*\n/, "\\0  CONFIG[\"EXTSTATIC\"] = \"#{extstatic}\"\n")
-  else
-    t = t.sub(/CONFIG\["EXTSTATIC"\]\s*=\s*".*?"/, "CONFIG[\"EXTSTATIC\"] = \"#{extstatic}\"")
-  end
-  if t !~ /CONFIG\["SLIM_STATIC"\]/
-    t = t.sub(/CONFIG\["EXTSTATIC"\].*\n/, "\\0  CONFIG[\"SLIM_STATIC\"] = \"#{slim_value}\"\n")
-  else
-    t = t.sub(/CONFIG\["SLIM_STATIC"\]\s*=\s*".*?"/, "CONFIG[\"SLIM_STATIC\"] = \"#{slim_value}\"")
-  end
-  # Set TOPDIR to /zip for Cosmopolitan portable executables
-  t = t.sub(/^  TOPDIR = .*$/, "  # Base directory - use /zip for Cosmopolitan (portable)\n  TOPDIR = '/zip'")
-  # Set prefix to TOPDIR (not the fallback expression)
-  t = t.sub(/CONFIG\["prefix"\] = .*$/, 'CONFIG["prefix"] = TOPDIR')
-  # Set topdir to TOPDIR (not File.dirname(__FILE__))
-  t = t.sub(/CONFIG\["topdir"\] = .*$/, 'CONFIG["topdir"] = TOPDIR')
-  # Set EXEEXT to .com for Cosmopolitan APE binaries
-  t = t.sub(/CONFIG\["EXEEXT"\]\s*=\s*".*?"/, 'CONFIG["EXEEXT"] = ".com"')
-  t
-end
+config_mode_h = <<~C_HEADER
+/* config.mode.h - Mode-specific configuration (generated by cosmo_configure.sh) */
+/* MODE: #{mode}, SLIM_STATIC: #{slim_static} */
+#ifndef RUBY_CONFIG_MODE_H
+#define RUBY_CONFIG_MODE_H
 
-changed |= rewrite(configh) do |t|
+#ifndef EXTSTATIC
+#define EXTSTATIC #{extstatic}
+#endif
+#define DLEXT "#{dlext}"
+#define SOEXT "#{soext}"
+#ifndef SLIM_STATIC
+#define SLIM_STATIC #{slim_define}
+#endif
+
+#endif /* RUBY_CONFIG_MODE_H */
+C_HEADER
+
+File.write(mode_configh, config_mode_h)
+puts "cosmo_configure: generated config.mode.h (EXTSTATIC=#{extstatic}, DLEXT=#{dlext})"
+
+# Generate rbconfig.mode.rb - includes configure_args manipulation
+rbconfig_dlext = plugin_mode ? "a" : "so"
+rbconfig_soext = plugin_mode ? "so" : "so"  # SOEXT is always "so" in rbconfig
+rbconfig_extstatic = plugin_mode ? "no" : "yes"
+
+# Read the main rbconfig.rb to get current configure_args
+main_text = File.read(rbconfig_main)
+if main_text =~ /CONFIG\["configure_args"\]\s*=\s*"([^"]*)"/
+  configure_args = $1
+
+  # Fix the --with-static-linked-ext flag based on mode
   if plugin_mode
-    t = t.sub(/#define\s+EXTSTATIC\s+\d+/, "#define EXTSTATIC 0")
-    t = t.sub(/#define\s+DLEXT_MAXLEN\s+\d+/, "#define DLEXT_MAXLEN 3")
-    t = t.sub(/#define\s+DLEXT\s+\".*?\"/, '#define DLEXT ".a"')
-    t = t.sub(/#define\s+SOEXT\s+\".*?\"/,  '#define SOEXT ".a"')
+    # Remove --with-static-linked-ext if present
+    configure_args = configure_args.gsub(/'--with-static-linked-ext'\s*/, "").strip
   else
-    t = t.sub(/#define\s+EXTSTATIC\s+\d+/, "#define EXTSTATIC 1")
-    t = t.sub(/#define\s+DLEXT_MAXLEN\s+\d+/, "#define DLEXT_MAXLEN 3")
-    t = t.sub(/#define\s+DLEXT\s+\".*?\"/, '#define DLEXT ".so"')
-    t = t.sub(/#define\s+SOEXT\s+\".*?\"/,  '#define SOEXT ".so"')
+    # Add --with-static-linked-ext if not present
+    unless configure_args.include?("'--with-static-linked-ext'")
+      # Insert after the first configure flag
+      configure_args = configure_args.sub(/^(\s*)/, "\\1'--with-static-linked-ext' ")
+    end
   end
-  if t =~ /#define\s+SLIM_STATIC\s+\d+/
-    t = t.sub(/#define\s+SLIM_STATIC\s+\d+/, "#define SLIM_STATIC #{slim_define}")
-  elsif t =~ /#define\s+EXTSTATIC\s+\d+/
-    t = t.sub(/#define\s+EXTSTATIC\s+\d+\n/, "\\0#define SLIM_STATIC #{slim_define}\n")
-  else
-    t += "\n#define SLIM_STATIC #{slim_define}\n"
-  end
-  t
+else
+  # Fallback if we can't parse configure_args
+  configure_args = plugin_mode ? "" : " '--with-static-linked-ext'"
 end
 
-puts changed ? "cosmo_configure: updated configs for #{mode} mode" : "cosmo_configure: no changes (mode=#{mode})"
-RUBY
+rbconfig_mode = <<~RUBY_CONFIG
+# rbconfig.mode.rb - Mode-specific configuration (generated by cosmo_configure.sh)
+# MODE: #{mode}, SLIM_STATIC: #{slim_static}
+
+RbConfig::CONFIG["DLEXT"] = "#{rbconfig_dlext}"
+RbConfig::CONFIG["SOEXT"] = "#{rbconfig_soext}"
+RbConfig::CONFIG["EXTSTATIC"] = "#{rbconfig_extstatic}"
+RbConfig::CONFIG["SLIM_STATIC"] = "#{slim_value}"
+RbConfig::CONFIG["configure_args"] = "#{configure_args}"
+RUBY_CONFIG
+
+File.write(mode_rbconfig, rbconfig_mode)
+puts "cosmo_configure: generated rbconfig.mode.rb (DLEXT=#{rbconfig_dlext}, EXTSTATIC=#{rbconfig_extstatic})"
+RUBY_GEN_MODE
+
+# Touch sentinel file to indicate successful configuration
+touch "$SENTINEL"
+echo "cosmo_configure: mode configuration complete (mode=${MODE})"

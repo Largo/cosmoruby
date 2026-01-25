@@ -1,3 +1,4 @@
 # frozen_string_literal: true
 
-require 'digest/sha2.so'
+require 'rbconfig'
+require 'digest/sha2.' + RbConfig::CONFIG["DLEXT"]

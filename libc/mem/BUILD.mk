@@ -16,6 +16,27 @@ LIBC_MEM_A_CHECKS =				\
 	$(LIBC_MEM_A).pkg			\
 	$(LIBC_MEM_A_HDRS:%=o/$(MODE)/%.ok)
 
+# Allocator selection based on build mode
+# Use dlmalloc for tiny modes (smaller binary), mimalloc otherwise
+ifeq ($(MODE),tiny)
+COSMO_USE_DLMALLOC := 1
+endif
+ifeq ($(MODE),tinylinux)
+COSMO_USE_DLMALLOC := 1
+endif
+ifeq ($(MODE),aarch64-tiny)
+COSMO_USE_DLMALLOC := 1
+endif
+
+# Allow explicit override via environment or command line
+ifdef COSMO_USE_DLMALLOC
+LIBC_MEM_ALLOCATOR_DEP := THIRD_PARTY_DLMALLOC
+LIBC_MEM_ALLOCATOR_FLAGS :=
+else
+LIBC_MEM_ALLOCATOR_DEP := THIRD_PARTY_MIMALLOC
+LIBC_MEM_ALLOCATOR_FLAGS := -DCOSMO_USE_MIMALLOC=1
+endif
+
 LIBC_MEM_A_DIRECTDEPS =				\
 	LIBC_CALLS				\
 	LIBC_FMT				\
@@ -25,7 +46,7 @@ LIBC_MEM_A_DIRECTDEPS =				\
 	LIBC_STR				\
 	LIBC_SYSV				\
 	LIBC_SYSV_CALLS				\
-	THIRD_PARTY_DLMALLOC
+	$(LIBC_MEM_ALLOCATOR_DEP)
 
 LIBC_MEM_A_DEPS :=				\
 	$(call uniq,$(foreach x,$(LIBC_MEM_A_DIRECTDEPS),$($(x))))
@@ -44,6 +65,11 @@ $(LIBC_MEM_A_OBJS): private				\
 			-Wframe-larger-than=4096	\
 			-Walloca-larger-than=4096	\
 			-fexceptions			\
+
+# Pass allocator selection flag to C files
+$(LIBC_MEM_A_OBJS): private				\
+		CFLAGS +=				\
+			$(LIBC_MEM_ALLOCATOR_FLAGS)
 
 o/$(MODE)/libc/mem/malloc_usable_size.o			\
 o/$(MODE)/libc/mem/realloc_in_place.o			\

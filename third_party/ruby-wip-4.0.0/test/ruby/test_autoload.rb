@@ -67,7 +67,7 @@ p Foo::Bar
 
   def test_autoload_p_with_static_extensions
     require 'rbconfig'
-    omit unless RbConfig::CONFIG['EXTSTATIC'] == 'static'
+    omit "Test requires static extensions (EXTSTATIC=static)" unless RbConfig::CONFIG['EXTSTATIC'] == 'static'
     begin
       require 'fcntl.so'
     rescue LoadError

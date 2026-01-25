@@ -46,7 +46,7 @@ module RbConfig
   CONFIG["RUBY_SEARCH_PATH"] = ""
   CONFIG["UNIVERSAL_INTS"] = ""
   CONFIG["UNIVERSAL_ARCHNAMES"] = ""
-  CONFIG["configure_args"] = " '--prefix=/tmp/ruby-cosmo-config' '--disable-shared' '--disable-pie' '--disable-install-doc' '--disable-install-rdoc' '--disable-install-capi' '--disable-yjit' '--disable-zjit' '--enable-load-relative' '--disable-dln' '--enable-debug-env' '--without-valgrind' '--without-jemalloc' '--without-gmp' '--with-parser=prism' '--with-thread=pthread' '--with-coroutine=amd64' '--host=x86_64-pc-cosmo' 'host_alias=x86_64-pc-cosmo' 'CC=/home/groobiest/Code/jart/cosmopolitan/.cosmocc/current/bin/cosmocc' 'CFLAGS=-O2'"
+  CONFIG["configure_args"] = " '--prefix=/tmp/ruby-cosmo-config' '--disable-shared' '--disable-pie' '--disable-install-doc' '--disable-install-rdoc' '--disable-install-capi' '--enable-yjit' '--disable-zjit' '--enable-load-relative' '--disable-dln' '--enable-debug-env' '--without-valgrind' '--without-jemalloc' '--without-gmp' '--with-parser=prism' '--with-thread=pthread' '--with-coroutine=amd64' '--host=x86_64-pc-cosmo' 'host_alias=x86_64-pc-cosmo' 'CC=/home/groobiest/Code/jart/cosmopolitan/.cosmocc/current/bin/cosmocc' 'CFLAGS=-O2'"
   CONFIG["CONFIGURE"] = "configure"
   CONFIG["vendorarchdir"] = "$(vendorlibdir)/$(sitearch)"
   CONFIG["vendorlibdir"] = "$(vendordir)/$(ruby_version)"
@@ -132,7 +132,6 @@ module RbConfig
   CONFIG["TEST_RUNNABLE"] = "yes"
   CONFIG["rubylibprefix"] = "$(libdir)/$(RUBY_BASE_NAME)"
   CONFIG["setup"] = "Setup"
-  CONFIG["SOEXT"] = "so"
   CONFIG["TRY_LINK"] = ""
   CONFIG["PRELOADENV"] = "LD_PRELOAD"
   CONFIG["LIBPATHENV"] = "LD_LIBRARY_PATH"
@@ -141,11 +140,8 @@ module RbConfig
   CONFIG["LINK_SO"] = "\n$(POSTLINK)"
   CONFIG["ADDITIONAL_DLDFLAGS"] = ""
   CONFIG["ENCSTATIC"] = ""
-  CONFIG["EXTSTATIC"] = "yes"
-  CONFIG["SLIM_STATIC"] = "no"
   CONFIG["ASMEXT"] = "S"
   CONFIG["LIBEXT"] = "a"
-  CONFIG["DLEXT"] = "so"
   CONFIG["LDSHAREDXX"] = ""
   CONFIG["LDSHARED"] = "$(LD)"
   CONFIG["CCDLFLAGS"] = "-fPIC"
@@ -326,6 +322,7 @@ module RbConfig
     val.replace(newval) unless newval == val
     val
   end
+require_relative 'rbconfig.mode'
   CONFIG.each_value do |val|
     RbConfig::expand(val)
   end

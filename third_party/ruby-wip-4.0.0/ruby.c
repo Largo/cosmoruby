@@ -2444,6 +2444,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_gc_set_params();
     ruby_init_loadpath();
 
+    // Init_enc() needed in both static and plugin modes:
+    // - Static mode: enc/encinit.c provides Init_enc() with all encodings
+    // - Plugin mode: dmyenc.c provides Init_enc() to load enc/encdb dynamically
     Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);

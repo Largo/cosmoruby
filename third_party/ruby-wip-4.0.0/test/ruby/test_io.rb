@@ -2803,6 +2803,7 @@ class TestIO < Test::Unit::TestCase
   bug11320 = '[ruby-core:69780] [Bug #11320]'
   ["UTF-8", "EUC-JP", "Shift_JIS"].each do |enc|
     define_method("test_reopen_nonascii(#{enc})") do
+      pend "Cosmopolitan is stricter about Unicode filenames than standard Linux. Skipping." if RUBY_PLATFORM =~ /cosmo/
       mkcdtmpdir do
         fname = "\u{30eb 30d3 30fc}".encode(enc)
         File.write(fname, '')

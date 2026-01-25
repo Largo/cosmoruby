@@ -37,6 +37,7 @@
 #define EMFILE 24
 #define ENOTTY 25
 #define ESPIPE 29
+#define EPIPE 32
 #define EDOM 33
 #define ERANGE 34
 #define ENAMETOOLONG 36
@@ -57,6 +58,7 @@
 #define EWOULDBLOCK EAGAIN
 
 /* fcntl constants (Linux x86_64 from libc/sysv/consts.sh) */
+#define F_DUPFD 0
 #define F_GETFD 1
 #define F_SETFD 2
 #define F_GETFL 3

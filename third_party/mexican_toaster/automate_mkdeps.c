@@ -1394,36 +1394,51 @@ int main(int argc, char *argv[]) {
     printf("Stage 1 :- Processing: %s (included by %s)\n", filename, includer);
 
     char *found = NULL;
-    char *incdir = DirName(includer);
-    char *cand = Join(incdir, filename);
-    if (FileExists(cand)) {
-      found = cand;
-      printf("  Found in source directory: %s\n", found);
+    
+    /* Handle absolute paths directly */
+    if (filename[0] == '/') {
+      /* Absolute path - use direct lookup */
+      if (FileExists(filename)) {
+        found = strdup(filename);
+        printf("  Found absolute path: %s\n", found);
+      } else {
+        fprintf(stderr, "  ✗ ERROR: Absolute path not found: %s\n", filename);
+        fprintf(stderr, "\n");
+        continue;
+      }
     } else {
-      free(cand);
-      for (size_t k = 0; k < cfg.include_paths_count; ++k) {
-        char *cand2 = Join(cfg.include_paths[k], filename);
-        if (FileExists(cand2)) {
-          found = cand2;
-          printf("  Found in -I path %s: %s\n", cfg.include_paths[k], found);
-          break;
+      /* Relative path - use C header resolution */
+      char *incdir = DirName(includer);
+      char *cand = Join(incdir, filename);
+      if (FileExists(cand)) {
+        found = cand;
+        printf("  Found in source directory: %s\n", found);
+      } else {
+        free(cand);
+        for (size_t k = 0; k < cfg.include_paths_count; ++k) {
+          char *cand2 = Join(cfg.include_paths[k], filename);
+          if (FileExists(cand2)) {
+            found = cand2;
+            printf("  Found in -I path %s: %s\n", cfg.include_paths[k], found);
+            break;
+          }
+          free(cand2);
         }
-        free(cand2);
       }
-    }
-    if (!found) {
-      fprintf(stderr, "  ✗ ERROR: File not found using C header resolution\n");
-      fprintf(stderr, "  Searched:\n");
-      fprintf(stderr, "    1. Source directory: %s/%s\n",
-              incdir, filename);
-      for (size_t k = 0; k < cfg.include_paths_count; ++k) {
-        fprintf(stderr, "    2. -I %s/%s\n", cfg.include_paths[k], filename);
+      if (!found) {
+        fprintf(stderr, "  ✗ ERROR: File not found using C header resolution\n");
+        fprintf(stderr, "  Searched:\n");
+        fprintf(stderr, "    1. Source directory: %s/%s\n",
+                incdir, filename);
+        for (size_t k = 0; k < cfg.include_paths_count; ++k) {
+          fprintf(stderr, "    2. -I %s/%s\n", cfg.include_paths[k], filename);
+        }
+        fprintf(stderr, "\n");
+        free(incdir);
+        continue;
       }
-      fprintf(stderr, "\n");
       free(incdir);
-      continue;
     }
-    free(incdir);
 
     /* Check if includer is already a shim (from any module) */
     /* Check for both /shims/ and _shims/ patterns */

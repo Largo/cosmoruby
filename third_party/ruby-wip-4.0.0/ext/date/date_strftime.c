@@ -17,6 +17,7 @@
 #endif
 
 #undef strchr	/* avoid AIX weirdness */
+#undef div	/* avoid Cosmopolitan libc conflict */
 
 #define range(low, item, hi)	(item)
 

@@ -1,8 +1,12 @@
 #!/bin/bash
 # Package Ruby with embedded stdlib
 #
-# Usage: cd o && bash ../third_party/ruby/package_ruby.sh
-# This script must be run from the 'o' directory
+# Usage: package_ruby.sh [RUBY_BINARY]
+# Where RUBY_BINARY is the path to the Ruby interpreter to use (defaults to third_party/ruby/ruby)
+# This script should be called from third_party/ruby directory
+
+# Get Ruby binary from parameter or use default
+RUBY_BIN="${1:-../../o/third_party/ruby/ruby}"
 
 # Ensure we're in the o directory
 cd "$(dirname "$0")/../../o" 2>/dev/null || true
@@ -35,12 +39,18 @@ cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/date/lib/date*
 
 # Copy digest extension Ruby library files
 cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/digest/lib/digest* cosmo-ruby/lib/ruby/4.0.0/
+# Copy digest/sha2 extension Ruby library files
+mkdir -p cosmo-ruby/lib/ruby/4.0.0/digest
+cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/digest/sha2/lib/* cosmo-ruby/lib/ruby/4.0.0/digest/
 
 # Copy json extension Ruby library files
 cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/json/lib/json* cosmo-ruby/lib/ruby/4.0.0/
 
 # Copy monitor extension Ruby library files
 cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/monitor/lib/monitor.rb cosmo-ruby/lib/ruby/4.0.0/
+
+# Copy objspace extension Ruby library files
+cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/objspace/lib/objspace* cosmo-ruby/lib/ruby/4.0.0/
 
 # Note: pathname is now a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
 
@@ -53,7 +63,7 @@ cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/ripper/lib/rip
 # Get DLEXT and ARCH early for patching and plugin copying
 ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
 ARCH=${ARCH:-x86_64-cosmo}
-DLEXT="$(sed -n 's/^  CONFIG\["DLEXT"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
+DLEXT="$(sed -n 's/^#define DLEXT "\.\?\(.*\)"/\1/p' ../third_party/ruby/include/ruby/config.mode.h | head -1)"
 DLEXT=${DLEXT:-a}
 
 # Patch extension wrapper files to use correct DLEXT in plugin mode
@@ -68,10 +78,12 @@ mkdir -p cosmo-ruby/lib/ruby/gems/4.0.0
 cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/* cosmo-ruby/lib/ruby/gems/4.0.0/
 
 # Copy plugin extension archives when building in plugin mode (EXTSTATIC=0)
-EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
-SLIM_STATIC="$(sed -n 's/^#define[[:space:]]\+SLIM_STATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.h | head -1)"
+# Plugins must go in the archdir (lib/ruby/4.0.0/x86_64-cosmo/) which is in $LOAD_PATH,
+# NOT in extensions/ subdirectory which is NOT searched by require.
+EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.mode.h | head -1)"
+SLIM_STATIC="$(sed -n 's/^#define[[:space:]]\+SLIM_STATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.mode.h | head -1)"
 if [[ "$EXTSTATIC" == "0" ]]; then
-  plugins_dir="cosmo-ruby/lib/ruby/4.0.0/extensions/${ARCH}"
+  plugins_dir="cosmo-ruby/lib/ruby/4.0.0/${ARCH}"
   mkdir -p "${plugins_dir}"
   # Map feature path -> archive path
   while read -r feature archive; do
@@ -86,55 +98,179 @@ if [[ "$EXTSTATIC" == "0" ]]; then
       echo "Warning: plugin archive missing: $src"
     fi
   done <<'EOF'
+continuation continuation
+coverage coverage
 date_core date
 digest digest
 digest/md5 digest
 digest/sha1 digest
 digest/sha2 digest
 etc etc
+fcntl fcntl
 io/nonblock io/nonblock
 json/ext/generator json
 json/ext/parser json
 monitor monitor
+objspace objspace
 psych psych
+rbconfig/sizeof rbconfig/sizeof
 ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
 stringio stringio
+strscan strscan
 zlib zlib
 mbedtls mbedtls
 EOF
+
+  # Copy test extensions only in debug/test mode (MODE=dbg or RUBY_TEST_EXTENSIONS=1)
+  # These are Ruby's internal test helpers, not needed for production
+  if [[ "$MODE" == "dbg" || "$RUBY_TEST_EXTENSIONS" == "1" ]]; then
+    echo "Including test extensions (MODE=$MODE, RUBY_TEST_EXTENSIONS=$RUBY_TEST_EXTENSIONS)"
+    while read -r feature archive; do
+      src="third_party/ruby/ext/${archive}/${archive##*/}.${DLEXT}"
+      dst="${plugins_dir}/${feature}.${DLEXT}"
+      if [[ -f "$src" ]]; then
+        mkdir -p "$(dirname "$dst")"
+        cp -a "$src" "$dst"
+      else
+        echo "Warning: test extension archive missing: $src"
+      fi
+    done <<'TEST_EOF'
+-test-/file -test-/file
+-test-/iter -test-/iter
+-test-/memory_view -test-/memory_view
+-test-/rb_call_super_kw -test-/rb_call_super_kw
+TEST_EOF
+  fi
+
+  # Copy encoding plugin archives in plugin mode
+  enc_dir="${plugins_dir}/enc"
+  mkdir -p "${enc_dir}"
+  for enc in big5 cesu_8 cp949 emacs_mule euc_jp euc_kr euc_tw \
+             gb2312 gb18030 gbk iso_8859_1 iso_8859_2 iso_8859_3 \
+             iso_8859_4 iso_8859_5 iso_8859_6 iso_8859_7 iso_8859_8 \
+             iso_8859_9 iso_8859_10 iso_8859_11 iso_8859_13 iso_8859_14 \
+             iso_8859_15 iso_8859_16 koi8_r koi8_u shift_jis \
+             utf_16be utf_16le utf_32be utf_32le windows_31j \
+             windows_1250 windows_1251 windows_1252 windows_1253 \
+             windows_1254 windows_1257; do
+    src="third_party/ruby/enc/${enc}.${DLEXT}"
+    dst="${enc_dir}/${enc}.${DLEXT}"
+    if [[ -f "$src" ]]; then
+      cp -a "$src" "$dst"
+    else
+      echo "Warning: encoding archive missing: $src"
+    fi
+  done
+
+  # Copy encoding database (encdb and transdb) in plugin mode
+  mkdir -p "${plugins_dir}/enc/trans"
+  for db in enc/encdb enc/trans/transdb; do
+    src="third_party/ruby/${db}.${DLEXT}"
+    dst="${plugins_dir}/${db}.${DLEXT}"
+    if [[ -f "$src" ]]; then
+      cp -a "$src" "$dst"
+    else
+      echo "Warning: encoding database missing: $src"
+    fi
+  done
+
+  # Copy transcoder plugin archives in plugin mode
+  trans_dir="${plugins_dir}/enc/trans"
+  mkdir -p "${trans_dir}"
+  for trans in big5 cesu_8 chinese ebcdic emoji emoji_iso2022_kddi \
+               emoji_sjis_docomo emoji_sjis_kddi emoji_sjis_softbank \
+               escape gb18030 gbk iso2022 japanese japanese_euc \
+               japanese_sjis korean single_byte utf8_mac utf_16_32; do
+    src="third_party/ruby/enc/trans/${trans}.${DLEXT}"
+    dst="${trans_dir}/${trans}.${DLEXT}"
+    if [[ -f "$src" ]]; then
+      cp -a "$src" "$dst"
+    else
+      echo "Warning: transcoder archive missing: $src"
+    fi
+  done
 elif [[ "$EXTSTATIC" == "1" && "$SLIM_STATIC" == "1" ]]; then
   # In slim static mode (EXTSTATIC=1, SLIM_STATIC=1), extensions are linked but
   # require still needs to find stub files to trigger their statically-linked init functions.
   # Create zero-byte stub files for the require mechanism.
-  plugins_dir="cosmo-ruby/lib/ruby/4.0.0/extensions/${ARCH}"
+  # Stubs must go in archdir which is in $LOAD_PATH.
+  plugins_dir="cosmo-ruby/lib/ruby/4.0.0/${ARCH}"
   mkdir -p "${plugins_dir}"
   while read -r feature archive; do
     dst="${plugins_dir}/${feature}.${DLEXT}"
     mkdir -p "$(dirname "$dst")"
     : > "$dst"
   done <<'EOF'
+continuation continuation
+coverage coverage
 date_core date
 digest digest
 digest/md5 digest
 digest/sha1 digest
 digest/sha2 digest
 etc etc
+fcntl fcntl
 io/nonblock io/nonblock
 json/ext/generator json
 json/ext/parser json
 monitor monitor
+objspace objspace
+prism/prism prism
 psych psych
+rbconfig/sizeof rbconfig/sizeof
 ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
 stringio stringio
+strscan strscan
 zlib zlib
 mbedtls mbedtls
 EOF
+
+  # Create test extension stubs only in debug/test mode
+  if [[ "$MODE" == "dbg" || "$RUBY_TEST_EXTENSIONS" == "1" ]]; then
+    echo "Including test extension stubs (MODE=$MODE, RUBY_TEST_EXTENSIONS=$RUBY_TEST_EXTENSIONS)"
+    for feature in "-test-/file" "-test-/iter" "-test-/memory_view" "-test-/rb_call_super_kw"; do
+      dst="${plugins_dir}/${feature}.${DLEXT}"
+      mkdir -p "$(dirname "$dst")"
+      : > "$dst"
+    done
+  fi
+
+  # Create zero-byte encoding stubs in slim static mode
+  enc_dir="${plugins_dir}/enc"
+  mkdir -p "${enc_dir}"
+  for enc in big5 cesu_8 cp949 emacs_mule euc_jp euc_kr euc_tw \
+             gb2312 gb18030 gbk iso_8859_1 iso_8859_2 iso_8859_3 \
+             iso_8859_4 iso_8859_5 iso_8859_6 iso_8859_7 iso_8859_8 \
+             iso_8859_9 iso_8859_10 iso_8859_11 iso_8859_13 iso_8859_14 \
+             iso_8859_15 iso_8859_16 koi8_r koi8_u shift_jis \
+             utf_16be utf_16le utf_32be utf_32le windows_31j \
+             windows_1250 windows_1251 windows_1252 windows_1253 \
+             windows_1254 windows_1257; do
+    dst="${enc_dir}/${enc}.${DLEXT}"
+    : > "$dst"
+  done
+
+  # Create zero-byte encoding database stubs in slim static mode
+  mkdir -p "${plugins_dir}/enc/trans"
+  : > "${plugins_dir}/enc/encdb.${DLEXT}"
+  : > "${plugins_dir}/enc/trans/transdb.${DLEXT}"
+
+  # Create zero-byte transcoder stubs in slim static mode
+  trans_dir="${plugins_dir}/enc/trans"
+  mkdir -p "${trans_dir}"
+  for trans in big5 cesu_8 chinese ebcdic emoji emoji_iso2022_kddi \
+               emoji_sjis_docomo emoji_sjis_kddi emoji_sjis_softbank \
+               escape gb18030 gbk iso2022 japanese japanese_euc \
+               japanese_sjis korean single_byte utf8_mac utf_16_32; do
+    dst="${trans_dir}/${trans}.${DLEXT}"
+    : > "$dst"
+  done
 fi
 
 # Create default gem specification for bundler (must be static, no require_relative)
@@ -168,8 +304,10 @@ EOF
 # Generate default gemspecs for built-in extensions and stdlib
 # Ruby 4.0.0 moved IRB and other components to bundled gems, which depend on
 # built-in extensions and stdlib gems. These need default gemspecs for gem resolution.
+# With cosmo_plugin integration, we can now generate gemspecs even in plugin mode
+# since extensions will be dynamically loaded when needed
 echo "Generating default gemspecs for built-in extensions and stdlib..."
-RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib third_party/ruby/ruby --disable-gems - <<'RUBY'
+RUBYOPT=--disable-gems RUBYLIB="${RUBYLIB:-../third_party/ruby/lib}" "$RUBY_BIN" --disable-gems - <<'RUBY'
 require 'rubygems'
 require 'rubygems/specification'
 require 'find'
@@ -220,8 +358,12 @@ cd cosmo-ruby
 echo "ZIP extraction skipped (rebuilding from source)"
 touch .cosmo
 
-# Create the ZIP file
-RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib zip -q -r -dd ../ruby-stdlib.zip *
+# Create marker file for packaged Ruby detection
+# This is checked at runtime to set RUBY_COSMO_PACKAGED constant
+echo "CosmoRuby packaged $(date -Iseconds)" > .cosmo_ruby_packaged
+
+# Create the ZIP file (include dotfiles like .cosmo_ruby_packaged)
+RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib zip -q -r -dd ../ruby-stdlib.zip * .cosmo_ruby_packaged
 
 cd ..
 

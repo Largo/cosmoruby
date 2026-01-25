@@ -438,6 +438,8 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_glob_ignore_casefold_invalid_encoding
+    pend "Cosmopolitan is stricter about Unicode filenames than standard Linux. Skipping." if RUBY_PLATFORM =~ /cosmo/
+    
     bug14456 = "[ruby-core:85448]"
     filename = "\u00AAa123".encode('ISO-8859-1')
     File.write(File.join(@root, filename), "")

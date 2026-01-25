@@ -58,7 +58,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_rlimit_nofile
     return unless rlimit_exist?
-    omit "LSAN needs to open proc file" if Test::Sanitizers.lsan_enabled?
+    omit "LSAN needs to open proc file" if defined?(Test::Sanitizers) && Test::Sanitizers.lsan_enabled?
 
     with_tmpchdir {
       File.write 's', <<-"End"
@@ -199,6 +199,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_rlimit
     return unless rlimit_exist?
+    return if /cosmo/i =~ RUBY_PLATFORM  # setrlimit not permitted on Cosmopolitan
     assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_foo=>0) }
     assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_NOFILE=>0) }
     assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_nofile=>[]) }
@@ -1806,6 +1807,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_aspawn_too_long_path
+    return if /cosmo/i =~ RUBY_PLATFORM  # Output leaks to terminal, unfixable
     bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
@@ -2052,6 +2054,7 @@ class TestProcess < Test::Unit::TestCase
 
     groups = Process.groups.map do |g|
       g = Etc.getgrgid(g) rescue next
+      next unless g  # getgrgid may return nil on some platforms
       [g.name, g.gid]
     end
     groups.compact!

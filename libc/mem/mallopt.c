@@ -16,9 +16,17 @@
 │ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR             │
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 int mallopt(int param_number, int value) {
+#if defined(COSMO_USE_MIMALLOC) && COSMO_USE_MIMALLOC
+  /* mimalloc uses mi_option_set() instead of mallopt().
+   * Return 1 (success) as a no-op for compatibility. */
+  (void)param_number;
+  (void)value;
+  return 1;
+#else
   return dlmallopt(param_number, value);
+#endif
 }

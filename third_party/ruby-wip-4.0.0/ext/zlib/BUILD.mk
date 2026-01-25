@@ -23,7 +23,7 @@ o/$(MODE)/third_party/ruby/ext/zlib/%.o: private	\
 		-DRUBY_EXPORT				\
 		-DRUBY_COSMOPOLITAN
 
-$(THIRD_PARTY_RUBY_EXT_ZLIB_OBJS): third_party/ruby/ext/zlib/BUILD.mk
+$(THIRD_PARTY_RUBY_EXT_ZLIB_OBJS): $(THIRD_PARTY_RUBY_EXT_ZLIB_HDRS) third_party/ruby/ext/zlib/BUILD.mk
 
 .PHONY: o/$(MODE)/third_party/ruby/ext/zlib
 o/$(MODE)/third_party/ruby/ext/zlib: $(THIRD_PARTY_RUBY_EXT_ZLIB_A)

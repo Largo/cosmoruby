@@ -17,10 +17,10 @@
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/errno.h"
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
 #include "libc/stdckdint.h"
 #include "libc/str/str.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 __static_yoink("free");
 
@@ -46,6 +46,6 @@ void *calloc(size_t n, size_t itemsize) {
     memset(p, 0, n);
   return p;
 #else
-  return dlcalloc(n, itemsize);
+  return COSMO_CALLOC(n, itemsize);
 #endif
 }

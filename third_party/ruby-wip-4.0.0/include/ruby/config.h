@@ -1,15 +1,15 @@
 #ifndef INCLUDE_RUBY_CONFIG_H
-#define HAVE_ARC4RANDOM_BUF 1
-#define HAVE_RB_FD_INIT 1
-#define HAVE_RB_IO_CLOSED_P 1
-#define HAVE_SANITIZER_ASAN_INTERFACE_H 1
 #define INCLUDE_RUBY_CONFIG_H 1
+/* confdefs.h */
 /* Cosmopolitan Ruby Configuration */
 /* Generated for Cosmopolitan Libc - Actually Portable Executables */
 /* Based on Ruby 4.0.0 native configure output with Cosmopolitan adaptations */
 
 /* MUST include errno wrapper FIRST to override Cosmopolitan's runtime errno constants */
 #include "errno_wrapper.h"
+
+#define HAVE_RB_IO_CLOSED_P 1
+#define HAVE_TERMIOS_H 1
 
 #define HAVE_STDIO_H 1
 #define HAVE_STDLIB_H 1
@@ -59,6 +59,8 @@
 #define HAVE_LOCALE_H 1
 #define HAVE_MALLOC_H 1
 #define HAVE_PWD_H 1
+#define HAVE_SANITIZER_ASAN_INTERFACE_H 1
+#define HAVE_SANITIZER_TSAN_INTERFACE_H 1 /* hmm */
 #define HAVE_STDALIGN_H 1
 #define HAVE_STDIO_H 1
 #define HAVE_SYS_FCNTL_H 1
@@ -213,6 +215,7 @@
 #define SIZEOF_STRUCT_TIMEVAL_TV_SEC SIZEOF_TIME_T
 #define HAVE_STRUCT_TIMESPEC 1
 #define HAVE_STRUCT_TIMEZONE 1
+#define HAVE_RB_FD_INIT 1
 #define HAVE_INT8_T 1
 #define SIZEOF_INT8_T 1
 #define HAVE_UINT8_T 1
@@ -271,7 +274,10 @@
 #define HAVE_VFORK 1
 #define HAVE_WORKING_VFORK 1
 #define HAVE_WORKING_FORK 1
+#define HAVE_UNAME 1
+#define HAVE_SYS_UTSNAME_H 1
 #define HAVE__LONGJMP 1
+#define HAVE_ARC4RANDOM_BUF 1
 #define HAVE_ATAN2L 1
 #define HAVE_ATAN2F 1
 #define HAVE_DECL_ATOMIC_SIGNAL_FENCE 1
@@ -285,9 +291,11 @@
 #define HAVE_DIRFD 1
 #define HAVE_DL_ITERATE_PHDR 1
 #define HAVE_DLOPEN 1
+/* HAVE_DLADDR 1 ? */
 #define HAVE_DUP3 1
 #define HAVE_EACCESS 1
 #define HAVE_ENDGRENT 1
+#define HAVE_EVENTFD 1
 #define HAVE_EXECL 1
 #define HAVE_EXECLE 1
 #define HAVE_EXECV 1
@@ -348,7 +356,8 @@
 #define HAVE_WRITEV 1
 #define HAVE_MEMRCHR 1
 #define HAVE_MEMMEM 1
-#define HAVE_MKNOD 1
+/* #undef HAVE_MKFIFO */
+/* #undef HAVE_MKNOD -- Cosmopolitan doesn't support mknod for FIFOs (returns ENOSYS) */
 #define HAVE_MKTIME 1
 #define HAVE_MMAP 1
 #define HAVE_MREMAP 1
@@ -400,6 +409,7 @@
 #define HAVE_TIMEGM 1
 #define HAVE_TIMES 1
 #define HAVE_TRUNCATE 1
+#define HAVE_TRUNCATE64 1
 #define HAVE_TZSET 1
 #define HAVE_UMASK 1
 #define HAVE_UNSETENV 1
@@ -407,6 +417,7 @@
 #define HAVE_UTIMES 1
 #define HAVE_WAIT4 1
 #define HAVE_WAITPID 1
+/* #undef HAVE_STATX */
 /* #undef HAVE_CRYPT_H */
 /* #undef HAVE_STRUCT_CRYPT_DATA_INITIALIZED */
 #define HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN 1
@@ -439,10 +450,14 @@
 #define HAVE_GNU_QSORT_R 1
 #define ATAN2_INF_C99 1
 #define HAVE_CLOCK_GETRES 1
+#define HAVE_LIBRT 1
+#define HAVE_TIMER_CREATE 1
+#define HAVE_TIMER_SETTIME 1
 #define HAVE_STRUCT_TM_TM_ZONE 1
 #define HAVE_TM_ZONE 1
 #define HAVE_STRUCT_TM_TM_GMTOFF 1
 #define HAVE_DAYLIGHT 1
+#define NEGATIVE_TIME_T 1
 #define POSIX_SIGNAL 1
 #define RSHIFT(x,y) ((x)>>(int)(y))
 #define USE_COPY_FILE_RANGE 1
@@ -463,33 +478,26 @@
 #define DEFINE_MCONTEXT_PTR(mc, uc) mcontext_t *mc = &(uc)->uc_mcontext
 #define HAVE_GETCONTEXT 1
 #define HAVE_SETCONTEXT 1
-#define CANNOT_FORK_WITH_PTHREAD 1
+/* Cosmopolitan supports fork() with pthreads */
+/* #define CANNOT_FORK_WITH_PTHREAD 1 */
 #define HAVE_SYS_USER_H 1
 #define HAVE_CONST_PAGE_SIZE 0
 #define IOCTL_REQ_TYPE unsigned long
 #define NUM2IOCTLREQ(num) NUM2ULONG(num)
 #define USE_ELF 1
 #define HAVE_ELF_H 1
-#define EXTSTATIC 1
-#define DLEXT_MAXLEN 3
-#define DLEXT ".so"
-#define HAVE_EVENTFD 1
-#define HAVE_LIBRT 1
 #define HAVE_LIBZ 1
-#define HAVE_TERMIOS_H 1
-#define HAVE_TIMER_CREATE 1
-#define HAVE_TIMER_SETTIME 1
-#define HAVE_TRUNCATE64 1
-#define SOEXT ".so"
+/* HAVE_BACKTRACE 1 */
+#define DLEXT_MAXLEN 3
 #define HAVE__SETJMP 1
-#define NEGATIVE_TIME_T 1
 #define RUBY_SETJMP(env) __builtin_setjmp((env))
 #define RUBY_LONGJMP(env,val) __builtin_longjmp((env),val)
 #define USE_MODULAR_GC 0
-#define USE_YJIT 0
-#define USE_RJIT 0
+#define USE_YJIT 1
+#define USE_ZJIT 0
+/* LOAD_RELATIVE 1 ? */
 #define RUBY_PLATFORM "x86_64-cosmo"
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
-#define SLIM_STATIC 0
 #define mremap cosmo_mremap
+#include "config.mode.h"
 #endif /* INCLUDE_RUBY_CONFIG_H */

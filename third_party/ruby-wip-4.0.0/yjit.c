@@ -544,3 +544,87 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
 
+// ============================================================================
+// Weak stubs for YJIT Rust functions
+//
+// These provide default (no-op) implementations that satisfy the linker during
+// the Cosmopolitan .pkg dependency check. They get overridden at final link
+// time when libyjit.a (the Rust library) is linked with --whole-archive.
+//
+// Without these, the build fails because class.o, vm.o, etc. call YJIT
+// functions that are declared in yjit.h but only implemented in Rust.
+// ============================================================================
+
+#define YJIT_WEAK __attribute__((weak))
+
+// Weak definitions for extern variables (defined in Rust: yjit/src/stats.rs, yjit/src/yjit.rs)
+YJIT_WEAK uint64_t rb_yjit_call_threshold = 0;
+YJIT_WEAK uint64_t rb_yjit_cold_threshold = 0;
+YJIT_WEAK uint64_t rb_yjit_live_iseq_count = 0;
+YJIT_WEAK uint64_t rb_yjit_iseq_alloc_count = 0;
+YJIT_WEAK bool rb_yjit_enabled_p = false;
+
+// From yjit/src/yjit.rs
+YJIT_WEAK bool rb_yjit_parse_option(const char *str_ptr) { return false; }
+YJIT_WEAK bool rb_yjit_option_disable(void) { return false; }
+YJIT_WEAK void rb_yjit_init(bool yjit_enabled) { }
+YJIT_WEAK void rb_yjit_free_at_exit(void) { }
+YJIT_WEAK uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception) { return NULL; }
+
+// From yjit/src/invariants.rs
+YJIT_WEAK void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) { }
+YJIT_WEAK void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) { }
+YJIT_WEAK void rb_yjit_before_ractor_spawn(void) { }
+YJIT_WEAK void rb_yjit_constant_state_changed(ID id) { }
+YJIT_WEAK void rb_yjit_root_mark(void) { }
+YJIT_WEAK void rb_yjit_root_update_references(void) { }
+YJIT_WEAK void rb_yjit_constant_ic_update(const rb_iseq_t *iseq, IC ic, unsigned insn_idx) { }
+YJIT_WEAK void rb_yjit_invalidate_no_singleton_class(VALUE klass) { }
+YJIT_WEAK void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq) { }
+YJIT_WEAK void rb_yjit_tracing_invalidate_all(void) { }
+
+// From yjit/src/core.rs
+YJIT_WEAK void rb_yjit_iseq_free(const rb_iseq_t *iseq) { }
+YJIT_WEAK void rb_yjit_iseq_mark(void *payload) { }
+YJIT_WEAK void rb_yjit_iseq_update_references(const rb_iseq_t *iseq) { }
+YJIT_WEAK void rb_yjit_mark_all_writeable(void) { }
+YJIT_WEAK void rb_yjit_mark_all_executable(void) { }
+
+// From yjit/src/stats.rs
+YJIT_WEAK void rb_yjit_incr_counter(const char *counter_name) { }
+YJIT_WEAK void rb_yjit_collect_binding_alloc(void) { }
+YJIT_WEAK void rb_yjit_collect_binding_set(void) { }
+YJIT_WEAK const VALUE *rb_yjit_count_side_exit_op(const VALUE *exit_pc) { return exit_pc; }
+YJIT_WEAK void rb_yjit_record_exit_stack(const VALUE *exit_pc) { }
+
+// From yjit/src/options.rs
+YJIT_WEAK void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns) { }
+
+// From yjit/src/yjit.rs (lazy push frame)
+YJIT_WEAK void rb_yjit_lazy_push_frame(const VALUE *pc) { }
+
+// Ruby-callable primitives (declared above, implemented in Rust)
+YJIT_WEAK VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+YJIT_WEAK VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+YJIT_WEAK VALUE rb_yjit_log_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+YJIT_WEAK VALUE rb_yjit_print_log_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+YJIT_WEAK VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+YJIT_WEAK VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_get_log(rb_execution_context_t *ec, VALUE self) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq) { return INT2FIX(0); }
+YJIT_WEAK VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self) { return Qnil; }
+YJIT_WEAK VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_log, VALUE print_log, VALUE mem_size, VALUE call_threshold) { return Qfalse; }
+
+// rb_yjit_c_builtin_p is handled by the YJIT_C_BUILTIN macro above, but add weak stub anyway
+#ifndef YJIT_C_BUILTIN
+YJIT_WEAK VALUE rb_yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+#endif
+
+// Note: rb_yjit_cancel_jit_return is defined in cont.c, not Rust
+
+#undef YJIT_WEAK
+

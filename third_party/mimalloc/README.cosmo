@@ -1,0 +1,64 @@
+DESCRIPTION
+
+  mimalloc is a general purpose allocator with excellent performance
+  characteristics developed by Microsoft Research.
+
+  It features:
+  - Small footprint with no dependencies
+  - Free list sharding for good multi-threaded performance
+  - Secure mode with randomised allocation, guard pages, etc.
+  - First-class support for heaps and heap walking
+
+ORIGIN
+
+  https://github.com/microsoft/mimalloc
+  Version 3.2.7
+  Retrieved 2024-01-24
+
+LICENSE
+
+  MIT License
+
+  Copyright (c) 2018-2025 Microsoft Research, Daan Leijen
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+LOCAL MODIFICATIONS
+
+  - Created cosmo_config.h for Cosmopolitan-specific configuration
+  - Created cosmo_prim.c implementing platform primitives using Cosmopolitan APIs
+  - Modified BUILD.mk for integration with Cosmopolitan build system
+  - Disabled automatic malloc/free override (MI_MALLOC_OVERRIDE=0)
+  - Disabled transparent huge pages for cross-platform compatibility
+  - Custom process init/done using Cosmopolitan constructor priorities
+
+INTEGRATION NOTES
+
+  mimalloc is integrated as an optional allocator alongside dlmalloc.
+  Selection is controlled at compile time via COSMO_USE_MIMALLOC or
+  COSMO_USE_DLMALLOC defines.
+
+  Default allocator selection by build mode:
+  - MODE= (default): mimalloc
+  - MODE=dbg: mimalloc with MI_DEBUG=2, MI_SECURE=4
+  - MODE=opt: mimalloc
+  - MODE=rel: mimalloc
+  - MODE=tiny: dlmalloc (smaller binary size)
+  - MODE=tinylinux: dlmalloc
+  - MODE=aarch64-tiny: dlmalloc

@@ -9,7 +9,8 @@
 # For details of Ruby License, see ruby/COPYING.
 #
 
-require 'ripper.so'
+require 'rbconfig'
+require 'ripper.' + RbConfig::CONFIG["DLEXT"]
 
 class Ripper
 

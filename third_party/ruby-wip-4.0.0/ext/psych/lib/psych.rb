@@ -12,7 +12,8 @@ when 'jruby'
     org.jruby.ext.psych.PsychLibrary.new.load(JRuby.runtime, false)
   end
 else
-  require 'psych.so'
+  require 'rbconfig'
+  require 'psych.' + RbConfig::CONFIG["DLEXT"]
 end
 require_relative 'psych/nodes'
 require_relative 'psych/streaming'

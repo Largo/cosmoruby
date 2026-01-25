@@ -3306,7 +3306,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_iclass_memory_leak
     # [Bug #19550]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, timeout: 10)
       code = proc do
         mod = Module.new
         Class.new do

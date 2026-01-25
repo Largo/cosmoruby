@@ -16,9 +16,9 @@
 │ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR             │
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
 #include "libc/str/str.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 __static_yoink("free");
 
@@ -46,11 +46,11 @@ void *malloc(size_t n) {
 #ifdef COSMO_MEM_DEBUG
   return memalign(16, n);
 #elifdef MODE_DBG
-  char *p = dlmalloc(n);
+  char *p = COSMO_MALLOC(n);
   if (p)
-    memset(p, 0xa5, dlmalloc_usable_size(p));
+    memset(p, 0xa5, COSMO_USABLE_SIZE(p));
   return p;
 #else
-  return dlmalloc(n);
+  return COSMO_MALLOC(n);
 #endif
 }

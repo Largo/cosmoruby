@@ -19,6 +19,13 @@
 
 o/$(MODE)/third_party/ruby/ruby.dbg: | ruby.codegen
 
+# In plugin mode, ensure encoding archives are built before ruby
+ifeq ($(RUBY_EXTSTATIC),0)
+o/$(MODE)/third_party/ruby/ruby.dbg: | ruby.plugins
+else ifeq ($(RUBY_SLIM_STATIC),1)
+o/$(MODE)/third_party/ruby/ruby.dbg: | ruby.plugins
+endif
+
 RUBY_LINK_EXT_ARCHIVES := $(foreach x,$(THIRD_PARTY_RUBY_EXTENSIONS),$($(x)_A))
 RUBY_UNDEFS_DEPS := $(if $(strip $(RUBY_LINK_EXT_ARCHIVES)),$(RUBY_LINK_EXT_ARCHIVES),$(RUBY_PLUGIN_ARCHIVES))
 ifneq ($(strip $(RUBY_UNDEFS_DEPS)),)
@@ -33,6 +40,29 @@ RUBY_WHOLE_ARCHIVE_EXTS =
 endif
 RUBY_UNDEFS_ORDER = $(if $(RUBY_UNDEFS_ARGS),| $(RUBY_UNDEFS_ARGS))
 
+################################################################################
+# YJIT Rust Library Linkage
+#
+# YJIT_LIBOBJ is defined in yjit/BUILD.mk when RUBY_YJIT_ENABLED=1
+# We need to link it with --whole-archive to ensure all symbols are included
+#
+# IMPORTANT: YJIT_LIBOBJ must be an ORDER-ONLY prerequisite (after |) because
+# APELINK automatically passes regular prerequisites to the linker. If we add
+# it as a regular prerequisite AND in LDFLAGS, it gets linked twice causing
+# "multiple definition" errors.
+ifeq ($(RUBY_YJIT_ENABLED),1)
+RUBY_YJIT_LINK_FLAGS = --whole-archive $(YJIT_LIBOBJ) --no-whole-archive
+RUBY_YJIT_ORDER_ONLY = $(YJIT_LIBOBJ)
+else
+RUBY_YJIT_LINK_FLAGS =
+RUBY_YJIT_ORDER_ONLY =
+endif
+
+# Combined order-only prerequisites (undefs + yjit)
+# This creates a single | followed by all order-only deps
+RUBY_ALL_ORDER_ONLY_DEPS = $(strip $(RUBY_UNDEFS_ARGS) $(RUBY_YJIT_ORDER_ONLY))
+RUBY_ALL_ORDER_ONLY = $(if $(RUBY_ALL_ORDER_ONLY_DEPS),| $(RUBY_ALL_ORDER_ONLY_DEPS))
+
 # Phase 1: Build without exports to extract symbols
 # Note: Does NOT depend on ruby.pkg (which includes exports.o) to break circular dependency
 o/$(MODE)/third_party/ruby/ruby.pre.dbg:			\
@@ -40,12 +70,14 @@ o/$(MODE)/third_party/ruby/ruby.pre.dbg:			\
         o/$(MODE)/third_party/ruby/ruby.main.o			\
         $(RUBY_LINK_EXT_ARCHIVES)				\
         $(CRT)							\
-        $(APE_NO_MODIFY_SELF)
+        $(APE_NO_MODIFY_SELF)					\
+        | $(RUBY_YJIT_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/ruby.pre.dbg: private		\
 	LDFLAGS +=						\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Force linker to keep export table symbols (prevents --gc-sections from deleting them)
 RUBY_EXPORT_UNDEFS = \
@@ -71,7 +103,7 @@ o/$(MODE)/third_party/ruby/ruby.stage1.dbg:			\
         $(RUBY_LINK_EXT_ARCHIVES)				\
         $(CRT)							\
         $(APE_NO_MODIFY_SELF)					\
-        $(RUBY_UNDEFS_ORDER)
+        $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 # Force linker to extract all extension object files from archives (weak symbols don't trigger extraction)
@@ -79,7 +111,8 @@ o/$(MODE)/third_party/ruby/ruby.stage1.dbg: private		\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 4: Build stage2 binary with exports generated from stage1
 o/$(MODE)/third_party/ruby/ruby.stage2.dbg:			\
@@ -89,14 +122,15 @@ o/$(MODE)/third_party/ruby/ruby.stage2.dbg:			\
         $(RUBY_LINK_EXT_ARCHIVES)				\
         $(CRT)							\
         $(APE_NO_MODIFY_SELF)					\
-        $(RUBY_UNDEFS_ORDER)
+        $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/ruby.stage2.dbg: private		\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 5: Build final binary with exports generated from stage2
 o/$(MODE)/third_party/ruby/ruby.dbg:				\
@@ -107,14 +141,15 @@ o/$(MODE)/third_party/ruby/ruby.dbg:				\
         $(RUBY_LINK_EXT_ARCHIVES)				\
         $(CRT)							\
         $(APE_NO_MODIFY_SELF)					\
-        $(RUBY_UNDEFS_ORDER)
+        $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/ruby.dbg: private			\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 ################################################################################
 # ruby.zipless
@@ -125,6 +160,13 @@ o/$(MODE)/third_party/ruby/ruby.zipless.pkg:			\
 
 o/$(MODE)/third_party/ruby/ruby.zipless.dbg: | ruby.codegen
 
+# In plugin mode, ensure encoding archives are built before ruby.zipless
+ifeq ($(RUBY_EXTSTATIC),0)
+o/$(MODE)/third_party/ruby/ruby.zipless.dbg: | ruby.plugins
+else ifeq ($(RUBY_SLIM_STATIC),1)
+o/$(MODE)/third_party/ruby/ruby.zipless.dbg: | ruby.plugins
+endif
+
 o/$(MODE)/third_party/ruby/ruby.zipless.dbg:			\
         $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
         o/$(MODE)/third_party/ruby/ruby.zipless.pkg		\
@@ -133,19 +175,21 @@ o/$(MODE)/third_party/ruby/ruby.zipless.dbg:			\
         $(RUBY_LINK_EXT_ARCHIVES)				\
         $(CRT)							\
         $(APE_NO_MODIFY_SELF)					\
-        $(RUBY_UNDEFS_ORDER)
+        $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/ruby.zipless.dbg: private		\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 ################################################################################
 # irb
 
 THIRD_PARTY_RUBY_IRB_DIRECTDEPS =				\
+    LIBC_CALLS							\
     LIBC_FMT							\
     LIBC_INTRIN							\
     LIBC_NEXGEN32E						\
@@ -167,18 +211,27 @@ o/$(MODE)/third_party/ruby/irb.pkg:				\
 
 o/$(MODE)/third_party/ruby/irb.dbg: | ruby.codegen
 
+# In plugin mode, ensure encoding archives are built before irb
+ifeq ($(RUBY_EXTSTATIC),0)
+o/$(MODE)/third_party/ruby/irb.dbg: | ruby.plugins
+else ifeq ($(RUBY_SLIM_STATIC),1)
+o/$(MODE)/third_party/ruby/irb.dbg: | ruby.plugins
+endif
+
 # Phase 1: Build without exports
 o/$(MODE)/third_party/ruby/irb.pre.dbg:				\
     $(THIRD_PARTY_RUBY_IRB_DEPS)				\
     o/$(MODE)/third_party/ruby/irb.main.o			\
     $(RUBY_LINK_EXT_ARCHIVES)				\
     $(CRT)							\
-    $(APE_NO_MODIFY_SELF)
+    $(APE_NO_MODIFY_SELF)					\
+    | $(RUBY_YJIT_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/irb.pre.dbg: private			\
 	LDFLAGS +=						\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 3: Build stage1 binary with pre-export table
 o/$(MODE)/third_party/ruby/irb.stage1.dbg:			\
@@ -188,7 +241,7 @@ o/$(MODE)/third_party/ruby/irb.stage1.dbg:			\
     $(RUBY_LINK_EXT_ARCHIVES)				\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(RUBY_UNDEFS_ORDER)
+    $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 # Force linker to extract all extension object files from archives (weak symbols don't trigger extraction)
@@ -196,7 +249,8 @@ o/$(MODE)/third_party/ruby/irb.stage1.dbg: private		\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 4: Build stage2 binary with exports generated from stage1
 o/$(MODE)/third_party/ruby/irb.stage2.dbg:			\
@@ -206,7 +260,7 @@ o/$(MODE)/third_party/ruby/irb.stage2.dbg:			\
     $(RUBY_LINK_EXT_ARCHIVES)				\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(RUBY_UNDEFS_ORDER)
+    $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 # Force linker to extract all extension object files from archives (weak symbols don't trigger extraction)
@@ -214,7 +268,8 @@ o/$(MODE)/third_party/ruby/irb.stage2.dbg: private		\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 5: Build final binary with exports generated from stage2
 o/$(MODE)/third_party/ruby/irb.dbg:				\
@@ -225,14 +280,15 @@ o/$(MODE)/third_party/ruby/irb.dbg:				\
     $(RUBY_LINK_EXT_ARCHIVES)				\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(RUBY_UNDEFS_ORDER)
+    $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/irb.dbg: private			\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 ################################################################################
 # irb.zipless
@@ -244,6 +300,13 @@ o/$(MODE)/third_party/ruby/irb.zipless.pkg:			\
 
 o/$(MODE)/third_party/ruby/irb.zipless.dbg: | ruby.codegen
 
+# In plugin mode, ensure encoding archives are built before irb.zipless
+ifeq ($(RUBY_EXTSTATIC),0)
+o/$(MODE)/third_party/ruby/irb.zipless.dbg: | ruby.plugins
+else ifeq ($(RUBY_SLIM_STATIC),1)
+o/$(MODE)/third_party/ruby/irb.zipless.dbg: | ruby.plugins
+endif
+
 o/$(MODE)/third_party/ruby/irb.zipless.dbg:			\
     $(THIRD_PARTY_RUBY_IRB_DEPS)				\
     o/$(MODE)/third_party/ruby/irb.zipless.pkg			\
@@ -252,14 +315,15 @@ o/$(MODE)/third_party/ruby/irb.zipless.dbg:			\
     $(RUBY_LINK_EXT_ARCHIVES)				\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(RUBY_UNDEFS_ORDER)
+    $(RUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/irb.zipless.dbg: private		\
 	LDFLAGS +=						\
 		$(RUBY_UNDEFS_FLAGS)				\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(RUBY_WHOLE_ARCHIVE_EXTS)
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS =				\
     LIBC_CALLS							\
@@ -292,6 +356,10 @@ MINIRUBY_WHOLE_ARCHIVE_EXTS =
 endif
 MINIRUBY_UNDEFS_ORDER = $(if $(MINIRUBY_UNDEFS_ARGS),| $(MINIRUBY_UNDEFS_ARGS))
 
+# Combined order-only prerequisites for miniruby (undefs + yjit)
+MINIRUBY_ALL_ORDER_ONLY_DEPS = $(strip $(MINIRUBY_UNDEFS_ARGS) $(RUBY_YJIT_ORDER_ONLY))
+MINIRUBY_ALL_ORDER_ONLY = $(if $(MINIRUBY_ALL_ORDER_ONLY_DEPS),| $(MINIRUBY_ALL_ORDER_ONLY_DEPS))
+
 # miniruby.zipless - filesystem paths only
 o/$(MODE)/third_party/ruby/miniruby.zipless.pkg:		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
@@ -307,13 +375,14 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.pre.dbg:		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(MINIRUBY_UNDEFS_ORDER)
+    | $(RUBY_YJIT_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/miniruby.zipless.pre.dbg: private	\
 	LDFLAGS +=						\
 		$(MINIRUBY_UNDEFS_FLAGS)			\
-		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
+		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 3: Build final binary with exports
 o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
@@ -324,14 +393,15 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
     o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(MINIRUBY_UNDEFS_ORDER)
+    $(MINIRUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/miniruby.zipless.dbg: private	\
 	LDFLAGS +=						\
 		$(MINIRUBY_UNDEFS_FLAGS)			\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
+		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # miniruby - ZIP paths only
 o/$(MODE)/third_party/ruby/miniruby.pkg:			\
@@ -347,12 +417,14 @@ o/$(MODE)/third_party/ruby/miniruby.pre.dbg:			\
     $(MINIRUBY_LINK_EXT_ARCHIVES)				\
     o/$(MODE)/third_party/ruby/miniruby.main.o			\
     $(CRT)							\
-    $(APE_NO_MODIFY_SELF)
+    $(APE_NO_MODIFY_SELF)					\
+    | $(RUBY_YJIT_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/miniruby.pre.dbg: private		\
 	LDFLAGS +=						\
-		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
+		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 ifneq ($(strip $(MINIRUBY_UNDEFS_DEPS)),)
 $(MINIRUBY_UNDEFS_ARGS): third_party/ruby/generate_undefs.sh	\
@@ -369,14 +441,15 @@ o/$(MODE)/third_party/ruby/miniruby.stage1.dbg:		\
     o/$(MODE)/third_party/ruby/miniruby_exports.pre.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(MINIRUBY_UNDEFS_ORDER)
+    $(MINIRUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/miniruby.stage1.dbg: private		\
 	LDFLAGS +=						\
 		$(MINIRUBY_UNDEFS_FLAGS)			\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
+		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 4: Build stage2 binary with exports generated from stage1
 o/$(MODE)/third_party/ruby/miniruby.stage2.dbg:		\
@@ -386,14 +459,15 @@ o/$(MODE)/third_party/ruby/miniruby.stage2.dbg:		\
     o/$(MODE)/third_party/ruby/miniruby_exports.stage1.o	\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(MINIRUBY_UNDEFS_ORDER)
+    $(MINIRUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/miniruby.stage2.dbg: private		\
 	LDFLAGS +=						\
 		$(MINIRUBY_UNDEFS_FLAGS)			\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
+		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # Phase 5: Build final binary with exports generated from stage2
 o/$(MODE)/third_party/ruby/miniruby.dbg:			\
@@ -404,14 +478,15 @@ o/$(MODE)/third_party/ruby/miniruby.dbg:			\
     o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
-    $(MINIRUBY_UNDEFS_ORDER)
+    $(MINIRUBY_ALL_ORDER_ONLY)
 	@$(APELINK)
 
 o/$(MODE)/third_party/ruby/miniruby.dbg: private		\
 	LDFLAGS +=						\
 		$(MINIRUBY_UNDEFS_FLAGS)			\
 		$(RUBY_EXPORT_UNDEFS)				\
-		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
+		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
 
 # automate_mkdeps has been moved to third_party/mexican_toaster/
 # See third_party/mexican_toaster/BUILD.mk for build rules

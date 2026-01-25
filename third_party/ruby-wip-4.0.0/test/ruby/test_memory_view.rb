@@ -1,3 +1,4 @@
+require 'test/unit' unless defined?(Test::Unit)
 require "-test-/memory_view"
 require "rbconfig/sizeof"
 

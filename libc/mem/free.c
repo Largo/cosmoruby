@@ -17,10 +17,10 @@
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/assert.h"
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
 #include "libc/runtime/runtime.h"
 #include "libc/str/str.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 /**
  * Free memory returned by malloc() & co.
@@ -44,9 +44,9 @@ void free(void *p) {
   }
 #elifdef MODE_DBG
   if (p)
-    memset(p, 0xa4, dlmalloc_usable_size(p));
-  dlfree(p);
+    memset(p, 0xa4, COSMO_USABLE_SIZE(p));
+  COSMO_FREE(p);
 #else
-  dlfree(p);
+  COSMO_FREE(p);
 #endif
 }

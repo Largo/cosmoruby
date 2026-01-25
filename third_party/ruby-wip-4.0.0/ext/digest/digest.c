@@ -537,7 +537,7 @@ rb_digest_class_init(VALUE self)
  *		rb_digest_make_metadata(&sha1));
  */
 
-#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+#if defined(DIGEST_USE_RB_EXT_RESOLVE_SYMBOL) || (defined(EXTSTATIC) && EXTSTATIC)
 static const rb_data_type_t metadata_type = {
     "digest/metadata",
     {0},
@@ -555,7 +555,7 @@ get_metadata_ptr(VALUE obj)
 {
     rb_digest_metadata_t *algo;
 
-#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+#if defined(DIGEST_USE_RB_EXT_RESOLVE_SYMBOL) || (defined(EXTSTATIC) && EXTSTATIC)
     if (!rb_typeddata_is_kind_of(obj, &metadata_type)) return 0;
     algo = RTYPEDDATA_DATA(obj);
 #else

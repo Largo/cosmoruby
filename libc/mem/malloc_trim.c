@@ -16,8 +16,8 @@
 │ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR             │
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 /**
  * Releases freed memory back to system.
@@ -29,6 +29,6 @@ int malloc_trim(size_t n) {
 #ifdef COSMO_MEM_DEBUG
   return 0;
 #else
-  return dlmalloc_trim(n);
+  return COSMO_MALLOC_TRIM(n);
 #endif
 }

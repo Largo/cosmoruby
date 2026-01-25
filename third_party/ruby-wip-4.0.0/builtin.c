@@ -77,11 +77,10 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
-
 #ifdef BUILTIN_BINARY_SIZE
-
     load_with_builtin_functions("gem_prelude", NULL);
-
+#else
+    /* When using mini_builtin.c, load gem_prelude from miniprelude.c */
+    rb_load_with_builtin_functions("gem_prelude", NULL);
 #endif
-
 }

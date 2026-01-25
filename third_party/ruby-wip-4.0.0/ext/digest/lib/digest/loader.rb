@@ -1,3 +1,4 @@
 # frozen_string_literal: true
 
-require 'digest.so'
+require 'rbconfig'
+require 'digest.' + RbConfig::CONFIG["DLEXT"]

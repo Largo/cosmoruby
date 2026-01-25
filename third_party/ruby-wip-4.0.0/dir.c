@@ -1809,7 +1809,7 @@ do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, r
 #if USE_OPENDIR_AT
     struct fstatat_args args;
     args.fd = fd;
-    args.path = path;
+    args.path = at_subpath(fd, baselen, path);
     args.pst = pst;
     args.flag = 0;
     int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
@@ -1841,7 +1841,7 @@ do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, 
 #if USE_OPENDIR_AT
     struct fstatat_args args;
     args.fd = fd;
-    args.path = path;
+    args.path = at_subpath(fd, baselen, path);
     args.pst = pst;
     args.flag = AT_SYMLINK_NOFOLLOW;
     int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);

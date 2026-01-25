@@ -7,5 +7,6 @@ Init_file(void)
 {
     VALUE mBug = rb_define_module("Bug");
     VALUE module = rb_define_module_under(mBug, "File");
+    (void)module;
     TEST_INIT_FUNCS(init);
 }

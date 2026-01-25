@@ -31,7 +31,7 @@ o/$(MODE)/third_party/ruby/ext/psych/%.o: private	\
 		-DRUBY_EXPORT				\
 		-DRUBY_COSMOPOLITAN
 
-$(THIRD_PARTY_RUBY_EXT_PSYCH_OBJS): third_party/ruby/ext/psych/BUILD.mk
+$(THIRD_PARTY_RUBY_EXT_PSYCH_OBJS): $(THIRD_PARTY_RUBY_EXT_PSYCH_HDRS) third_party/ruby/ext/psych/BUILD.mk
 
 .PHONY: o/$(MODE)/third_party/ruby/ext/psych
 o/$(MODE)/third_party/ruby/ext/psych: $(THIRD_PARTY_RUBY_EXT_PSYCH_A)

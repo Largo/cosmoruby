@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require 'socket.so'
+require 'rbconfig'
+require 'socket.' + RbConfig::CONFIG["DLEXT"]
 
 unless IO.method_defined?(:wait_writable, false)
   # It's only required on older Rubies < v3.2:

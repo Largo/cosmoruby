@@ -14,6 +14,7 @@
 ************************************************/
 
 #include "ruby.h"
+#include "ruby/config.h"
 
 #define RUBY_DIGEST_API_VERSION	3
 
@@ -67,7 +68,7 @@ rb_id_metadata(void)
 #if !defined(HAVE_RB_EXT_RESOLVE_SYMBOL)
 #elif !defined(RUBY_UNTYPED_DATA_WARNING)
 # error RUBY_UNTYPED_DATA_WARNING is not defined
-#elif RUBY_UNTYPED_DATA_WARNING
+#elif RUBY_UNTYPED_DATA_WARNING && !defined(RUBY_COSMOPOLITAN)
 /* rb_ext_resolve_symbol() has been defined since Ruby 3.3, but digest
  * bundled with 3.3 didn't use it. */
 # define DIGEST_USE_RB_EXT_RESOLVE_SYMBOL 1
@@ -91,7 +92,7 @@ rb_digest_make_metadata(const rb_digest_metadata_t *meta)
     static wrapper_func_type wrapper;
     if (!wrapper) {
         wrapper = (wrapper_func_type)(uintptr_t)
-            rb_ext_resolve_symbol("digest.so", "rb_digest_wrap_metadata");
+            rb_ext_resolve_symbol("digest" DLEXT, "rb_digest_wrap_metadata");
         if (!wrapper) rb_raise(rb_eLoadError, "rb_digest_wrap_metadata not found");
     }
     return wrapper(meta);

@@ -258,7 +258,8 @@ include third_party/nsync/BUILD.mk		# │  You can issue system calls
 include libc/runtime/BUILD.mk			# │
 include libc/crt/BUILD.mk			# │
 include third_party/dlmalloc/BUILD.mk		#─┘
-include libc/mem/BUILD.mk			#─┐
+include third_party/mimalloc/BUILD.mk		#─┐ Memory allocators
+include libc/mem/BUILD.mk			# │
 include third_party/gdtoa/BUILD.mk		# ├──DYNAMIC RUNTIME
 include third_party/nsync/mem/BUILD.mk		# │  You can now use stdio
 include libc/proc/BUILD.mk			# │  You can now use threads

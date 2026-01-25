@@ -797,10 +797,10 @@ static int
 load_encoding(const char *name)
 {
     ASSERT_vm_unlocking();
-    VALUE enclib = rb_sprintf("enc/%s.so", name);
+    VALUE enclib = rb_sprintf("enc/%s" DLEXT, name);
     VALUE debug = ruby_debug;
     VALUE errinfo;
-    char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
+    char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - strlen(DLEXT);
     int loaded;
     int idx;
 
@@ -2027,6 +2027,10 @@ Init_Encoding(void)
 
     for (i = 0; i < enc_table->count; ++i) {
         rb_ary_push(list, enc_new(enc_table->list[i].enc));
+        /* Define constants for built-in encodings */
+        /* if (enc_table->list[i].name) {
+            set_encoding_const(enc_table->list[i].name, enc_table->list[i].enc);
+        } */
     }
 
     rb_marshal_define_compat(rb_cEncoding, Qnil, 0, enc_m_loader);

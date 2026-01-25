@@ -18,12 +18,12 @@
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/calls/calls.h"
 #include "libc/macros.h"
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
 #include "libc/runtime/runtime.h"
 #include "libc/str/str.h"
 #include "libc/sysv/consts/map.h"
 #include "libc/sysv/consts/prot.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 __static_yoink("free");
 
@@ -62,11 +62,11 @@ void *memalign(size_t align, size_t bytes) {
   res[-2] = -(uintptr_t)page;
   return res;
 #elifdef MODE_DBG
-  char *p = dlmemalign(align, bytes);
+  char *p = COSMO_MEMALIGN(align, bytes);
   if (p)
-    memset(p, 0xa8, dlmalloc_usable_size(p));
+    memset(p, 0xa8, COSMO_USABLE_SIZE(p));
   return p;
 #else
-  return dlmemalign(align, bytes);
+  return COSMO_MEMALIGN(align, bytes);
 #endif
 }

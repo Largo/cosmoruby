@@ -176,7 +176,8 @@ module CGI::Escape
   # TruffleRuby runs the pure-Ruby variant faster, do not use the C extension there
   unless RUBY_ENGINE == 'truffleruby'
     begin
-      require 'cgi/escape.so'
+      require 'rbconfig'
+      require 'cgi/escape.' + RbConfig::CONFIG["DLEXT"]
     rescue LoadError
     end
   end

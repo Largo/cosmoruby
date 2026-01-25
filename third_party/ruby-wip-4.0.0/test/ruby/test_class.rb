@@ -863,7 +863,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_classext_memory_leak
-    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true, timeout: 10)
 code = proc { Class.new }
 1_000.times(&code)
 PREP

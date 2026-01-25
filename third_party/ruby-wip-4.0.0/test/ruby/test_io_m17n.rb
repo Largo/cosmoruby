@@ -2696,6 +2696,7 @@ EOT
   end
 
   def test_inspect_nonascii
+    pend "Cosmopolitan is stricter about Unicode filenames than standard Linux. Skipping." if RUBY_PLATFORM =~ /cosmo/
     bug6072 = '[ruby-dev:45280]'
     paths = ["\u{3042}".encode("sjis"), "\u{ff}".encode("iso-8859-1")]
     encs = with_tmpdir {

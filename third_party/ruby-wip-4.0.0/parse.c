@@ -391,7 +391,7 @@ RBIMPL_WARNING_POP()
 // Not sure why effective even after popped.
 #endif
 
-#include "parse.h"
+#include "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.h"
 
 #define NO_LEX_CTXT (struct lex_context){0}
 
@@ -2690,7 +2690,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 #  endif
 # endif
 
-#include "/home/groobiest/Code/jart/cosmopolitan/o/third_party/ruby/generated/parse.h"
+#include "parse.h"
 /* Symbol kind.  */
 enum yysymbol_kind_t
 {

@@ -21,9 +21,12 @@
 # To enable/disable extensions, comment/uncomment these includes
 # and update ext/extinit.c accordingly
 include third_party/cosmo_plugin/BUILD.mk
+include third_party/ruby/ext/continuation/BUILD.mk
+include third_party/ruby/ext/coverage/BUILD.mk
 include third_party/ruby/ext/date/BUILD.mk
 include third_party/ruby/ext/digest/BUILD.mk
 include third_party/ruby/ext/etc/BUILD.mk
+include third_party/ruby/ext/fcntl/BUILD.mk
 include third_party/ruby/ext/io/nonblock/BUILD.mk
 include third_party/ruby/ext/io/console/BUILD.mk
 include third_party/ruby/ext/io/wait/BUILD.mk
@@ -31,24 +34,38 @@ include third_party/ruby/ext/json/BUILD.mk
 include third_party/ruby/ext/ripper/BUILD.mk
 include third_party/ruby/ext/mbedtls/BUILD.mk
 include third_party/ruby/ext/monitor/BUILD.mk
+include third_party/ruby/ext/objspace/BUILD.mk
 include third_party/ruby/ext/psych/BUILD.mk
+include third_party/ruby/ext/rbconfig/sizeof/BUILD.mk
 include third_party/ruby/ext/socket/BUILD.mk
 include third_party/ruby/ext/stringio/BUILD.mk
+include third_party/ruby/ext/strscan/BUILD.mk
 include third_party/ruby/ext/zlib/BUILD.mk
+include third_party/ruby/ext/-test-/class/BUILD.mk
+include third_party/ruby/ext/-test-/fatal/BUILD.mk
+include third_party/ruby/ext/-test-/file/BUILD.mk
+include third_party/ruby/ext/-test-/iter/BUILD.mk
+include third_party/ruby/ext/-test-/memory_view/BUILD.mk
+include third_party/ruby/ext/-test-/rb_call_super_kw/BUILD.mk
+include third_party/ruby/ext/-test-/sanitizers/BUILD.mk
+include third_party/ruby/ext/-test-/stack/BUILD.mk
 
 PKGS += THIRD_PARTY_RUBY
 
-# Detect extension mode from config.h (EXTSTATIC=0 => plugin/dynamic extensions).
-RUBY_EXTSTATIC := $(shell awk '/^#define[[:space:]]+EXTSTATIC[[:space:]]+/{print $$3; exit}' third_party/ruby/include/ruby/config.h)
+# Detect extension mode from config.mode.h (EXTSTATIC=0 => plugin/dynamic extensions).
+RUBY_EXTSTATIC := $(shell awk '/^#define[[:space:]]+EXTSTATIC[[:space:]]+/{print $$3; exit}' third_party/ruby/include/ruby/config.mode.h 2>/dev/null)
 RUBY_EXTSTATIC ?= 1
-RUBY_SLIM_STATIC := $(shell awk '/^#define[[:space:]]+SLIM_STATIC[[:space:]]+/{print $$3; exit}' third_party/ruby/include/ruby/config.h)
+RUBY_SLIM_STATIC := $(shell awk '/^#define[[:space:]]+SLIM_STATIC[[:space:]]+/{print $$3; exit}' third_party/ruby/include/ruby/config.mode.h 2>/dev/null)
 RUBY_SLIM_STATIC ?= 0
 
-# All C extensions bundled with this port.
-RUBY_ALL_EXTENSIONS =				\
+# All C extensions bundled with this port (production).
+RUBY_ALL_EXTENSIONS =			\
+	THIRD_PARTY_RUBY_EXT_CONTINUATION		\
+	THIRD_PARTY_RUBY_EXT_COVERAGE			\
 	THIRD_PARTY_RUBY_EXT_DATE			\
 	THIRD_PARTY_RUBY_EXT_DIGEST			\
 	THIRD_PARTY_RUBY_EXT_ETC			\
+	THIRD_PARTY_RUBY_EXT_FCNTL			\
 	THIRD_PARTY_RUBY_EXT_IO_NONBLOCK		\
 	THIRD_PARTY_RUBY_EXT_IO_CONSOLE		\
 	THIRD_PARTY_RUBY_EXT_IO_WAIT			\
@@ -56,10 +73,28 @@ RUBY_ALL_EXTENSIONS =				\
 	THIRD_PARTY_RUBY_EXT_RIPPER			\
 	THIRD_PARTY_RUBY_EXT_MBEDTLS			\
 	THIRD_PARTY_RUBY_EXT_MONITOR			\
+	THIRD_PARTY_RUBY_EXT_OBJSPACE			\
 	THIRD_PARTY_RUBY_EXT_PSYCH			\
+	THIRD_PARTY_RUBY_EXT_RBCONFIG_SIZEOF		\
 	THIRD_PARTY_RUBY_EXT_SOCKET			\
 	THIRD_PARTY_RUBY_EXT_STRINGIO			\
+	THIRD_PARTY_RUBY_EXT_STRSCAN			\
 	THIRD_PARTY_RUBY_EXT_ZLIB
+
+# Test extensions - only included when RUBY_TEST_EXTENSIONS=1
+RUBY_TEST_EXTENSION_PKGS =		\
+	THIRD_PARTY_RUBY_EXT_TEST_CLASS			\
+	THIRD_PARTY_RUBY_EXT_TEST_FATAL			\
+	THIRD_PARTY_RUBY_EXT_TEST_FILE			\
+	THIRD_PARTY_RUBY_EXT_TEST_ITER			\
+	THIRD_PARTY_RUBY_EXT_TEST_MEMORY_VIEW		\
+	THIRD_PARTY_RUBY_EXT_TEST_RB_CALL_SUPER_KW	\
+	THIRD_PARTY_RUBY_EXT_TEST_SANITIZERS		\
+	THIRD_PARTY_RUBY_EXT_TEST_STACK
+
+ifeq ($(RUBY_TEST_EXTENSIONS),1)
+RUBY_ALL_EXTENSIONS += $(RUBY_TEST_EXTENSION_PKGS)
+endif
 
 # Link statically when EXTSTATIC=1; otherwise stage for plugins.
 ifeq ($(RUBY_EXTSTATIC),0)
@@ -146,7 +181,9 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/probes.h\
 	third_party/ruby/include/ruby/encoding.h\
 	third_party/ruby/include/ruby/st.h\
+	third_party/ruby/include/ruby/thread.h\
 	third_party/ruby/include/ruby/util.h\
+	third_party/ruby/include/ruby/ractor.h\
 	third_party/ruby/vm_core.h\
 	third_party/ruby/builtin.h\
 	third_party/ruby/ruby_assert.h\
@@ -162,23 +199,29 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/internal/complex.h\
 	third_party/ruby/internal/sanitizers.h\
 	third_party/ruby/internal/variable.h\
-	third_party/ruby/include/ruby/thread.h\
+	third_party/ruby/eval_intern.h\
+	third_party/ruby/internal/box.h\
+	third_party/ruby/internal/class.h\
+	third_party/ruby/internal/eval.h\
+	third_party/ruby/internal/error.h\
+	third_party/ruby/internal/file.h\
+	third_party/ruby/internal/io.h\
+	third_party/ruby/internal/load.h\
+	third_party/ruby/internal/st.h\
+	third_party/ruby/include/ruby/internal/globals.h\
+	third_party/ruby/darray.h\
 	third_party/ruby/builtin_binary.rbbin\
 	third_party/ruby/mini_builtin.c\
 	third_party/ruby/constant.h\
 	third_party/ruby/id_table.h\
-	third_party/ruby/internal/class.h\
-	third_party/ruby/internal/eval.h\
 	third_party/ruby/internal/string.h\
 	third_party/ruby/yjit.h\
-	third_party/ruby/internal/error.h\
+	third_party/ruby/zjit.h\
 	third_party/ruby/encindex.h\
 	third_party/ruby/internal/compile.h\
 	third_party/ruby/internal/encoding.h\
-	third_party/ruby/internal/io.h\
 	third_party/ruby/internal/re.h\
 	third_party/ruby/internal/thread.h\
-	third_party/ruby/include/ruby/ractor.h\
 	third_party/ruby/include/ruby/re.h\
 	third_party/ruby/vm_callinfo.h\
 	third_party/ruby/vm_debug.h\
@@ -188,10 +231,11 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/optunifs.inc\
 	third_party/ruby/prism_compile.c\
 	third_party/ruby/internal/math.h\
-	third_party/ruby/eval_intern.h\
+	third_party/ruby/internal/concurrent_set.h\
+	third_party/ruby/include/ruby/atomic.h\
+	third_party/ruby/vm_sync.h\
 	third_party/ruby/internal/cont.h\
 	third_party/ruby/include/ruby/fiber/scheduler.h\
-	third_party/ruby/vm_sync.h\
 	third_party/ruby/ractor_core.h\
 	third_party/ruby/internal/signal.h\
 	third_party/ruby/include/ruby/io.h\
@@ -199,17 +243,17 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/thread_native.h\
 	third_party/ruby/win32/dir.h\
 	third_party/ruby/internal/dir.h\
-	third_party/ruby/internal/file.h\
 	third_party/ruby/internal/imemo.h\
 	third_party/ruby/dir.rbinc\
+	third_party/ruby/include/ruby/config.h\
 	third_party/ruby/dln.h\
 	third_party/ruby/internal/compilers.h\
 	third_party/ruby/missing/file.h\
 	third_party/ruby/include/ruby/internal/stdbool.h\
 	third_party/ruby/internal/enc.h\
 	third_party/ruby/internal/inits.h\
-	third_party/ruby/internal/load.h\
 	third_party/ruby/regenc.h\
+	third_party/ruby/ruby_atomic.h\
 	third_party/ruby/include/verconf.h\
 	third_party/ruby/version.h\
 	third_party/ruby/internal/enumerator.h\
@@ -221,21 +265,20 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/vm.h\
 	third_party/ruby/eval_error.c\
 	third_party/ruby/eval_jump.c\
+	third_party/ruby/include/ruby/internal/attr/nonstring.h\
 	third_party/ruby/win32/file.h\
 	third_party/ruby/wasm/setjmp.h\
 	third_party/ruby/wasm/machine.h\
-	third_party/ruby/darray.h\
 	third_party/ruby/gc/gc.h\
 	third_party/ruby/internal/struct.h\
 	third_party/ruby/regint.h\
 	third_party/ruby/include/ruby/debug.h\
-	third_party/ruby/ruby_atomic.h\
+	third_party/ruby/variable.h\
 	third_party/ruby/shape.h\
 	third_party/ruby/gc/default/default.c\
 	third_party/ruby/gc.rbinc\
 	third_party/ruby/missing/crt_externs.h\
 	third_party/ruby/internal/basic_operators.h\
-	third_party/ruby/internal/st.h\
 	third_party/ruby/internal/time.h\
 	third_party/ruby/hash.rbinc\
 	third_party/ruby/prelude.rbinc\
@@ -245,32 +288,33 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/missing.h\
 	third_party/ruby/io.rbinc\
 	third_party/ruby/internal/bits.h\
+	third_party/ruby/internal/set_table.h\
 	third_party/ruby/internal/util.h\
-	third_party/ruby/include/ruby/internal/attr/nonstring.h\
 	third_party/ruby/marshal.rbinc\
 	third_party/ruby/include/ruby/memory_view.h\
 	third_party/ruby/rubyparser.h\
 	third_party/ruby/node_name.inc\
 	third_party/ruby/numeric.rbinc\
-	third_party/ruby/variable.h\
 	third_party/ruby/include/ruby/assert.h\
 	third_party/ruby/kernel.rbinc\
 	third_party/ruby/nilclass.rbinc\
 	third_party/ruby/pack.rbinc\
+	third_party/ruby/pathname_builtin.rbinc\
 	third_party/ruby/parser_node.h\
 	third_party/ruby/universal_parser.c\
 	third_party/ruby/internal/parse.h\
 	third_party/ruby/include/ruby/regex.h\
 	third_party/ruby/parser_st.h\
 	third_party/ruby/ext/ripper/ripper_init.h\
-	third_party/ruby/parse.h\
 	third_party/ruby/ext/ripper/eventids1.h\
 	third_party/ruby/ext/ripper/eventids2.h\
+	third_party/ruby/parse.h\
 	third_party/ruby/lex.c\
 	third_party/ruby/parser_bits.h\
 	third_party/ruby/method.h\
 	third_party/ruby/hrtime.h\
 	third_party/ruby/internal/ractor.h\
+	third_party/ruby/ractor_sync.c\
 	third_party/ruby/ractor.rbinc\
 	third_party/ruby/internal/random.h\
 	third_party/ruby/include/ruby/random.h\
@@ -285,12 +329,10 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/vsnprintf.c\
 	third_party/ruby/timev.h\
 	third_party/ruby/missing/crypt.h\
-	third_party/ruby/include/ruby/atomic.h\
 	third_party/ruby/id.c\
 	third_party/ruby/id_table.c\
 	third_party/ruby/symbol.rbinc\
 	third_party/ruby/thread_sync.c\
-	third_party/ruby/timezoneapi.h\
 	third_party/ruby/timev.rbinc\
 	third_party/ruby/transcode_data.h\
 	third_party/ruby/missing/dtoa.c\
@@ -300,15 +342,18 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/vm_exec.c\
 	third_party/ruby/vm_method.c\
 	third_party/ruby/vm_eval.c\
-	third_party/ruby/yjit_hook.rbinc\
+	third_party/ruby/jit_hook.rbinc\
+	third_party/ruby/jit_undef.rbinc\
 	third_party/ruby/vm_call_iseq_optimized.inc\
 	third_party/ruby/addr2line.h\
 	third_party/ruby/missing/procstat_vm.c\
 	third_party/ruby/trace_point.rbinc\
 	third_party/ruby/enc/encdb.h\
+	third_party/ruby/enc/jis/props.h\
+	third_party/ruby/enc/iso_8859.h\
+	third_party/ruby/enc/shift_jis.h\
 	third_party/ruby/enc/unicode/17.0.0/casefold.h\
 	third_party/ruby/enc/unicode/17.0.0/name2ctype.h\
-	third_party/ruby/enc/iso_8859.h\
 	third_party/ruby/enc/transdb.h\
 	third_party/ruby/prism/extension.h\
 	third_party/ruby/prism/diagnostic.h\
@@ -332,10 +377,10 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/prism/util/pm_strncasecmp.h\
 	third_party/ruby/prism/util/pm_strpbrk.h\
 	third_party/ruby/include/ruby/defines.h\
-	third_party/ruby/internal/static_assert.h\
-	third_party/ruby/ext/io/console/win32_vk.inc\
-	third_party/ruby/ruby_cosmo_main.h\
 	third_party/ruby/internal/fixnum.h\
+	third_party/ruby/yjit.rbinc\
+	third_party/ruby/ruby_cosmo_main.h\
+	third_party/ruby/internal/static_assert.h\
 	third_party/ruby/include/ruby/intern.h\
 	third_party/ruby/internal/serial.h\
 	third_party/ruby/probes.dmyh\
@@ -348,29 +393,35 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/internal/encoding/string.h\
 	third_party/ruby/include/ruby/internal/encoding/symbol.h\
 	third_party/ruby/include/ruby/internal/encoding/transcode.h\
+	third_party/ruby/include/ruby/internal/attr/nonnull.h\
+	third_party/ruby/include/ruby/internal/intern/thread.h\
+	third_party/ruby/include/ruby/internal/dllexport.h\
 	third_party/ruby/include/ruby/internal/attr/noalias.h\
 	third_party/ruby/include/ruby/internal/attr/nodiscard.h\
-	third_party/ruby/include/ruby/internal/attr/nonnull.h\
 	third_party/ruby/include/ruby/internal/attr/restrict.h\
 	third_party/ruby/include/ruby/internal/attr/returns_nonnull.h\
-	third_party/ruby/include/ruby/internal/dllexport.h\
+	third_party/ruby/include/ruby/internal/fl_type.h\
+	third_party/ruby/include/ruby/internal/special_consts.h\
+	third_party/ruby/include/ruby/internal/value.h\
 	third_party/ruby/vm_opts.h\
 	third_party/ruby/include/ruby/internal/warning_push.h\
 	third_party/ruby/prism_compile.h\
 	third_party/ruby/include/ruby/backward/2/attributes.h\
-	third_party/ruby/include/ruby/config.h\
 	third_party/ruby/include/ruby/internal/compiler_since.h\
-	third_party/ruby/include/ruby/internal/value.h\
-	third_party/ruby/include/ruby/internal/intern/thread.h\
-	third_party/ruby/include/ruby/internal/fl_type.h\
-	third_party/ruby/include/ruby/internal/special_consts.h\
+	third_party/ruby/include/ruby/internal/attr/pure.h\
+	third_party/ruby/include/ruby/internal/value_type.h\
 	third_party/ruby/include/ruby/onigmo.h\
 	third_party/ruby/include/ruby/internal/core/rmatch.h\
+	third_party/ruby/include/ruby/backward/2/limits.h\
+	third_party/ruby/include/ruby/internal/attr/artificial.h\
+	third_party/ruby/include/ruby/internal/cast.h\
+	third_party/ruby/include/ruby/internal/static_assert.h\
 	third_party/ruby/include/ruby/internal/arithmetic.h\
 	third_party/ruby/include/ruby/internal/attr/const.h\
 	third_party/ruby/include/ruby/internal/attr/packed_struct.h\
-	third_party/ruby/include/ruby/internal/attr/pure.h\
 	third_party/ruby/include/ruby/internal/attr/noreturn.h\
+	third_party/ruby/include/errno_wrapper.h\
+	third_party/ruby/include/ruby/config.mode.h\
 	third_party/ruby/include/ruby/internal/has/attribute.h\
 	third_party/ruby/include/ruby/internal/has/builtin.h\
 	third_party/ruby/include/ruby/internal/has/c_attribute.h\
@@ -385,20 +436,19 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/internal/attr/deprecated.h\
 	third_party/ruby/include/ruby/internal/event.h\
 	third_party/ruby/gc/gc_impl.h\
+	third_party/ruby/ccan/str/str.h\
+	third_party/ruby/ccan/container_of/container_of.h\
+	third_party/ruby/ccan/check_type/check_type.h\
 	third_party/ruby/include/ruby/internal/attr/format.h\
 	third_party/ruby/include/ruby/internal/core/rtypeddata.h\
 	third_party/ruby/parser_value.h\
 	third_party/ruby/include/ruby/internal/assume.h\
 	third_party/ruby/include/ruby/internal/attr/cold.h\
-	third_party/ruby/include/ruby/internal/cast.h\
 	third_party/ruby/include/ruby/backward/2/assume.h\
 	third_party/ruby/include/ruby/backward/2/inttypes.h\
 	third_party/ruby/include/ruby/oniguruma.h\
 	third_party/ruby/include/ruby/backward/2/long_long.h\
 	third_party/ruby/siphash.h\
-	third_party/ruby/include/ruby/backward/2/limits.h\
-	third_party/ruby/include/ruby/internal/attr/artificial.h\
-	third_party/ruby/include/ruby/internal/static_assert.h\
 	third_party/ruby/thread_sync.rbinc\
 	third_party/ruby/vm_args.c\
 	third_party/ruby/vmtc.inc\
@@ -438,6 +488,7 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/internal/intern/re.h\
 	third_party/ruby/include/ruby/internal/intern/ruby.h\
 	third_party/ruby/include/ruby/internal/intern/select.h\
+	third_party/ruby/include/ruby/internal/intern/set.h\
 	third_party/ruby/include/ruby/internal/intern/signal.h\
 	third_party/ruby/include/ruby/internal/intern/sprintf.h\
 	third_party/ruby/include/ruby/internal/intern/string.h\
@@ -446,19 +497,18 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/internal/intern/variable.h\
 	third_party/ruby/include/ruby/internal/intern/vm.h\
 	third_party/ruby/include/ruby/internal/core/rbasic.h\
-	third_party/ruby/include/ruby/internal/has/cpp_attribute.h\
 	third_party/ruby/include/ruby/internal/compiler_is.h\
+	third_party/ruby/include/ruby/internal/has/cpp_attribute.h\
+	third_party/ruby/include/ruby/internal/attr/flag_enum.h\
+	third_party/ruby/include/ruby/internal/attr/forceinline.h\
+	third_party/ruby/include/ruby/internal/attr/constexpr.h\
+	third_party/ruby/include/ruby/internal/attr/enum_extensibility.h\
 	third_party/ruby/include/ruby/internal/attr/alloc_size.h\
 	third_party/ruby/include/ruby/internal/attr/error.h\
-	third_party/ruby/include/ruby/internal/attr/forceinline.h\
 	third_party/ruby/include/ruby/internal/attr/maybe_unused.h\
 	third_party/ruby/include/ruby/internal/attr/noinline.h\
 	third_party/ruby/include/ruby/internal/attr/warning.h\
-	third_party/ruby/include/errno_wrapper.h\
-	third_party/ruby/include/ruby/internal/attr/flag_enum.h\
-	third_party/ruby/include/ruby/internal/value_type.h\
-	third_party/ruby/include/ruby/internal/attr/constexpr.h\
-	third_party/ruby/include/ruby/internal/attr/enum_extensibility.h\
+	third_party/ruby/include/ruby/internal/constant_p.h\
 	third_party/ruby/include/ruby/internal/arithmetic/char.h\
 	third_party/ruby/include/ruby/internal/arithmetic/double.h\
 	third_party/ruby/include/ruby/internal/arithmetic/fixnum.h\
@@ -474,16 +524,16 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/internal/arithmetic/size_t.h\
 	third_party/ruby/include/ruby/internal/arithmetic/st_data_t.h\
 	third_party/ruby/include/ruby/internal/arithmetic/uid_t.h\
+	third_party/ruby/ccan/build_assert/build_assert.h\
 	third_party/ruby/include/ruby/internal/core/rdata.h\
-	third_party/ruby/prism/prism_xallocator.h\
 	third_party/ruby/include/ruby/internal/attr/noexcept.h\
 	third_party/ruby/include/ruby/internal/stdalign.h\
 	third_party/ruby/include/ruby/internal/iterator.h\
 	third_party/ruby/include/ruby/internal/symbol.h\
+	third_party/ruby/include/ruby/backward.h\
 	third_party/ruby/include/ruby/internal/intern/select/largesize.h\
 	third_party/ruby/include/ruby/internal/intern/select/win32.h\
 	third_party/ruby/include/ruby/internal/intern/select/posix.h\
-	third_party/ruby/include/ruby/internal/constant_p.h\
 	third_party/ruby/include/ruby/internal/variable.h\
 	third_party/ruby/include/ruby/internal/compiler_is/apple.h\
 	third_party/ruby/include/ruby/internal/compiler_is/clang.h\
@@ -491,392 +541,406 @@ THIRD_PARTY_RUBY_A_HDRS =\
 	third_party/ruby/include/ruby/internal/compiler_is/intel.h\
 	third_party/ruby/include/ruby/internal/compiler_is/msvc.h\
 	third_party/ruby/include/ruby/internal/compiler_is/sunpro.h\
-	third_party/ruby/include/ruby/internal/core/rstring.h
+	third_party/ruby/include/ruby/internal/core/rstring.h\
+	third_party/ruby/include/ruby/internal/interpreter.h
 # List Ruby core included files (relative paths as they appear in #include directives)
 # For Stage 1 of mkdeps dependency resolution (trick it with shims)
 THIRD_PARTY_RUBY_A_INCS =\
-	ruby-4.0.0_shims/third_party+ruby+include+ruby.h\
-	ruby-4.0.0_shims/debug_counter.h\
-	ruby-4.0.0_shims/id.h\
-	ruby-4.0.0_shims/internal.h\
-	ruby-4.0.0_shims/internal+array.h\
-	ruby-4.0.0_shims/internal+compar.h\
-	ruby-4.0.0_shims/internal+enum.h\
-	ruby-4.0.0_shims/internal+gc.h\
-	ruby-4.0.0_shims/internal+hash.h\
-	ruby-4.0.0_shims/internal+numeric.h\
-	ruby-4.0.0_shims/internal+object.h\
-	ruby-4.0.0_shims/internal+proc.h\
-	ruby-4.0.0_shims/internal+rational.h\
-	ruby-4.0.0_shims/internal+vm.h\
-	ruby-4.0.0_shims/probes.h\
-	ruby-4.0.0_shims/ruby+encoding.h\
-	ruby-4.0.0_shims/ruby+st.h\
-	ruby-4.0.0_shims/ruby+util.h\
-	ruby-4.0.0_shims/vm_core.h\
-	ruby-4.0.0_shims/builtin.h\
-	ruby-4.0.0_shims/ruby_assert.h\
-	ruby-4.0.0_shims/array.rbinc\
-	ruby-4.0.0_shims/internal+ruby_parser.h\
-	ruby-4.0.0_shims/internal+symbol.h\
-	ruby-4.0.0_shims/internal+warnings.h\
-	ruby-4.0.0_shims/iseq.h\
-	ruby-4.0.0_shims/node.h\
-	ruby-4.0.0_shims/ruby.h\
-	ruby-4.0.0_shims/ast.rbinc\
-	ruby-4.0.0_shims/ruby+internal+config.h\
-	ruby-4.0.0_shims/internal+bignum.h\
-	ruby-4.0.0_shims/internal+complex.h\
-	ruby-4.0.0_shims/internal+sanitizers.h\
-	ruby-4.0.0_shims/internal+variable.h\
-	ruby-4.0.0_shims/ruby+thread.h\
-	ruby-4.0.0_shims/builtin_binary.rbbin\
-	ruby-4.0.0_shims/mini_builtin.c\
-	ruby-4.0.0_shims/constant.h\
-	ruby-4.0.0_shims/id_table.h\
-	ruby-4.0.0_shims/internal+class.h\
-	ruby-4.0.0_shims/internal+eval.h\
-	ruby-4.0.0_shims/internal+string.h\
-	ruby-4.0.0_shims/yjit.h\
-	ruby-4.0.0_shims/internal+error.h\
-	ruby-4.0.0_shims/ruby+ruby.h\
-	ruby-4.0.0_shims/encindex.h\
-	ruby-4.0.0_shims/internal+compile.h\
-	ruby-4.0.0_shims/internal+encoding.h\
-	ruby-4.0.0_shims/internal+io.h\
-	ruby-4.0.0_shims/internal+re.h\
-	ruby-4.0.0_shims/internal+thread.h\
-	ruby-4.0.0_shims/ruby+ractor.h\
-	ruby-4.0.0_shims/ruby+re.h\
-	ruby-4.0.0_shims/vm_callinfo.h\
-	ruby-4.0.0_shims/vm_debug.h\
-	ruby-4.0.0_shims/insns.inc\
-	ruby-4.0.0_shims/insns_info.inc\
-	ruby-4.0.0_shims/optinsn.inc\
-	ruby-4.0.0_shims/optunifs.inc\
-	ruby-4.0.0_shims/prism_compile.c\
-	ruby-4.0.0_shims/internal+math.h\
-	ruby-4.0.0_shims/eval_intern.h\
-	ruby-4.0.0_shims/internal+cont.h\
-	ruby-4.0.0_shims/ruby+fiber+scheduler.h\
-	ruby-4.0.0_shims/vm_sync.h\
-	ruby-4.0.0_shims/ractor_core.h\
-	ruby-4.0.0_shims/internal+signal.h\
-	ruby-4.0.0_shims/ruby+io.h\
-	ruby-4.0.0_shims/symbol.h\
-	ruby-4.0.0_shims/ruby+thread_native.h\
-	ruby-4.0.0_shims/win32+dir.h\
-	ruby-4.0.0_shims/internal+dir.h\
-	ruby-4.0.0_shims/internal+file.h\
-	ruby-4.0.0_shims/internal+imemo.h\
-	ruby-4.0.0_shims/dir.rbinc\
-	ruby-4.0.0_shims/dln.h\
-	ruby-4.0.0_shims/internal+compilers.h\
-	ruby-4.0.0_shims/missing+file.h\
-	ruby-4.0.0_shims/ruby+internal+stdbool.h\
-	ruby-4.0.0_shims/third_party+ruby+include+ruby+ruby.h\
-	ruby-4.0.0_shims/internal+enc.h\
-	ruby-4.0.0_shims/internal+inits.h\
-	ruby-4.0.0_shims/internal+load.h\
-	ruby-4.0.0_shims/regenc.h\
-	ruby-4.0.0_shims/verconf.h\
-	ruby-4.0.0_shims/version.h\
-	ruby-4.0.0_shims/internal+enumerator.h\
-	ruby-4.0.0_shims/internal+range.h\
-	ruby-4.0.0_shims/internal+process.h\
-	ruby-4.0.0_shims/known_errors.inc\
-	ruby-4.0.0_shims/warning.rbinc\
-	ruby-4.0.0_shims/probes_helper.h\
-	ruby-4.0.0_shims/ruby+vm.h\
-	ruby-4.0.0_shims/eval_error.c\
-	ruby-4.0.0_shims/eval_jump.c\
-	ruby-4.0.0_shims/win32+file.h\
-	ruby-4.0.0_shims/wasm+setjmp.h\
-	ruby-4.0.0_shims/wasm+machine.h\
-	ruby-4.0.0_shims/darray.h\
-	ruby-4.0.0_shims/gc+gc.h\
-	ruby-4.0.0_shims/internal+struct.h\
-	ruby-4.0.0_shims/regint.h\
-	ruby-4.0.0_shims/ruby+debug.h\
-	ruby-4.0.0_shims/ruby_atomic.h\
-	ruby-4.0.0_shims/shape.h\
-	ruby-4.0.0_shims/gc+default+default.c\
-	ruby-4.0.0_shims/gc.rbinc\
-	ruby-4.0.0_shims/missing+crt_externs.h\
-	ruby-4.0.0_shims/internal+basic_operators.h\
-	ruby-4.0.0_shims/internal+st.h\
-	ruby-4.0.0_shims/internal+time.h\
-	ruby-4.0.0_shims/hash.rbinc\
-	ruby-4.0.0_shims/prelude.rbinc\
-	ruby-4.0.0_shims/ruby+io+buffer.h\
-	ruby-4.0.0_shims/ccan+list+list.h\
-	ruby-4.0.0_shims/internal+transcode.h\
-	ruby-4.0.0_shims/ruby+missing.h\
-	ruby-4.0.0_shims/io.rbinc\
-	ruby-4.0.0_shims/internal+bits.h\
-	ruby-4.0.0_shims/internal+util.h\
-	ruby-4.0.0_shims/ruby+internal+attr+nonstring.h\
-	ruby-4.0.0_shims/marshal.rbinc\
-	ruby-4.0.0_shims/ruby+memory_view.h\
-	ruby-4.0.0_shims/rubyparser.h\
-	ruby-4.0.0_shims/node_name.inc\
-	ruby-4.0.0_shims/numeric.rbinc\
-	ruby-4.0.0_shims/variable.h\
-	ruby-4.0.0_shims/ruby+assert.h\
-	ruby-4.0.0_shims/kernel.rbinc\
-	ruby-4.0.0_shims/nilclass.rbinc\
-	ruby-4.0.0_shims/pack.rbinc\
-	ruby-4.0.0_shims/parser_node.h\
-	ruby-4.0.0_shims/universal_parser.c\
-	ruby-4.0.0_shims/internal+parse.h\
-	ruby-4.0.0_shims/ruby+regex.h\
-	ruby-4.0.0_shims/parser_st.h\
-	ruby-4.0.0_shims/ripper_init.h\
-	ruby-4.0.0_shims/parse.h\
-	ruby-4.0.0_shims/eventids1.h\
-	ruby-4.0.0_shims/eventids2.h\
-	ruby-4.0.0_shims/lex.c\
-	ruby-4.0.0_shims/parser_bits.h\
-	ruby-4.0.0_shims/method.h\
-	ruby-4.0.0_shims/hrtime.h\
-	ruby-4.0.0_shims/internal+ractor.h\
-	ruby-4.0.0_shims/ractor.rbinc\
-	ruby-4.0.0_shims/internal+random.h\
-	ruby-4.0.0_shims/ruby+random.h\
-	ruby-4.0.0_shims/missing+mt19937.c\
-	ruby-4.0.0_shims/siphash.c\
-	ruby-4.0.0_shims/regparse.h\
-	ruby-4.0.0_shims/st.h\
-	ruby-4.0.0_shims/internal+cmdlineopt.h\
-	ruby-4.0.0_shims/internal+loadpath.h\
-	ruby-4.0.0_shims/internal+missing.h\
-	ruby-4.0.0_shims/ruby+version.h\
-	ruby-4.0.0_shims/ruby+internal+error.h\
-	ruby-4.0.0_shims/vsnprintf.c\
-	ruby-4.0.0_shims/timev.h\
-	ruby-4.0.0_shims/missing+crypt.h\
-	ruby-4.0.0_shims/ruby+atomic.h\
-	ruby-4.0.0_shims/id.c\
-	ruby-4.0.0_shims/id_table.c\
-	ruby-4.0.0_shims/symbol.rbinc\
-	ruby-4.0.0_shims/thread_sync.c\
-	ruby-4.0.0_shims/timezoneapi.h\
-	ruby-4.0.0_shims/timev.rbinc\
-	ruby-4.0.0_shims/transcode_data.h\
-	ruby-4.0.0_shims/missing+dtoa.c\
-	ruby-4.0.0_shims/vm_exec.h\
-	ruby-4.0.0_shims/vm_insnhelper.h\
-	ruby-4.0.0_shims/vm_insnhelper.c\
-	ruby-4.0.0_shims/vm_exec.c\
-	ruby-4.0.0_shims/vm_method.c\
-	ruby-4.0.0_shims/vm_eval.c\
-	ruby-4.0.0_shims/yjit_hook.rbinc\
-	ruby-4.0.0_shims/vm_call_iseq_optimized.inc\
-	ruby-4.0.0_shims/addr2line.h\
-	ruby-4.0.0_shims/missing+procstat_vm.c\
-	ruby-4.0.0_shims/trace_point.rbinc\
-	ruby-4.0.0_shims/encdb.h\
-	ruby-4.0.0_shims/casefold.h\
-	ruby-4.0.0_shims/name2ctype.h\
-	ruby-4.0.0_shims/iso_8859.h\
-	ruby-4.0.0_shims/transdb.h\
-	ruby-4.0.0_shims/prism+extension.h\
-	ruby-4.0.0_shims/prism+diagnostic.h\
-	ruby-4.0.0_shims/prism+encoding.h\
-	ruby-4.0.0_shims/prism+node.h\
-	ruby-4.0.0_shims/prism+options.h\
-	ruby-4.0.0_shims/prism+pack.h\
-	ruby-4.0.0_shims/prism+prettyprint.h\
-	ruby-4.0.0_shims/prism.h\
-	ruby-4.0.0_shims/prism+regexp.h\
-	ruby-4.0.0_shims/prism+static_literals.h\
-	ruby-4.0.0_shims/prism+ast.h\
-	ruby-4.0.0_shims/prism+util+pm_buffer.h\
-	ruby-4.0.0_shims/prism+util+pm_char.h\
-	ruby-4.0.0_shims/prism+util+pm_constant_pool.h\
-	ruby-4.0.0_shims/prism+util+pm_integer.h\
-	ruby-4.0.0_shims/prism+util+pm_list.h\
-	ruby-4.0.0_shims/prism+util+pm_memchr.h\
-	ruby-4.0.0_shims/prism+util+pm_newline_list.h\
-	ruby-4.0.0_shims/prism+util+pm_string.h\
-	ruby-4.0.0_shims/prism+util+pm_strncasecmp.h\
-	ruby-4.0.0_shims/prism+util+pm_strpbrk.h\
-	ruby-4.0.0_shims/crt_externs.h\
-	ruby-4.0.0_shims/dladdr.h\
-	ruby-4.0.0_shims/ruby+defines.h\
-	ruby-4.0.0_shims/missing+dladdr.h\
-	ruby-4.0.0_shims/internal+static_assert.h\
-	ruby-4.0.0_shims/win32_vk.inc\
-	ruby-4.0.0_shims/ruby_cosmo_main.h\
-	ruby-4.0.0_shims/internal+fixnum.h\
-	ruby-4.0.0_shims/ruby+intern.h\
-	ruby-4.0.0_shims/internal+serial.h\
-	ruby-4.0.0_shims/probes.dmyh\
-	ruby-4.0.0_shims/ruby+internal+encoding+coderange.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+ctype.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+encoding.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+pathname.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+re.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+sprintf.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+string.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+symbol.h\
-	ruby-4.0.0_shims/ruby+internal+encoding+transcode.h\
-	ruby-4.0.0_shims/ruby+internal+attr+noalias.h\
-	ruby-4.0.0_shims/ruby+internal+attr+nodiscard.h\
-	ruby-4.0.0_shims/ruby+internal+attr+nonnull.h\
-	ruby-4.0.0_shims/ruby+internal+attr+restrict.h\
-	ruby-4.0.0_shims/ruby+internal+attr+returns_nonnull.h\
-	ruby-4.0.0_shims/ruby+internal+dllexport.h\
-	ruby-4.0.0_shims/vm_opts.h\
-	ruby-4.0.0_shims/ruby+internal+warning_push.h\
-	ruby-4.0.0_shims/prism_compile.h\
-	ruby-4.0.0_shims/ruby+backward+2+attributes.h\
-	ruby-4.0.0_shims/ruby+config.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_since.h\
-	ruby-4.0.0_shims/ruby+internal+value.h\
-	ruby-4.0.0_shims/ruby+internal+intern+thread.h\
-	ruby-4.0.0_shims/internal+dllexport.h\
-	ruby-4.0.0_shims/internal+fl_type.h\
-	ruby-4.0.0_shims/internal+special_consts.h\
-	ruby-4.0.0_shims/internal+stdbool.h\
-	ruby-4.0.0_shims/internal+value.h\
-	ruby-4.0.0_shims/ruby+onigmo.h\
-	ruby-4.0.0_shims/ruby+internal+core+rmatch.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic.h\
-	ruby-4.0.0_shims/ruby+internal+attr+const.h\
-	ruby-4.0.0_shims/ruby+internal+attr+packed_struct.h\
-	ruby-4.0.0_shims/ruby+internal+attr+pure.h\
-	ruby-4.0.0_shims/ruby+internal+attr+noreturn.h\
-	ruby-4.0.0_shims/ruby+internal+has+attribute.h\
-	ruby-4.0.0_shims/ruby+internal+has+builtin.h\
-	ruby-4.0.0_shims/ruby+internal+has+c_attribute.h\
-	ruby-4.0.0_shims/ruby+internal+has+declspec_attribute.h\
-	ruby-4.0.0_shims/ruby+internal+has+extension.h\
-	ruby-4.0.0_shims/ruby+internal+has+feature.h\
-	ruby-4.0.0_shims/ruby+internal+has+warning.h\
-	ruby-4.0.0_shims/ruby+backward+2+gcc_version_since.h\
-	ruby-4.0.0_shims/onigmo.h\
-	ruby-4.0.0_shims/ruby+internal+abi.h\
-	ruby-4.0.0_shims/revision.h\
-	ruby-4.0.0_shims/ruby+win32.h\
-	ruby-4.0.0_shims/ruby+internal+attr+deprecated.h\
-	ruby-4.0.0_shims/ruby+internal+event.h\
-	ruby-4.0.0_shims/gc+gc_impl.h\
-	ruby-4.0.0_shims/include+ruby+st.h\
-	ruby-4.0.0_shims/third_party+ruby+ccan+str+str.h\
-	ruby-4.0.0_shims/third_party+ruby+ccan+container_of+container_of.h\
-	ruby-4.0.0_shims/third_party+ruby+ccan+check_type+check_type.h\
-	ruby-4.0.0_shims/ruby+internal+attr+format.h\
-	ruby-4.0.0_shims/ruby+internal+core+rtypeddata.h\
-	ruby-4.0.0_shims/parser_value.h\
-	ruby-4.0.0_shims/ruby+internal+assume.h\
-	ruby-4.0.0_shims/ruby+internal+attr+cold.h\
-	ruby-4.0.0_shims/ruby+internal+cast.h\
-	ruby-4.0.0_shims/ruby+backward+2+assume.h\
-	ruby-4.0.0_shims/ruby+backward+2+inttypes.h\
-	ruby-4.0.0_shims/ruby+oniguruma.h\
-	ruby-4.0.0_shims/oniguruma.h\
-	ruby-4.0.0_shims/ruby+backward+2+long_long.h\
-	ruby-4.0.0_shims/siphash.h\
-	ruby-4.0.0_shims/ruby+backward+2+limits.h\
-	ruby-4.0.0_shims/ruby+internal+attr+artificial.h\
-	ruby-4.0.0_shims/ruby+internal+static_assert.h\
-	ruby-4.0.0_shims/thread_sync.rbinc\
-	ruby-4.0.0_shims/vm_args.c\
-	ruby-4.0.0_shims/vmtc.inc\
-	ruby-4.0.0_shims/vm.inc\
-	ruby-4.0.0_shims/prism+defines.h\
-	ruby-4.0.0_shims/prism+parser.h\
-	ruby-4.0.0_shims/prism+version.h\
-	ruby-4.0.0_shims/ruby+internal+xmalloc.h\
-	ruby-4.0.0_shims/ruby+backward+2+bool.h\
-	ruby-4.0.0_shims/ruby+backward+2+stdalign.h\
-	ruby-4.0.0_shims/ruby+backward+2+stdarg.h\
-	ruby-4.0.0_shims/ruby+internal+dosish.h\
-	ruby-4.0.0_shims/ruby+internal+intern+array.h\
-	ruby-4.0.0_shims/ruby+internal+intern+bignum.h\
-	ruby-4.0.0_shims/ruby+internal+intern+class.h\
-	ruby-4.0.0_shims/ruby+internal+intern+compar.h\
-	ruby-4.0.0_shims/ruby+internal+intern+complex.h\
-	ruby-4.0.0_shims/ruby+internal+intern+cont.h\
-	ruby-4.0.0_shims/ruby+internal+intern+dir.h\
-	ruby-4.0.0_shims/ruby+internal+intern+enum.h\
-	ruby-4.0.0_shims/ruby+internal+intern+enumerator.h\
-	ruby-4.0.0_shims/ruby+internal+intern+error.h\
-	ruby-4.0.0_shims/ruby+internal+intern+eval.h\
-	ruby-4.0.0_shims/ruby+internal+intern+file.h\
-	ruby-4.0.0_shims/ruby+internal+intern+hash.h\
-	ruby-4.0.0_shims/ruby+internal+intern+io.h\
-	ruby-4.0.0_shims/ruby+internal+intern+load.h\
-	ruby-4.0.0_shims/ruby+internal+intern+marshal.h\
-	ruby-4.0.0_shims/ruby+internal+intern+numeric.h\
-	ruby-4.0.0_shims/ruby+internal+intern+object.h\
-	ruby-4.0.0_shims/ruby+internal+intern+parse.h\
-	ruby-4.0.0_shims/ruby+internal+intern+proc.h\
-	ruby-4.0.0_shims/ruby+internal+intern+process.h\
-	ruby-4.0.0_shims/ruby+internal+intern+random.h\
-	ruby-4.0.0_shims/ruby+internal+intern+range.h\
-	ruby-4.0.0_shims/ruby+internal+intern+rational.h\
-	ruby-4.0.0_shims/ruby+internal+intern+re.h\
-	ruby-4.0.0_shims/ruby+internal+intern+ruby.h\
-	ruby-4.0.0_shims/ruby+internal+intern+select.h\
-	ruby-4.0.0_shims/ruby+internal+intern+signal.h\
-	ruby-4.0.0_shims/ruby+internal+intern+sprintf.h\
-	ruby-4.0.0_shims/ruby+internal+intern+string.h\
-	ruby-4.0.0_shims/ruby+internal+intern+struct.h\
-	ruby-4.0.0_shims/ruby+internal+intern+time.h\
-	ruby-4.0.0_shims/ruby+internal+intern+variable.h\
-	ruby-4.0.0_shims/ruby+internal+intern+vm.h\
-	ruby-4.0.0_shims/ruby+internal+fl_type.h\
-	ruby-4.0.0_shims/ruby+internal+core+rbasic.h\
-	ruby-4.0.0_shims/ruby+internal+has+cpp_attribute.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is.h\
-	ruby-4.0.0_shims/prism+prism.h\
-	ruby-4.0.0_shims/ruby+internal+attr+alloc_size.h\
-	ruby-4.0.0_shims/ruby+internal+attr+error.h\
-	ruby-4.0.0_shims/ruby+internal+attr+forceinline.h\
-	ruby-4.0.0_shims/ruby+internal+attr+maybe_unused.h\
-	ruby-4.0.0_shims/ruby+internal+attr+noinline.h\
-	ruby-4.0.0_shims/ruby+internal+attr+warning.h\
-	ruby-4.0.0_shims/errno_wrapper.h\
-	ruby-4.0.0_shims/ruby+internal+attr+flag_enum.h\
-	ruby-4.0.0_shims/ruby+internal+special_consts.h\
-	ruby-4.0.0_shims/ruby+internal+value_type.h\
-	ruby-4.0.0_shims/ruby+internal+attr+constexpr.h\
-	ruby-4.0.0_shims/ruby+internal+attr+enum_extensibility.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+char.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+double.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+fixnum.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+gid_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+int.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+intptr_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+long.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+long_long.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+mode_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+off_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+pid_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+short.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+size_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+st_data_t.h\
-	ruby-4.0.0_shims/ruby+internal+arithmetic+uid_t.h\
-	ruby-4.0.0_shims/ruby+internal+core+rdata.h\
-	ruby-4.0.0_shims/prism_xallocator.h\
-	ruby-4.0.0_shims/ruby+internal+attr+noexcept.h\
-	ruby-4.0.0_shims/ruby+internal+stdalign.h\
-	ruby-4.0.0_shims/ruby+internal+iterator.h\
-	ruby-4.0.0_shims/ruby+internal+symbol.h\
-	ruby-4.0.0_shims/ruby+internal+intern+select+largesize.h\
-	ruby-4.0.0_shims/ruby+internal+intern+select+win32.h\
-	ruby-4.0.0_shims/ruby+internal+intern+select+posix.h\
-	ruby-4.0.0_shims/ruby+internal+constant_p.h\
-	ruby-4.0.0_shims/ruby+internal+variable.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is+apple.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is+clang.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is+gcc.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is+intel.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is+msvc.h\
-	ruby-4.0.0_shims/ruby+internal+compiler_is+sunpro.h\
-	ruby-4.0.0_shims/ruby+internal+core+rstring.h
+	ruby_shims/third_party+ruby+include+ruby.h\
+	ruby_shims/debug_counter.h\
+	ruby_shims/id.h\
+	ruby_shims/internal.h\
+	ruby_shims/internal+array.h\
+	ruby_shims/internal+compar.h\
+	ruby_shims/internal+enum.h\
+	ruby_shims/internal+gc.h\
+	ruby_shims/internal+hash.h\
+	ruby_shims/internal+numeric.h\
+	ruby_shims/internal+object.h\
+	ruby_shims/internal+proc.h\
+	ruby_shims/internal+rational.h\
+	ruby_shims/internal+vm.h\
+	ruby_shims/probes.h\
+	ruby_shims/ruby+encoding.h\
+	ruby_shims/ruby+st.h\
+	ruby_shims/ruby+thread.h\
+	ruby_shims/ruby+util.h\
+	ruby_shims/ruby+ractor.h\
+	ruby_shims/vm_core.h\
+	ruby_shims/builtin.h\
+	ruby_shims/ruby_assert.h\
+	ruby_shims/array.rbinc\
+	ruby_shims/internal+ruby_parser.h\
+	ruby_shims/internal+symbol.h\
+	ruby_shims/internal+warnings.h\
+	ruby_shims/iseq.h\
+	ruby_shims/node.h\
+	ruby_shims/ruby.h\
+	ruby_shims/ast.rbinc\
+	ruby_shims/ruby+internal+config.h\
+	ruby_shims/internal+bignum.h\
+	ruby_shims/internal+complex.h\
+	ruby_shims/internal+sanitizers.h\
+	ruby_shims/internal+variable.h\
+	ruby_shims/eval_intern.h\
+	ruby_shims/internal+box.h\
+	ruby_shims/internal+class.h\
+	ruby_shims/internal+eval.h\
+	ruby_shims/internal+error.h\
+	ruby_shims/internal+file.h\
+	ruby_shims/internal+io.h\
+	ruby_shims/internal+load.h\
+	ruby_shims/internal+st.h\
+	ruby_shims/ruby+internal+globals.h\
+	ruby_shims/darray.h\
+	ruby_shims/builtin_binary.rbbin\
+	ruby_shims/mini_builtin.c\
+	ruby_shims/constant.h\
+	ruby_shims/id_table.h\
+	ruby_shims/internal+string.h\
+	ruby_shims/yjit.h\
+	ruby_shims/zjit.h\
+	ruby_shims/ruby+ruby.h\
+	ruby_shims/encindex.h\
+	ruby_shims/internal+compile.h\
+	ruby_shims/internal+encoding.h\
+	ruby_shims/internal+re.h\
+	ruby_shims/internal+thread.h\
+	ruby_shims/ruby+re.h\
+	ruby_shims/vm_callinfo.h\
+	ruby_shims/vm_debug.h\
+	ruby_shims/insns.inc\
+	ruby_shims/insns_info.inc\
+	ruby_shims/optinsn.inc\
+	ruby_shims/optunifs.inc\
+	ruby_shims/prism_compile.c\
+	ruby_shims/internal+math.h\
+	ruby_shims/internal+concurrent_set.h\
+	ruby_shims/ruby+atomic.h\
+	ruby_shims/vm_sync.h\
+	ruby_shims/internal+cont.h\
+	ruby_shims/ruby+fiber+scheduler.h\
+	ruby_shims/ractor_core.h\
+	ruby_shims/internal+signal.h\
+	ruby_shims/ruby+io.h\
+	ruby_shims/symbol.h\
+	ruby_shims/ruby+thread_native.h\
+	ruby_shims/win32+dir.h\
+	ruby_shims/internal+dir.h\
+	ruby_shims/internal+imemo.h\
+	ruby_shims/dir.rbinc\
+	ruby_shims/ruby+config.h\
+	ruby_shims/dln.h\
+	ruby_shims/internal+compilers.h\
+	ruby_shims/missing+file.h\
+	ruby_shims/ruby+internal+stdbool.h\
+	ruby_shims/third_party+ruby+include+ruby+ruby.h\
+	ruby_shims/internal+enc.h\
+	ruby_shims/internal+inits.h\
+	ruby_shims/regenc.h\
+	ruby_shims/ruby_atomic.h\
+	ruby_shims/verconf.h\
+	ruby_shims/version.h\
+	ruby_shims/internal+enumerator.h\
+	ruby_shims/internal+range.h\
+	ruby_shims/internal+process.h\
+	ruby_shims/known_errors.inc\
+	ruby_shims/warning.rbinc\
+	ruby_shims/probes_helper.h\
+	ruby_shims/ruby+vm.h\
+	ruby_shims/eval_error.c\
+	ruby_shims/eval_jump.c\
+	ruby_shims/ruby+internal+attr+nonstring.h\
+	ruby_shims/win32+file.h\
+	ruby_shims/wasm+setjmp.h\
+	ruby_shims/wasm+machine.h\
+	ruby_shims/gc+gc.h\
+	ruby_shims/internal+struct.h\
+	ruby_shims/regint.h\
+	ruby_shims/ruby+debug.h\
+	ruby_shims/variable.h\
+	ruby_shims/shape.h\
+	ruby_shims/gc+default+default.c\
+	ruby_shims/gc.rbinc\
+	ruby_shims/missing+crt_externs.h\
+	ruby_shims/internal+basic_operators.h\
+	ruby_shims/internal+time.h\
+	ruby_shims/hash.rbinc\
+	ruby_shims/prelude.rbinc\
+	ruby_shims/ruby+io+buffer.h\
+	ruby_shims/ccan+list+list.h\
+	ruby_shims/internal+transcode.h\
+	ruby_shims/ruby+missing.h\
+	ruby_shims/io.rbinc\
+	ruby_shims/internal+bits.h\
+	ruby_shims/internal+set_table.h\
+	ruby_shims/internal+util.h\
+	ruby_shims/marshal.rbinc\
+	ruby_shims/ruby+memory_view.h\
+	ruby_shims/rubyparser.h\
+	ruby_shims/node_name.inc\
+	ruby_shims/numeric.rbinc\
+	ruby_shims/ruby+assert.h\
+	ruby_shims/kernel.rbinc\
+	ruby_shims/nilclass.rbinc\
+	ruby_shims/pack.rbinc\
+	ruby_shims/pathname_builtin.rbinc\
+	ruby_shims/parser_node.h\
+	ruby_shims/universal_parser.c\
+	ruby_shims/internal+parse.h\
+	ruby_shims/ruby+regex.h\
+	ruby_shims/parser_st.h\
+	ruby_shims/ripper_init.h\
+	ruby_shims/+home+groobiest+code+jart+cosmopolitan+o+third_party+ruby+generated+parse.h\
+	ruby_shims/eventids1.h\
+	ruby_shims/eventids2.h\
+	ruby_shims/parse.h\
+	ruby_shims/lex.c\
+	ruby_shims/parser_bits.h\
+	ruby_shims/method.h\
+	ruby_shims/hrtime.h\
+	ruby_shims/internal+ractor.h\
+	ruby_shims/ractor_sync.c\
+	ruby_shims/ractor.rbinc\
+	ruby_shims/internal+random.h\
+	ruby_shims/ruby+random.h\
+	ruby_shims/missing+mt19937.c\
+	ruby_shims/siphash.c\
+	ruby_shims/regparse.h\
+	ruby_shims/st.h\
+	ruby_shims/internal+cmdlineopt.h\
+	ruby_shims/internal+loadpath.h\
+	ruby_shims/internal+missing.h\
+	ruby_shims/ruby+version.h\
+	ruby_shims/ruby+internal+error.h\
+	ruby_shims/vsnprintf.c\
+	ruby_shims/timev.h\
+	ruby_shims/missing+crypt.h\
+	ruby_shims/id.c\
+	ruby_shims/id_table.c\
+	ruby_shims/symbol.rbinc\
+	ruby_shims/thread_sync.c\
+	ruby_shims/timev.rbinc\
+	ruby_shims/transcode_data.h\
+	ruby_shims/missing+dtoa.c\
+	ruby_shims/vm_exec.h\
+	ruby_shims/vm_insnhelper.h\
+	ruby_shims/vm_insnhelper.c\
+	ruby_shims/vm_exec.c\
+	ruby_shims/vm_method.c\
+	ruby_shims/vm_eval.c\
+	ruby_shims/jit_hook.rbinc\
+	ruby_shims/jit_undef.rbinc\
+	ruby_shims/vm_call_iseq_optimized.inc\
+	ruby_shims/addr2line.h\
+	ruby_shims/missing+procstat_vm.c\
+	ruby_shims/trace_point.rbinc\
+	ruby_shims/encdb.h\
+	ruby_shims/enc+jis+props.h\
+	ruby_shims/iso_8859.h\
+	ruby_shims/shift_jis.h\
+	ruby_shims/casefold.h\
+	ruby_shims/name2ctype.h\
+	ruby_shims/transdb.h\
+	ruby_shims/prism+extension.h\
+	ruby_shims/prism+diagnostic.h\
+	ruby_shims/prism+encoding.h\
+	ruby_shims/prism+node.h\
+	ruby_shims/prism+options.h\
+	ruby_shims/prism+pack.h\
+	ruby_shims/prism+prettyprint.h\
+	ruby_shims/prism.h\
+	ruby_shims/prism+regexp.h\
+	ruby_shims/prism+static_literals.h\
+	ruby_shims/prism+ast.h\
+	ruby_shims/prism+util+pm_buffer.h\
+	ruby_shims/prism+util+pm_char.h\
+	ruby_shims/prism+util+pm_constant_pool.h\
+	ruby_shims/prism+util+pm_integer.h\
+	ruby_shims/prism+util+pm_list.h\
+	ruby_shims/prism+util+pm_memchr.h\
+	ruby_shims/prism+util+pm_newline_list.h\
+	ruby_shims/prism+util+pm_string.h\
+	ruby_shims/prism+util+pm_strncasecmp.h\
+	ruby_shims/prism+util+pm_strpbrk.h\
+	ruby_shims/crt_externs.h\
+	ruby_shims/ruby+defines.h\
+	ruby_shims/internal+fixnum.h\
+	ruby_shims/yjit.rbinc\
+	ruby_shims/ruby_cosmo_main.h\
+	ruby_shims/internal+static_assert.h\
+	ruby_shims/ruby+intern.h\
+	ruby_shims/internal+serial.h\
+	ruby_shims/probes.dmyh\
+	ruby_shims/ruby+internal+encoding+coderange.h\
+	ruby_shims/ruby+internal+encoding+ctype.h\
+	ruby_shims/ruby+internal+encoding+encoding.h\
+	ruby_shims/ruby+internal+encoding+pathname.h\
+	ruby_shims/ruby+internal+encoding+re.h\
+	ruby_shims/ruby+internal+encoding+sprintf.h\
+	ruby_shims/ruby+internal+encoding+string.h\
+	ruby_shims/ruby+internal+encoding+symbol.h\
+	ruby_shims/ruby+internal+encoding+transcode.h\
+	ruby_shims/ruby+internal+attr+nonnull.h\
+	ruby_shims/ruby+internal+intern+thread.h\
+	ruby_shims/ruby+internal+dllexport.h\
+	ruby_shims/ruby+internal+attr+noalias.h\
+	ruby_shims/ruby+internal+attr+nodiscard.h\
+	ruby_shims/ruby+internal+attr+restrict.h\
+	ruby_shims/ruby+internal+attr+returns_nonnull.h\
+	ruby_shims/internal+dllexport.h\
+	ruby_shims/internal+fl_type.h\
+	ruby_shims/internal+special_consts.h\
+	ruby_shims/internal+stdbool.h\
+	ruby_shims/internal+value.h\
+	ruby_shims/vm_opts.h\
+	ruby_shims/ruby+internal+warning_push.h\
+	ruby_shims/prism_compile.h\
+	ruby_shims/ruby+backward+2+attributes.h\
+	ruby_shims/ruby+internal+compiler_since.h\
+	ruby_shims/ruby+internal+value.h\
+	ruby_shims/serial.h\
+	ruby_shims/ruby+internal+attr+pure.h\
+	ruby_shims/ruby+internal+fl_type.h\
+	ruby_shims/ruby+internal+special_consts.h\
+	ruby_shims/ruby+internal+value_type.h\
+	ruby_shims/ruby+onigmo.h\
+	ruby_shims/ruby+internal+core+rmatch.h\
+	ruby_shims/ruby+backward+2+limits.h\
+	ruby_shims/ruby+internal+attr+artificial.h\
+	ruby_shims/ruby+internal+cast.h\
+	ruby_shims/ruby+internal+static_assert.h\
+	ruby_shims/ruby+internal+arithmetic.h\
+	ruby_shims/ruby+internal+attr+const.h\
+	ruby_shims/ruby+internal+attr+packed_struct.h\
+	ruby_shims/ruby+internal+attr+noreturn.h\
+	ruby_shims/errno_wrapper.h\
+	ruby_shims/config.mode.h\
+	ruby_shims/ruby+internal+has+attribute.h\
+	ruby_shims/ruby+internal+has+builtin.h\
+	ruby_shims/ruby+internal+has+c_attribute.h\
+	ruby_shims/ruby+internal+has+declspec_attribute.h\
+	ruby_shims/ruby+internal+has+extension.h\
+	ruby_shims/ruby+internal+has+feature.h\
+	ruby_shims/ruby+internal+has+warning.h\
+	ruby_shims/ruby+backward+2+gcc_version_since.h\
+	ruby_shims/config.h\
+	ruby_shims/onigmo.h\
+	ruby_shims/ruby+internal+abi.h\
+	ruby_shims/revision.h\
+	ruby_shims/ruby+win32.h\
+	ruby_shims/ruby+internal+attr+deprecated.h\
+	ruby_shims/ruby+internal+event.h\
+	ruby_shims/gc+gc_impl.h\
+	ruby_shims/ccan+str+str.h\
+	ruby_shims/ccan+container_of+container_of.h\
+	ruby_shims/ccan+check_type+check_type.h\
+	ruby_shims/ruby+internal+attr+format.h\
+	ruby_shims/ruby+internal+core+rtypeddata.h\
+	ruby_shims/parser_value.h\
+	ruby_shims/ruby+internal+assume.h\
+	ruby_shims/ruby+internal+attr+cold.h\
+	ruby_shims/ruby+backward+2+assume.h\
+	ruby_shims/ruby+backward+2+inttypes.h\
+	ruby_shims/ruby+oniguruma.h\
+	ruby_shims/oniguruma.h\
+	ruby_shims/ruby+backward+2+long_long.h\
+	ruby_shims/siphash.h\
+	ruby_shims/thread_sync.rbinc\
+	ruby_shims/vm_args.c\
+	ruby_shims/vmtc.inc\
+	ruby_shims/vm.inc\
+	ruby_shims/prism+defines.h\
+	ruby_shims/prism+parser.h\
+	ruby_shims/prism+version.h\
+	ruby_shims/ruby+internal+xmalloc.h\
+	ruby_shims/ruby+backward+2+bool.h\
+	ruby_shims/ruby+backward+2+stdalign.h\
+	ruby_shims/ruby+backward+2+stdarg.h\
+	ruby_shims/ruby+internal+dosish.h\
+	ruby_shims/ruby+internal+intern+array.h\
+	ruby_shims/ruby+internal+intern+bignum.h\
+	ruby_shims/ruby+internal+intern+class.h\
+	ruby_shims/ruby+internal+intern+compar.h\
+	ruby_shims/ruby+internal+intern+complex.h\
+	ruby_shims/ruby+internal+intern+cont.h\
+	ruby_shims/ruby+internal+intern+dir.h\
+	ruby_shims/ruby+internal+intern+enum.h\
+	ruby_shims/ruby+internal+intern+enumerator.h\
+	ruby_shims/ruby+internal+intern+error.h\
+	ruby_shims/ruby+internal+intern+eval.h\
+	ruby_shims/ruby+internal+intern+file.h\
+	ruby_shims/ruby+internal+intern+hash.h\
+	ruby_shims/ruby+internal+intern+io.h\
+	ruby_shims/ruby+internal+intern+load.h\
+	ruby_shims/ruby+internal+intern+marshal.h\
+	ruby_shims/ruby+internal+intern+numeric.h\
+	ruby_shims/ruby+internal+intern+object.h\
+	ruby_shims/ruby+internal+intern+parse.h\
+	ruby_shims/ruby+internal+intern+proc.h\
+	ruby_shims/ruby+internal+intern+process.h\
+	ruby_shims/ruby+internal+intern+random.h\
+	ruby_shims/ruby+internal+intern+range.h\
+	ruby_shims/ruby+internal+intern+rational.h\
+	ruby_shims/ruby+internal+intern+re.h\
+	ruby_shims/ruby+internal+intern+ruby.h\
+	ruby_shims/ruby+internal+intern+select.h\
+	ruby_shims/ruby+internal+intern+set.h\
+	ruby_shims/ruby+internal+intern+signal.h\
+	ruby_shims/ruby+internal+intern+sprintf.h\
+	ruby_shims/ruby+internal+intern+string.h\
+	ruby_shims/ruby+internal+intern+struct.h\
+	ruby_shims/ruby+internal+intern+time.h\
+	ruby_shims/ruby+internal+intern+variable.h\
+	ruby_shims/ruby+internal+intern+vm.h\
+	ruby_shims/ruby+internal+core+rbasic.h\
+	ruby_shims/ruby+internal+compiler_is.h\
+	ruby_shims/ruby+internal+has+cpp_attribute.h\
+	ruby_shims/ruby+internal+attr+flag_enum.h\
+	ruby_shims/ruby+internal+attr+forceinline.h\
+	ruby_shims/ruby+internal+attr+constexpr.h\
+	ruby_shims/ruby+internal+attr+enum_extensibility.h\
+	ruby_shims/prism+prism.h\
+	ruby_shims/ruby+internal+attr+alloc_size.h\
+	ruby_shims/ruby+internal+attr+error.h\
+	ruby_shims/ruby+internal+attr+maybe_unused.h\
+	ruby_shims/ruby+internal+attr+noinline.h\
+	ruby_shims/ruby+internal+attr+warning.h\
+	ruby_shims/ruby+internal+constant_p.h\
+	ruby_shims/ruby+internal+arithmetic+char.h\
+	ruby_shims/ruby+internal+arithmetic+double.h\
+	ruby_shims/ruby+internal+arithmetic+fixnum.h\
+	ruby_shims/ruby+internal+arithmetic+gid_t.h\
+	ruby_shims/ruby+internal+arithmetic+int.h\
+	ruby_shims/ruby+internal+arithmetic+intptr_t.h\
+	ruby_shims/ruby+internal+arithmetic+long.h\
+	ruby_shims/ruby+internal+arithmetic+long_long.h\
+	ruby_shims/ruby+internal+arithmetic+mode_t.h\
+	ruby_shims/ruby+internal+arithmetic+off_t.h\
+	ruby_shims/ruby+internal+arithmetic+pid_t.h\
+	ruby_shims/ruby+internal+arithmetic+short.h\
+	ruby_shims/ruby+internal+arithmetic+size_t.h\
+	ruby_shims/ruby+internal+arithmetic+st_data_t.h\
+	ruby_shims/ruby+internal+arithmetic+uid_t.h\
+	ruby_shims/ccan+build_assert+build_assert.h\
+	ruby_shims/ruby+internal+core+rdata.h\
+	ruby_shims/ruby+internal+attr+noexcept.h\
+	ruby_shims/ruby+internal+stdalign.h\
+	ruby_shims/ruby+internal+iterator.h\
+	ruby_shims/ruby+internal+symbol.h\
+	ruby_shims/ruby+backward.h\
+	ruby_shims/ruby+internal+intern+select+largesize.h\
+	ruby_shims/ruby+internal+intern+select+win32.h\
+	ruby_shims/ruby+internal+intern+select+posix.h\
+	ruby_shims/ruby+internal+variable.h\
+	ruby_shims/ruby+internal+compiler_is+apple.h\
+	ruby_shims/ruby+internal+compiler_is+clang.h\
+	ruby_shims/ruby+internal+compiler_is+gcc.h\
+	ruby_shims/ruby+internal+compiler_is+intel.h\
+	ruby_shims/ruby+internal+compiler_is+msvc.h\
+	ruby_shims/ruby+internal+compiler_is+sunpro.h\
+	ruby_shims/ruby+internal+core+rstring.h\
+	ruby_shims/ruby+internal+interpreter.h
 # Ruby core source files: VM, encodings, transcoders, prism parser, and portability shims
 # NOTE: Extensions (ripper, io/*, pathname, stringio, monitor, socket) are built separately via BUILD.mk files
 # Note: Some .c files are not listed here because they're included by other files (e.g., constdefs.c) or provided by Cosmopolitan (e.g., getaddrinfo.c)
@@ -898,7 +962,6 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/ext/extinit.c				\
     third_party/ruby/dln.c					\
     third_party/ruby/dln_cosmo.c				\
-    third_party/ruby/enc/enc/encinit.c				\
     third_party/ruby/dln_find.c					\
     third_party/ruby/encoding.c					\
     third_party/ruby/loadpath.c					\
@@ -1057,7 +1120,9 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
     third_party/ruby/prism/util/pm_strncasecmp.c		\
     third_party/ruby/prism/util/pm_strpbrk.c			\
     third_party/ruby/missing/setproctitle.c			\
-    third_party/ruby/addr2line.c
+    third_party/ruby/addr2line.c				\
+    third_party/ruby/jit.c					\
+    third_party/ruby/yjit.c
 
 # Modular extension system:
 # - Extensions are built as separate .a libraries (ext/date/date.a, ext/psych/psych.a, etc.)
@@ -1070,12 +1135,22 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
 THIRD_PARTY_RUBY_A_SRCS_S =					\
     third_party/ruby/coroutine/amd64/Context.S
 
+# encinit.c references Init_trans_* symbols - only include in static mode
+# dmyenc.c is used in plugin mode to load enc/encdb dynamically
+ifeq ($(RUBY_EXTSTATIC),1)
+THIRD_PARTY_RUBY_ENCINIT_SRCS = third_party/ruby/enc/encinit.c
+else
+THIRD_PARTY_RUBY_ENCINIT_SRCS = third_party/ruby/dmyenc.c
+endif
+
 THIRD_PARTY_RUBY_A_SRCS =					\
     $(THIRD_PARTY_RUBY_A_SRCS_C)				\
+    $(THIRD_PARTY_RUBY_ENCINIT_SRCS)				\
     $(THIRD_PARTY_RUBY_A_SRCS_S)
 
 THIRD_PARTY_RUBY_A_OBJS =					\
     $(THIRD_PARTY_RUBY_A_SRCS_C:%.c=o/$(MODE)/%.o)		\
+    $(THIRD_PARTY_RUBY_ENCINIT_SRCS:%.c=o/$(MODE)/%.o)		\
     $(THIRD_PARTY_RUBY_A_SRCS_S:%.S=o/$(MODE)/%.o)
 
 THIRD_PARTY_RUBY_A_DIRECTDEPS =					\
@@ -1124,10 +1199,13 @@ $(THIRD_PARTY_RUBY_A).pkg:					\
 # extinit.c needs EXTSTATIC and SLIM_STATIC defined to match config.h
 # This enables static extension initialization for static/slim_static builds,
 # and disables it for dynamic builds (which use dmyext.c instead).
+# RUBY_TEST_EXTENSIONS enables test extension initialization.
+RUBY_TEST_EXTENSIONS_CFLAGS = $(if $(filter 1,$(RUBY_TEST_EXTENSIONS)),-DRUBY_TEST_EXTENSIONS,)
 o/$(MODE)/third_party/ruby/ext/extinit.o:				\
 		third_party/ruby/ext/extinit.c				\
 		third_party/ruby/include/ruby/config.h
 o/$(MODE)/third_party/ruby/ext/extinit.o: private		\
 	CFLAGS +=						\
 		-DEXTSTATIC=$(RUBY_EXTSTATIC)			\
-		-DSLIM_STATIC=$(RUBY_SLIM_STATIC)
+		-DSLIM_STATIC=$(RUBY_SLIM_STATIC)		\
+		$(RUBY_TEST_EXTENSIONS_CFLAGS)

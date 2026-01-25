@@ -252,7 +252,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_enabled_gc
-    omit unless /linux|darwin/ =~ RUBY_PLATFORM
+    omit "Test requires Linux or macOS" unless /linux|darwin/ =~ RUBY_PLATFORM
 
     if RbConfig::CONFIG['modular_gc_dir'].length > 0
       assert_match(/\+GC/, RUBY_DESCRIPTION)
@@ -335,7 +335,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_yydebug
-    omit if ParserSupport.prism_enabled_in_subprocess?
+    omit "Test not compatible with Prism parser" if ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(["-ye", ""]) do |r, e|
       assert_not_equal([], r)
@@ -1184,7 +1184,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_dump_parsetree_error_tolerant
-    omit if ParserSupport.prism_enabled_in_subprocess?
+    omit "Test not compatible with Prism parser" if ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(['--dump=parse', '-e', 'begin'],
                       "", [], /unexpected end-of-input/, success: false)

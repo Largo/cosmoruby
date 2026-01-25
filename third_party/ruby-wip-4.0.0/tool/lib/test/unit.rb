@@ -213,6 +213,10 @@ module Test
           self.verbose = options[:verbose]
         end
 
+        opts.on '--quiet-progress', "With --verbose, suppress per-test output but still capture skip messages." do
+          options[:quiet_progress] = true
+        end
+
         opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/, !/REGEXP/ or STRING" do |a|
           (options[:filter] ||= []) << a
         end
@@ -1655,9 +1659,10 @@ module Test
           _start_method(inst)
           inst._assertions = 0
 
-          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if @verbose
+          verbose_output = @verbose && !@options[:quiet_progress]
+          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if verbose_output
 
-          start_time = Time.now if @verbose
+          start_time = Time.now if verbose_output
           result =
             if trace
               ObjectSpace.trace_object_allocations {inst.run self}
@@ -1665,9 +1670,9 @@ module Test
               inst.run self
             end
 
-          print "%.2f s = " % (Time.now - start_time) if @verbose
+          print "%.2f s = " % (Time.now - start_time) if verbose_output
           print result
-          puts if @verbose
+          puts if verbose_output
           $stdout.flush
 
           leakchecker.check("#{inst.class}\##{inst.__name__}")

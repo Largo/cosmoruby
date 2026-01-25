@@ -7,5 +7,6 @@ Init_iter(void)
 {
     VALUE mBug = rb_define_module("Bug");
     VALUE klass = rb_define_module_under(mBug, "Iter");
+    (void)klass;
     TEST_INIT_FUNCS(init);
 }

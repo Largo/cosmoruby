@@ -114,7 +114,7 @@ int __getgr_a(const char *name, gid_t gid, struct group *gr, char **buf,
 	int cs;
 	*res = 0;
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cs);
-	f = fopen("/etc/group", "rbe"); /* todo(jart): why does this leak? */
+	f = fopen("/etc/group", "rbe");
 	if (!f) {
 		rv = errno;
 		goto done;
@@ -125,6 +125,10 @@ int __getgr_a(const char *name, gid_t gid, struct group *gr, char **buf,
 			break;
 		}
 	}
+	/* [jart] fix leak: close file after search completes.
+	 * A better fix would refactor to share g_getgrent->f with getgrent(),
+	 * see docs/ai/grp-file-descriptor-leak.md for sketch. */
+	fclose(f);
 done:
 	pthread_setcancelstate(cs, 0);
 	if (rv)

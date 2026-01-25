@@ -4,7 +4,7 @@ require 'test/unit'
 
 class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNING_LINE_PATTERNS = [
-    /ruby(\.exe)?: warning: Ruby::Box is experimental, and the behavior may change in the future!/,
+    /ruby(\.exe|\.com)?: warning: Ruby::Box is experimental, and the behavior may change in the future!/,
     %r{See https://docs.ruby-lang.org/en/(master|\d\.\d)/Ruby/Box.html for known issues, etc.}
   ]
   ENV_ENABLE_BOX = {'RUBY_BOX' => '1', 'TEST_DIR' => __dir__}
@@ -19,7 +19,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def setup_box
-    pend unless Ruby::Box.enabled?
+    pend "Ruby::Box is not enabled (set RUBY_BOX=1 to enable)" unless Ruby::Box.enabled?
     @box = Ruby::Box.new
   end
 
@@ -182,7 +182,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_top_level_methods_in_box
-    pend # TODO: fix loading/current box detection
+    pend "TODO: fix loading/current box detection"
     setup_box
     @box.require_relative('box/top_level')
     assert_equal "yay!", @box::Foo.foo

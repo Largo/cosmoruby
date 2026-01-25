@@ -390,7 +390,7 @@ dln_open(const char *file)
 
     /* Load file */
     int mode = rb_box_available() ? RTLD_LAZY|RTLD_LOCAL : RTLD_LAZY|RTLD_GLOBAL;
-    handle = cosmo_dlopen(file, mode);
+    handle = dlopen(file, mode);
     if (handle == NULL) {
         error = dln_strerror();
         goto failed;
@@ -479,7 +479,7 @@ dln_symbol(void *handle, const char *symbol)
     }
     if (handle == NULL) {
 # if defined(USE_DLN_DLOPEN)
-        handle = cosmo_dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
+        handle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
 # elif defined(_WIN32)
         handle = rb_libruby_handle();
 # else

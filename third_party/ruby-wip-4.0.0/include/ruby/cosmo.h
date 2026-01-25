@@ -11,6 +11,18 @@
 #include "ruby/ruby.h"
 #include "ruby/config.h"
 
+/* Cosmopolitan uses cosmo_dlopen for cross-platform dynamic loading */
+#ifdef __COSMOPOLITAN__
+# ifdef dlopen
+#  undef dlopen
+# endif
+# define dlopen cosmo_dlopen
+# ifdef dlsym
+#  undef dlsym
+# endif
+# define dlsym cosmo_dlsym
+#endif
+
 /**
  * cosmo_provide - Mark extension initialization point (NO-OP)
  *

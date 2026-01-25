@@ -6,18 +6,19 @@
  */
 #include <stdio.h>
 #include "ruby.h"
+#include "ruby/config.h"
 
 #define init(func, name) {	\
     extern void func(void);	\
     ruby_init_ext(name, func);	\
 }
 
-#define init_enc(name) init(Init_##name, "enc/"#name".so")
-#define init_trans(name) init(Init_trans_##name, "enc/trans/"#name".so")
+#define init_enc(name) init(Init_##name, "enc/"#name DLEXT)
+#define init_trans(name) init(Init_trans_##name, "enc/trans/"#name DLEXT)
 #define provide(func, name) { \
     extern void Init_##func(void); \
     Init_##func(); \
-    rb_provide(name".so"); \
+    rb_provide(name DLEXT); \
 }
 
 void ruby_init_ext(const char *name, void (*init)(void));

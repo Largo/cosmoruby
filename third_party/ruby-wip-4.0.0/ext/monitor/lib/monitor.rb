@@ -7,7 +7,8 @@
 # You can freely distribute/modify this library.
 #
 
-require 'monitor.so'
+require 'rbconfig'
+require 'monitor.' + RbConfig::CONFIG["DLEXT"]
 
 #
 # In concurrent programming, a monitor is an object or module intended to be

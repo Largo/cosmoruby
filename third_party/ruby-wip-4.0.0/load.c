@@ -22,6 +22,10 @@
 #include "ruby/util.h"
 #include "ractor_core.h"
 #include "vm_core.h"
+#include "third_party/cosmo_plugin/cosmo_plugin.h"
+
+// Bridge into the Cosmo plugin loader (implemented in third_party/cosmo_plugin).
+void *dln_load_cosmo(const char *path, const char *init_name);
 
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
@@ -33,7 +37,7 @@ enum {
 };
 
 static const char *const loadable_ext[] = {
-    ".rb", DLEXT,
+    ".rb", DLEXT, ".a",
     0
 };
 
@@ -41,6 +45,30 @@ static const char *const ruby_ext[] = {
     ".rb",
     0
 };
+
+static void
+build_init_name_from_path(const char *path, char *buf, size_t bufsize)
+{
+    if (!buf || bufsize == 0) return;
+    const char *base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    size_t len = strlen(base);
+    const char *dot = strrchr(base, '.');
+    if (dot && dot > base) {
+        len = dot - base;
+    }
+    size_t pos = 0;
+    if (bufsize > 5) {
+        memcpy(buf, "Init_", 5);
+        pos = 5;
+    }
+    for (size_t i = 0; i < len && pos + 1 < bufsize; ++i) {
+        char c = base[i];
+        if (c == '-' || c == '/') c = '_';
+        buf[pos++] = c;
+    }
+    buf[pos < bufsize ? pos : bufsize - 1] = '\0';
+}
 
 enum expand_type {
     EXPAND_ALL,
@@ -1365,8 +1393,24 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                   case 's':
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-                    handle = rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
-                    rb_hash_aset(box->ruby_dln_libmap, path, PTR2NUM(handle));
+                    {
+                        const char *cpath = RSTRING_PTR(path);
+                        const char *ext = strrchr(cpath, '.');
+                        bool is_archive = ext && strcmp(ext, ".a") == 0;
+
+                        if (is_archive) {
+                            char init_name[256];
+                            build_init_name_from_path(cpath, init_name, sizeof(init_name));
+
+                            handle = PTR2NUM(dln_load_cosmo(cpath,
+                                init_name[0] ? init_name : NULL));
+                            if (!handle) load_failed(path);
+                        }
+                        else {
+                            handle = rb_vm_call_cfunc_in_box(box->top_self, load_ext, path, fname, path, box);
+                        }
+                    }
+                    rb_hash_aset(box->ruby_dln_libmap, path, handle);
                     break;
                 }
                 result = TAG_RETURN;

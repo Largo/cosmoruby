@@ -134,7 +134,7 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_GENDIR)/config.h
 RUBY_VERCONF_GEN := $(RUBY_GENDIR)/verconf.h
 
 $(RUBY_VERCONF_GEN): $(RUBY_TOOLDIR)/generic_erb.rb $(RUBY_SRCDIR)/template/verconf.h.tmpl $(RUBY_RBCONFIG_GEN) | $(RUBY_GENDIR)
-	@cd $(RUBY_GENDIR) && $(HOST_RUBY) --disable=gems $(abspath $(RUBY_TOOLDIR))/generic_erb.rb -o $(abspath $@) $(abspath $(RUBY_SRCDIR)/template/verconf.h.tmpl)
+	@cd $(RUBY_GENDIR) && $(HOST_RUBY) --disable=gems $(abspath $(RUBY_TOOLDIR))/generic_erb.rb -c -o $(abspath $@) $(abspath $(RUBY_SRCDIR)/template/verconf.h.tmpl)
 	@$(RUBY_ENV) $(HOST_RUBY) --disable=gems $(RUBY_ADD_TO_MANIFEST) $(RUBY_MANIFEST) verconf.h third_party/ruby/include/verconf.h
 
 THIRD_PARTY_RUBY_GENERATED += $(RUBY_VERCONF_GEN)

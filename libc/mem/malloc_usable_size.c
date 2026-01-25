@@ -17,8 +17,8 @@
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
 #include "libc/assert.h"
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 /**
  * Returns the number of bytes you can actually use in
@@ -44,6 +44,6 @@ size_t malloc_usable_size(void *p) {
   npassert(((ssize_t *)p)[-2] < 0);
   return -((size_t *)p)[-1];
 #else
-  return dlmalloc_usable_size(p);
+  return COSMO_USABLE_SIZE(p);
 #endif
 }

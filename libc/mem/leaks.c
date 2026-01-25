@@ -21,9 +21,13 @@
 #include "libc/intrin/cxaatexit.h"
 #include "libc/intrin/kprintf.h"
 #include "libc/intrin/weaken.h"
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
 #include "libc/runtime/runtime.h"
 #include "libc/thread/posixthread.internal.h"
+
+#if !defined(COSMO_USE_MIMALLOC) || !COSMO_USE_MIMALLOC
+/* dlmalloc leak detection using dlmalloc_inspect_all */
 #include "third_party/dlmalloc/dlmalloc.h"
 
 struct LeakInfo {
@@ -39,20 +43,23 @@ static void visitor(void *start, void *end, size_t used_bytes, void *arg) {
   info->bytes += used_bytes;
   info->count += 1;
 }
+#endif
 
 /**
  * Performs simple memory leak detection.
  *
  * This is a zero overhead memory leak detector. To use it you just need
- * to call CheckForMemoryLeaks() at the end of main(). The leak detector
- * works by calling dlmalloc_inspect_all. The tradeoff is you won't have
- * backtraces so it may be a bit tricky to trace the provenence of leaks
+ * to call CheckForMemoryLeaks() at the end of main(). With dlmalloc, the
+ * leak detector works by calling dlmalloc_inspect_all. With mimalloc,
+ * this function calls mi_collect() but detailed leak reporting is not
+ * available - use cosmo_leak_print() instead for that.
  *
  * For each malloc(), realloc(), etc. call where free() wasn't called it
- * will print an error to kprintf(). The atexit() destructors are called
- * beforehand, to ensure global allocations are freed. This function has
- * to be called from an orphaned thread. If any leaks are detected, then
- * the process will call exit() with the exit code 73.
+ * will print an error to kprintf() (dlmalloc only). The atexit()
+ * destructors are called beforehand, to ensure global allocations are
+ * freed. This function has to be called from an orphaned thread. If any
+ * leaks are detected (dlmalloc), the process will call exit() with the
+ * exit code 73.
  *
  * Alternatively, cosmo provides a second memory leak detector which may
  * be accessed via APIs such as cosmo_leak_print(). The other API traces
@@ -71,7 +78,14 @@ void CheckForMemoryLeaks(void) {
   __cxa_thread_finalize();
   __cxa_finalize(0);
 
-  // check for leaks
+#if defined(COSMO_USE_MIMALLOC) && COSMO_USE_MIMALLOC
+  // mimalloc: use mi_collect to reclaim memory, but detailed leak
+  // detection via inspect_all is not available
+  mi_collect(true);
+  // Note: For detailed leak detection with mimalloc, use cosmo_leak_print()
+  // which provides backtraces via addr2line
+#else
+  // dlmalloc: check for leaks using dlmalloc_inspect_all
   struct LeakInfo info = {0};
   dlmalloc_inspect_all(visitor, &info);
   if (info.count) {
@@ -79,4 +93,5 @@ void CheckForMemoryLeaks(void) {
             info.count, info.count == 1 ? "" : "s", info.bytes);
     _Exit(73);
   }
+#endif
 }

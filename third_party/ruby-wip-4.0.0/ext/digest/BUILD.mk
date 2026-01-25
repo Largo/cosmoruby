@@ -30,7 +30,7 @@ o/$(MODE)/third_party/ruby/ext/digest/%.o: private	\
 		-DRUBY_EXPORT				\
 		-DRUBY_COSMOPOLITAN
 
-$(THIRD_PARTY_RUBY_EXT_DIGEST_OBJS): third_party/ruby/ext/digest/BUILD.mk
+$(THIRD_PARTY_RUBY_EXT_DIGEST_OBJS): $(THIRD_PARTY_RUBY_EXT_DIGEST_HDRS) third_party/ruby/ext/digest/BUILD.mk
 
 .PHONY: o/$(MODE)/third_party/ruby/ext/digest
 o/$(MODE)/third_party/ruby/ext/digest: $(THIRD_PARTY_RUBY_EXT_DIGEST_A)

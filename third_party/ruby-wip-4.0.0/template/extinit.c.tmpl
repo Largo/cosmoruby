@@ -1,10 +1,11 @@
 %# -*- C -*-
 % extinits = ARGV.map {|n| [n.tr('/', '_'), n]}
 #include "ruby/ruby.h"
+#include "ruby/config.h"
 
 #define init(func, name) {	\
     extern void func(void);	\
-    ruby_init_ext(name".so", func); \
+    ruby_init_ext(name DLEXT, func); \
 }
 
 void ruby_init_ext(const char *name, void (*init)(void));

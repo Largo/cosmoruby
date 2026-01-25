@@ -105,7 +105,7 @@ InitVM_pathname(void)
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
 
-    rb_provide("pathname.so");
+    rb_provide("pathname" DLEXT);
 }
 
 void

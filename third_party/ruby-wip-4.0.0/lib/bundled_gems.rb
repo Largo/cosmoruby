@@ -1,5 +1,7 @@
 # -*- frozen-string-literal: true -*-
 
+require 'rbconfig' unless defined?(RbConfig)
+
 # :stopdoc:
 module Gem
 end

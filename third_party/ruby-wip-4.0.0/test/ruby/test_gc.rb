@@ -115,14 +115,14 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_implementation
-    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+    omit "GC config test requires Linux or macOS" unless /darwin|linux/.match(RUBY_PLATFORM)
 
     gc_name = (ENV['RUBY_GC_LIBRARY'] || "default")
     assert_equal gc_name, GC.config[:implementation]
   end
 
   def test_gc_config_implementation_is_readonly
-    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+    omit "GC config test requires Linux or macOS" unless /darwin|linux/.match(RUBY_PLATFORM)
 
     assert_raise(ArgumentError) { GC.config(implementation: "somethingelse") }
   end

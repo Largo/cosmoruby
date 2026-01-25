@@ -23,7 +23,7 @@ o/$(MODE)/third_party/ruby/ext/mbedtls/%.o: private	\
 		-DRUBY_EXPORT				\
 		-DRUBY_COSMOPOLITAN
 
-$(THIRD_PARTY_RUBY_EXT_MBEDTLS_OBJS): third_party/ruby/ext/mbedtls/BUILD.mk
+$(THIRD_PARTY_RUBY_EXT_MBEDTLS_OBJS): $(THIRD_PARTY_RUBY_EXT_MBEDTLS_HDRS) third_party/ruby/ext/mbedtls/BUILD.mk
 
 .PHONY: o/$(MODE)/third_party/ruby/ext/mbedtls
 o/$(MODE)/third_party/ruby/ext/mbedtls: $(THIRD_PARTY_RUBY_EXT_MBEDTLS_A)

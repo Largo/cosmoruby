@@ -16,10 +16,10 @@
 │ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR             │
 │ PERFORMANCE OF THIS SOFTWARE.                                                │
 ╚─────────────────────────────────────────────────────────────────────────────*/
+#include "libc/mem/allocator.h"
 #include "libc/mem/mem.h"
 #include "libc/stdio/sysparam.h"
 #include "libc/str/str.h"
-#include "third_party/dlmalloc/dlmalloc.h"
 
 __static_yoink("free");
 
@@ -72,16 +72,16 @@ void *realloc(void *p, size_t n) {
   free(p);
   return p2;
 #elifdef MODE_DBG
-  size_t n1 = dlmalloc_usable_size(p);
+  size_t n1 = COSMO_USABLE_SIZE(p);
   if (n1 > n)
     memset((char *)p + n, 0xa6, n1 - n);
-  if ((p = dlrealloc(p, n))) {
-    size_t n2 = dlmalloc_usable_size(p);
+  if ((p = COSMO_REALLOC(p, n))) {
+    size_t n2 = COSMO_USABLE_SIZE(p);
     if (n2 > n1)
       memset((char *)p + n1, 0xa7, n2 - n1);
   }
   return p;
 #else
-  return dlrealloc(p, n);
+  return COSMO_REALLOC(p, n);
 #endif
 }

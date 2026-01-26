@@ -53,8 +53,8 @@ include third_party/ruby/ruby.link.mk
 
 .PHONY: ruby_verify ruby_verify_build ruby_missing
 ruby_verify:
-	@/bin/sh -c 'HOST_RUBY="$(HOST_RUBY)" sh third_party/ruby-wip-4.0.0/cosmo_tests/check_export_tables.sh'
-	@/bin/sh -c 'HOST_RUBY="$(HOST_RUBY)" sh third_party/ruby-wip-4.0.0/cosmo_tests/check_export_tables_binary.sh'
+	@HOST_RUBY="$(HOST_RUBY)" third_party/ruby-wip-4.0.0/cosmo_tests/check_export_tables.sh
+	@HOST_RUBY="$(HOST_RUBY)" third_party/ruby-wip-4.0.0/cosmo_tests/check_export_tables_binary.sh
 
 ruby_verify_build:						\
     o/$(MODE)/third_party/ruby/ruby				\

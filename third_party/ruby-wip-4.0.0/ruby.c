@@ -2414,15 +2414,28 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 opt->script = "-";
             }
             else if (opt->do_search) {
-                const char *path = getenv("RUBYPATH");
-
                 opt->script = 0;
-                if (path) {
-                    opt->script = dln_find_file_r(argv[0], path, fbuf, sizeof(fbuf));
+
+                /* CosmoRuby: In packaged mode, search ZIP_PATH (default /zip/bin) only.
+                 * This prevents accidentally picking up scripts from rbenv shims or
+                 * system PATH, ensuring isolation of the embedded Ruby environment. */
+                if (access("/zip/.cosmo_ruby_packaged", F_OK) == 0 &&
+                    access("/zip/bin", F_OK) == 0) {
+                    const char *zip_path = getenv("ZIP_PATH");
+                    if (!zip_path) zip_path = "/zip/bin";
+                    opt->script = dln_find_file_r(argv[0], zip_path, fbuf, sizeof(fbuf));
                 }
-                if (!opt->script) {
-                    opt->script = dln_find_file_r(argv[0], getenv(PATH_ENV), fbuf, sizeof(fbuf));
+                else {
+                    /* Non-packaged mode: use original RUBYPATH/PATH search */
+                    const char *path = getenv("RUBYPATH");
+                    if (path) {
+                        opt->script = dln_find_file_r(argv[0], path, fbuf, sizeof(fbuf));
+                    }
+                    if (!opt->script) {
+                        opt->script = dln_find_file_r(argv[0], getenv(PATH_ENV), fbuf, sizeof(fbuf));
+                    }
                 }
+
                 if (!opt->script)
                     opt->script = argv[0];
             }

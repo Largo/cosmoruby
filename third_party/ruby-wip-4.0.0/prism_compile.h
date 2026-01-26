@@ -83,7 +83,8 @@ typedef struct {
     bool parsed;
 } pm_parse_result_t;
 
-#define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
+/* Use 1U to avoid signed left shift UB when ubsan is enabled */
+#define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1U << 31))
 #define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_DOT3 ((pm_constant_id_t)(idDot3 | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))

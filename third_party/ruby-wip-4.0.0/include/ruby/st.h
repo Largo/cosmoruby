@@ -101,11 +101,17 @@ enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK, ST_REPLACE};
 size_t rb_st_table_size(const struct st_table *tbl);
 #define st_table_size rb_st_table_size
 st_table *rb_st_init_table(const struct st_hash_type *);
+#ifndef st_init_table
 #define st_init_table rb_st_init_table
+#endif
 st_table *rb_st_init_table_with_size(const struct st_hash_type *, st_index_t);
+#ifndef st_init_table_with_size
 #define st_init_table_with_size rb_st_init_table_with_size
+#endif
 st_table *rb_st_init_numtable(void);
+#ifndef st_init_numtable
 #define st_init_numtable rb_st_init_numtable
+#endif
 st_table *rb_st_init_numtable_with_size(st_index_t);
 #define st_init_numtable_with_size rb_st_init_numtable_with_size
 st_table *rb_st_init_strtable(void);
@@ -117,17 +123,23 @@ st_table *rb_st_init_strcasetable(void);
 st_table *rb_st_init_strcasetable_with_size(st_index_t);
 #define st_init_strcasetable_with_size rb_st_init_strcasetable_with_size
 int rb_st_delete(st_table *, st_data_t *, st_data_t *); /* returns 0:notfound 1:deleted */
+#ifndef st_delete
 #define st_delete rb_st_delete
+#endif
 int rb_st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 #define st_delete_safe rb_st_delete_safe
 int rb_st_shift(st_table *, st_data_t *, st_data_t *); /* returns 0:notfound 1:deleted */
 #define st_shift rb_st_shift
 int rb_st_insert(st_table *, st_data_t, st_data_t);
+#ifndef st_insert
 #define st_insert rb_st_insert
+#endif
 int rb_st_insert2(st_table *, st_data_t, st_data_t, st_data_t (*)(st_data_t));
 #define st_insert2 rb_st_insert2
 int rb_st_lookup(st_table *, st_data_t, st_data_t *);
+#ifndef st_lookup
 #define st_lookup rb_st_lookup
+#endif
 int rb_st_get_key(st_table *, st_data_t, st_data_t *);
 #define st_get_key rb_st_get_key
 typedef int st_update_callback_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing);
@@ -141,7 +153,9 @@ typedef int st_foreach_check_callback_func(st_data_t, st_data_t, st_data_t, int)
 int rb_st_foreach_with_replace(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 #define st_foreach_with_replace rb_st_foreach_with_replace
 int rb_st_foreach(st_table *, st_foreach_callback_func *, st_data_t);
+#ifndef st_foreach
 #define st_foreach rb_st_foreach
+#endif
 int rb_st_foreach_check(st_table *, st_foreach_check_callback_func *, st_data_t, st_data_t);
 #define st_foreach_check rb_st_foreach_check
 st_index_t rb_st_keys(st_table *table, st_data_t *keys, st_index_t size);
@@ -155,7 +169,9 @@ st_index_t rb_st_values_check(st_table *table, st_data_t *values, st_index_t siz
 void rb_st_add_direct(st_table *, st_data_t, st_data_t);
 #define st_add_direct rb_st_add_direct
 void rb_st_free_table(st_table *);
+#ifndef st_free_table
 #define st_free_table rb_st_free_table
+#endif
 void rb_st_cleanup_safe(st_table *, st_data_t);
 #define st_cleanup_safe rb_st_cleanup_safe
 void rb_st_clear(st_table *);

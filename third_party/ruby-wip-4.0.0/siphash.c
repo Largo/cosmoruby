@@ -35,8 +35,11 @@
 #endif
 
 /* __POWERPC__ added to accommodate Darwin case. */
+/* Cosmopolitan: disable unaligned access when ubsan is enabled to avoid UB */
 #ifndef UNALIGNED_WORD_ACCESS
-# if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+# if defined(__SANITIZE_UNDEFINED__)
+#   define UNALIGNED_WORD_ACCESS 0
+# elif defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
      defined(__powerpc64__) || defined(__POWERPC__) || defined(__aarch64__) || \
      defined(__mc68020__)

@@ -346,6 +346,47 @@ mkdir -p cosmo-ruby/usr/share/terminfo
 #
 cp -r /home/groobiest/Code/jart/cosmopolitan/usr/share/terminfo/* cosmo-ruby/usr/share/terminfo
 
+# Copy executable scripts to /zip/bin for ruby.com -S to find them
+echo "Copying executable scripts to bin/..."
+
+# Copy libexec scripts (erb, syntax_suggest, bundle, bundler)
+for exe in /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/libexec/*; do
+  [ -f "$exe" ] && cp "$exe" "cosmo-ruby/bin/$(basename "$exe")"
+done
+
+# Copy gem executables from .bundle/gems/*/exe/* (the real scripts, not binstubs)
+for exe in /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/gems/*/exe/*; do
+  [ -f "$exe" ] && cp "$exe" "cosmo-ruby/bin/$(basename "$exe")"
+done
+
+# Copy bin/gem
+cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/bin/gem cosmo-ruby/bin/
+
+# Copy additional useful executables from bundled gems (in bin/, not exe/)
+for exe in racc typeprof test-unit; do
+  src=$(find /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/gems -path "*/bin/$exe" -type f 2>/dev/null | head -1)
+  [ -f "$src" ] && cp "$src" "cosmo-ruby/bin/$exe"
+done
+
+echo "  Copied: $(ls cosmo-ruby/bin/ | tr '\n' ' ')"
+
+# Patch ALL shebangs from "#!/usr/bin/env ruby" to "#!/usr/bin/env ruby.com"
+# This ensures scripts in /zip work with CosmoRuby and don't pick up system ruby
+echo "Patching shebangs to use ruby.com..."
+
+# Find files with ruby shebangs first (much faster than running sed on every file)
+shebang_files=$(grep -rl '^#!/usr/bin/env ruby' cosmo-ruby 2>/dev/null || true)
+if [ -n "$shebang_files" ]; then
+  echo "$shebang_files" | while read -r f; do
+    sed -i '1s|^#!/usr/bin/env ruby$|#!/usr/bin/env ruby.com|; 1s|^#!/usr/bin/env ruby |#!/usr/bin/env ruby.com |' "$f"
+  done
+  echo "  Patched $(echo "$shebang_files" | wc -l) files"
+else
+  echo "  No files with ruby shebangs found"
+fi
+
+echo "  Shebang patching complete"
+
 cd cosmo-ruby
 
 # in o/cosmo-ruby !!

@@ -14,6 +14,26 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <cosmo.h>
+
+/* Register ShowBacktrace with mimalloc for proper debugging in dbg mode.
+ * mimalloc can't use _weaken() because it's in a static library that's linked
+ * before LIBC_LOG, so weak references resolve to NULL. Instead, we set a
+ * global function pointer that mimalloc checks.
+ *
+ * We use a constructor with priority 1 (earliest) to run before mimalloc's
+ * constructor (priority 50). */
+#include "libc/log/backtrace.internal.h"
+#include "libc/nexgen32e/stackframe.h"
+
+/* Declare the function pointer defined in mimalloc/cosmo_prim.c */
+extern void (*mi_cosmo_show_backtrace)(int, const struct StackFrame *);
+
+__attribute__((__constructor__(1)))
+static textstartup void rb_cosmo_init_backtrace(void) {
+    /* v8: Set the function pointer for mimalloc symbolic backtraces */
+    mi_cosmo_show_backtrace = ShowBacktrace;
+}
 
 static inline size_t
 rb_cosmo_collect_paths(const char **paths, size_t max)
@@ -195,6 +215,24 @@ rb_cosmo_define_packaged_constant(void)
 }
 
 /**
+ * Define RUBY_COSMO_EXECUTABLE constant with the actual path to the running
+ * Ruby interpreter. This uses Cosmopolitan's GetProgramExecutableName() which
+ * works cross-platform (Linux, macOS, Windows, BSDs).
+ *
+ * This is used by RbConfig.ruby to return the real executable path instead of
+ * the incorrect /zip/bin/ruby.com path that would be constructed from bindir.
+ */
+static inline void
+rb_cosmo_define_executable_constant(void)
+{
+    char *exe_path = GetProgramExecutableName();
+    if (exe_path && exe_path[0]) {
+        rb_define_global_const("RUBY_COSMO_EXECUTABLE",
+                               rb_str_new_cstr(exe_path));
+    }
+}
+
+/**
  * Common Ruby VM initialization and execution.
  * Takes argc/argv and runs the Ruby code.
  */
@@ -204,6 +242,7 @@ rb_main_run(int argc, char **argv)
     RUBY_INIT_STACK;
     ruby_init();
     rb_cosmo_define_packaged_constant();
+    rb_cosmo_define_executable_constant();
     rb_cosmo_configure_load_path();
     void *node = ruby_options(argc, argv);
     rb_cosmo_configure_load_path();

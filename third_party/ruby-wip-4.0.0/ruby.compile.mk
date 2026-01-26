@@ -316,6 +316,7 @@ THIRD_PARTY_RUBY_RUBY_DIRECTDEPS =				\
     LIBC_STR							\
     LIBC_SYSV							\
     LIBC_THREAD							\
+    THIRD_PARTY_MIMALLOC					\
     THIRD_PARTY_RUBY						\
     TOOL_ARGS							\
     THIRD_PARTY_COSMO_PLUGIN

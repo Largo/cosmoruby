@@ -132,11 +132,14 @@ static void PutEnv(char **p, char *kv) {
     tinyprint(2, "mtsh: strdup failed\n", NULL);
     _Exit(1);
   }
+  /* Save old pointer before overwriting - e.s points to middle of string,
+   * but p[e.i] is the original strdup'd pointer we need to free */
+  char *old = e.s ? p[e.i] : NULL;
   p[e.i] = copy;
-  if (!e.s) {
-    p[e.i + 1] = 0;
+  if (!old) {
+    p[e.i + 1] = 0;  /* New variable, add null terminator */
   } else {
-    free((char *)e.s);
+    free(old);  /* Free the original pointer, not e.s which points to middle */
   }
 }
 

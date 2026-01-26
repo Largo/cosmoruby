@@ -192,12 +192,14 @@ THIRD_PARTY_RUBY_IRB_DIRECTDEPS =				\
     LIBC_CALLS							\
     LIBC_FMT							\
     LIBC_INTRIN							\
+    LIBC_LOG							\
     LIBC_NEXGEN32E						\
     LIBC_RUNTIME						\
     LIBC_STDIO							\
     LIBC_MEM							\
     LIBC_STR							\
     LIBC_SYSV							\
+    THIRD_PARTY_MIMALLOC					\
     THIRD_PARTY_RUBY						\
     TOOL_ARGS
 
@@ -336,6 +338,7 @@ THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS =				\
     LIBC_STR							\
     LIBC_SYSV							\
     LIBC_THREAD							\
+    THIRD_PARTY_MIMALLOC					\
     THIRD_PARTY_RUBY						\
     TOOL_ARGS
 

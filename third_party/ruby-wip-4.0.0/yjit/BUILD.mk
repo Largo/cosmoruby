@@ -26,15 +26,14 @@ YJIT_TARGET_DIR := o/$(MODE)/third_party/ruby/yjit/target
 YJIT_LIB := $(YJIT_TARGET_DIR)/release/libyjit.a
 
 # Build YJIT Rust library
-# Note: Use /bin/sh explicitly because mtsh (Cosmopolitan's shell) can segfault with cargo
 $(YJIT_LIB): $(YJIT_RUST_SRCS)
 ifneq ($(CARGO),)
 	@echo "Building YJIT (Rust release mode)"
-	@/bin/sh -c 'mkdir -p $(YJIT_TARGET_DIR)'
-	/bin/sh -c 'TMPDIR=/tmp $(CARGO) build \
+	@mkdir -p $(YJIT_TARGET_DIR)
+	TMPDIR=/tmp $(CARGO) build \
 	    --manifest-path third_party/ruby/yjit/Cargo.toml \
 	    --target-dir $(YJIT_TARGET_DIR) \
-	    --release -q'
+	    --release -q
 else
 	$(error YJIT enabled but cargo not found. Install Rust or set RUBY_YJIT_ENABLED=0)
 endif

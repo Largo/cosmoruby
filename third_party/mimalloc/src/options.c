@@ -563,8 +563,48 @@ void _mi_warning_message(const char* fmt, ...) {
 
 
 #if MI_DEBUG
+/* Cosmopolitan: backtrace support for assertion failures */
+#include "libc/nexgen32e/stackframe.h"
+#include "libc/intrin/weaken.h"
+#include "libc/intrin/kprintf.h"
+#include "libc/runtime/symbols.internal.h"
+extern struct SymbolTable *__symtab;
+extern void (*mi_cosmo_show_backtrace)(int, const struct StackFrame *);
+
+static void mi_assert_print_backtrace(void) {
+  /* Try external ShowBacktrace callback first */
+  if (mi_cosmo_show_backtrace) {
+    _mi_prim_out_stderr("  backtrace:\n");
+    mi_cosmo_show_backtrace(2, __builtin_frame_address(0));
+    return;
+  }
+  /* Fall back to inline backtrace using weak references */
+  if (!_weaken(__symtab) || !*_weaken(__symtab) || !_weaken(__get_symbol)) {
+    _mi_prim_out_stderr("  (no symbol table available for backtrace)\n");
+    return;
+  }
+  _mi_prim_out_stderr("  backtrace:\n");
+  struct SymbolTable *st = *_weaken(__symtab);
+  struct StackFrame *fp = __builtin_frame_address(0);
+  for (int i = 0; i < 20 && fp; i++) {
+    if (kisdangerous(fp)) break;
+    intptr_t addr = fp->addr;
+    if (!addr) break;
+    int idx = _weaken(__get_symbol)(st, addr);
+    if (idx != -1) {
+      const char *name = st->name_base + st->names[idx];
+      _mi_fprintf(NULL, NULL, "    %p %s\n", (void*)addr, name);
+    } else {
+      _mi_fprintf(NULL, NULL, "    %p\n", (void*)addr);
+    }
+    if (fp->next <= fp) break;
+    fp = fp->next;
+  }
+}
+
 mi_decl_noreturn mi_decl_cold void _mi_assert_fail(const char* assertion, const char* fname, unsigned line, const char* func ) mi_attr_noexcept {
   _mi_fprintf(NULL, NULL, "mimalloc: assertion failed: at \"%s\":%u, %s\n  assertion: \"%s\"\n", fname, line, (func==NULL?"":func), assertion);
+  mi_assert_print_backtrace();
   abort();
 }
 #endif

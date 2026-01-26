@@ -25,7 +25,7 @@
 #include "libc/limits.h"
 #include "libc/macros.h"
 #include "libc/mem/alg.h"
-#include "libc/mem/leaks.h"
+#include "libc/cosmo.h"
 #include "libc/mem/mem.h"
 #include "libc/nexgen32e/crc32.h"
 #include "libc/runtime/runtime.h"

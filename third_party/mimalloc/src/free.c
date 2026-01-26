@@ -12,6 +12,8 @@ terms of the MIT license. A copy of the license can be found in the file
 #include "mimalloc/prim.h"   // _mi_prim_thread_id()
 #endif
 
+// Cosmopolitan backtrace support is in cosmo_prim.c via the error handler
+
 // forward declarations
 static void   mi_check_padding(const mi_page_t* page, const mi_block_t* block);
 static bool   mi_check_is_double_free(const mi_page_t* page, const mi_block_t* block);

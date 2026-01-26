@@ -99,6 +99,9 @@
 
 #ifdef UNALIGNED_WORD_ACCESS
 # /* Take that. */
+#elif defined(__SANITIZE_UNDEFINED__)
+/* Cosmopolitan: disable unaligned access when ubsan is enabled to avoid UB */
+# define UNALIGNED_WORD_ACCESS 0
 #elif defined(__i386)
 # define UNALIGNED_WORD_ACCESS 1
 #elif defined(__i386__)

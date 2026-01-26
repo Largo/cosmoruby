@@ -78,12 +78,16 @@ int _mtsh(int argc, char **argv, char **envp) {
     _Exit(12);
   }
 
-  // copy environment variables
+  // copy environment variables (must strdup so PutEnv can free them later)
   int envi = 0;
   if (envp) {
     for (; envp[envi]; ++envi) {
       npassert(envi + 1 < ARRAYLEN(envs));
-      envs[envi] = envp[envi];
+      envs[envi] = strdup(envp[envi]);
+      if (!envs[envi]) {
+        tinyprint(2, prog, ": strdup failed for env\n", NULL);
+        _Exit(1);
+      }
     }
   }
   envs[envi] = 0;

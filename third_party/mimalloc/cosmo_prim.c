@@ -12,8 +12,12 @@
 #include "libc/calls/weirdtypes.h"
 #include "libc/errno.h"
 #include "libc/intrin/atomic.h"
+#include "libc/intrin/iscall.h"
+#include "libc/intrin/kprintf.h"
+#include "libc/intrin/weaken.h"
 #include "libc/mem/mem.h"
 #include "libc/runtime/runtime.h"
+#include "libc/runtime/symbols.internal.h"
 #include "libc/str/str.h"
 #include "libc/sysv/consts/madv.h"
 #include "libc/sysv/consts/map.h"
@@ -385,9 +389,135 @@ void _mi_allocator_done(void) {
 extern void _mi_auto_process_init(void);
 extern void _mi_auto_process_done(void);
 
+/* ------------------------------------------------------------------------- */
+/* Debug: Backtrace on invalid pointer errors                                */
+/* ------------------------------------------------------------------------- */
+
+#include "libc/nexgen32e/stackframe.h"
+
+static _Atomic(int) mi_backtrace_in_progress = 0;
+
+/* Global function pointer for symbolic backtraces.
+ * Set by code that links ShowBacktrace (e.g., Ruby via ruby_cosmo_main.h).
+ * This avoids circular dependency issues with LIBC_LOG. */
+void (*mi_cosmo_show_backtrace)(int, const struct StackFrame *) = NULL;
+
+/* External symbol table pointer - defined in libc/runtime/getsymbol.c */
+extern struct SymbolTable *__symtab;
+
+/* Convert pointer to hex string (no heap allocation) */
+static void ptr_to_hex(void* p, char* buf) {
+  static const char hex[] = "0123456789abcdef";
+  uintptr_t v = (uintptr_t)p;
+  buf[0] = '0'; buf[1] = 'x';
+  for (int i = 15; i >= 0; i--) {
+    buf[2 + (15 - i)] = hex[(v >> (i * 4)) & 0xf];
+  }
+  buf[18] = '\0';
+}
+
+/* Look up symbol name for an address using weak references.
+ * Returns NULL if symbol table unavailable. No heap allocation. */
+static const char *mi_get_symbol_name(intptr_t addr, int *addend_out) {
+  int idx;
+  struct SymbolTable *st;
+
+  if (!_weaken(__symtab) || !(st = *_weaken(__symtab)))
+    return NULL;
+  if (!_weaken(__get_symbol))
+    return NULL;
+  if ((idx = _weaken(__get_symbol)(st, addr)) == -1)
+    return NULL;
+
+  if (addend_out) {
+    *addend_out = (addr - st->addr_base) - st->symbols[idx].x;
+  }
+
+  return st->name_base + st->names[idx];
+}
+
+static void mi_cosmo_error_handler(int err, void* arg) {
+  (void)arg;
+
+  /* Only show backtrace for EINVAL (invalid pointer) errors */
+  if (err == EINVAL) {
+    /* Prevent recursion in case we allocate memory */
+    int expected = 0;
+    if (atomic_compare_exchange_strong(&mi_backtrace_in_progress, &expected, 1)) {
+      /* Try external ShowBacktrace callback first if available */
+      if (mi_cosmo_show_backtrace) {
+        write(2, "  symbolic backtrace:\n", 22);
+        mi_cosmo_show_backtrace(2, __builtin_frame_address(0));
+      } else {
+        /* Inline symbolic backtrace using weak references */
+        char buf[32];
+        write(2, "  backtrace:\n", 13);
+
+        struct StackFrame *fp = __builtin_frame_address(0);
+        for (int i = 0; i < 20 && fp; i++) {
+          if (kisdangerous(fp))
+            break;
+
+          intptr_t addr = fp->addr;
+          if (!addr)
+            break;
+
+#ifdef __x86_64__
+          /* Adjust to point at call instruction, not return address */
+          if (!kisdangerous((void*)addr) && _weaken(__is_call)) {
+            addr -= _weaken(__is_call)((const unsigned char *)addr);
+          }
+#endif
+
+          int addend = 0;
+          const char *name = mi_get_symbol_name(addr, &addend);
+
+          /* Print frame pointer */
+          write(2, "    ", 4);
+          ptr_to_hex(fp, buf);
+          write(2, buf, 18);
+          write(2, " ", 1);
+
+          /* Print address */
+          ptr_to_hex((void*)addr, buf);
+          write(2, buf, 18);
+          write(2, " ", 1);
+
+          if (name) {
+            /* Print symbol+offset */
+            write(2, name, strlen(name));
+            if (addend != 0) {
+              /* Format +/-offset */
+              buf[0] = addend < 0 ? '-' : '+';
+              int a = addend < 0 ? -addend : addend;
+              int j = 1;
+              if (a >= 10000) buf[j++] = '0' + (a / 10000) % 10;
+              if (a >= 1000) buf[j++] = '0' + (a / 1000) % 10;
+              if (a >= 100) buf[j++] = '0' + (a / 100) % 10;
+              if (a >= 10) buf[j++] = '0' + (a / 10) % 10;
+              buf[j++] = '0' + a % 10;
+              write(2, buf, j);
+            }
+          }
+          write(2, "\n", 1);
+
+          /* Safety: frame pointer should increase (stack grows down) */
+          if (fp->next <= fp)
+            break;
+          fp = fp->next;
+        }
+      }
+
+      atomic_store(&mi_backtrace_in_progress, 0);
+    }
+  }
+}
+
 __attribute__((constructor(50)))
 static void mi_cosmo_process_init(void) {
   _mi_auto_process_init();
+  /* Register error handler for debugging invalid pointer errors */
+  mi_register_error(mi_cosmo_error_handler, NULL);
 }
 
 __attribute__((destructor(50)))

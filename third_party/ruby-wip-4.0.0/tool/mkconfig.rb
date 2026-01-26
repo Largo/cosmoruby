@@ -388,6 +388,11 @@ print <<EOS
   #
   # returns the absolute pathname of the ruby command.
   def RbConfig.ruby
+    # CosmoRuby: Use the actual executable path from GetProgramExecutableName()
+    # instead of constructing /zip/bin/ruby.com which does not exist as a file.
+    if defined?(RUBY_COSMO_EXECUTABLE)
+      return RUBY_COSMO_EXECUTABLE
+    end
     File.join(
       RbConfig::CONFIG["bindir"],
       RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]

@@ -4,10 +4,11 @@
 
 # Use objbincopy instead of GNU objcopy (fixes intermittent segfaults)
 # Write to temp file then mv to handle "Text file busy" on running executables
-OBJBINCOPY = build/bootstrap/objbincopy
-ifneq ($(ARCH), aarch64)
-MAKE_OBJCOPY = $(OBJBINCOPY) -o $@.tmp $< && mv -f $@.tmp $@ && $(MAKE_ZIPCOPY)
-endif
+#OBJBINCOPY = build/bootstrap/objbincopy
+#ifneq ($(ARCH), aarch64)
+#MAKE_OBJCOPY = $(OBJBINCOPY) -o $@.tmp $< && mv -f $@.tmp $@ && $(MAKE_ZIPCOPY)
+#endif
+MAKE_OBJCOPY = strace -f -o /tmp/objcopy-strace.log /usr/bin/objcopy -S -O binary $< $@
 
 # Mexican Toaster / Ruby development
 include third_party/libyaml/BUILD.mk

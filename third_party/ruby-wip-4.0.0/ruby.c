@@ -22,6 +22,10 @@
 # include <sys/cygwin.h>
 #endif
 
+#ifdef __COSMOPOLITAN__
+# include "libc/dce.h"  /* for IsWindows() */
+#endif
+
 #if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
 # include <dlfcn.h>
 #endif
@@ -1845,7 +1849,14 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT
+#ifdef __COSMOPOLITAN__
+    // YJIT uses Rust thread-local storage which doesn't work on Windows with Cosmopolitan
+    if (!IsWindows()) {
+        rb_yjit_init(opt->yjit);
+    }
+#else
     rb_yjit_init(opt->yjit);
+#endif
 #endif
 #if USE_ZJIT
     extern void rb_zjit_init(bool);

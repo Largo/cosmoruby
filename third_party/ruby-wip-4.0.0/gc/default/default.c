@@ -713,6 +713,14 @@ static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
  */
 static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
 
+#elif defined(__COSMOPOLITAN__)
+/* Cosmopolitan: partial munmap doesn't work reliably on Windows with mimalloc.
+ * The mmap path allocates a large region then munmaps the unaligned portions,
+ * but Windows VirtualFree requires freeing exact allocations, not partial regions.
+ * Use gc_aligned_malloc (posix_memalign) instead which works across all platforms.
+ */
+static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
+
 #elif HAVE_CONST_PAGE_SIZE
 /* If we have the PAGE_SIZE and it is a constant, then we can directly use it. */
 static const bool HEAP_PAGE_ALLOC_USE_MMAP = (PAGE_SIZE <= HEAP_PAGE_SIZE);

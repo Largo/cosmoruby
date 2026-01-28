@@ -343,8 +343,13 @@ static void HandleElf(const char *inpath, Elf64_Ehdr *elf, size_t esize) {
   macho_shdr = FindElfSectionByName(elf, esize, secstrs, ".macho");
   macho = GetElfSectionAddress(elf, esize, macho_shdr);
   // ValidateMachoSection(inpath, elf, macho_shdr, macho, 0);
-  loadcommand = (struct MachoLoadCommand *)(macho + 1);
-  loadcount = macho->loadcount;
+  if (macho) {
+    loadcommand = (struct MachoLoadCommand *)(macho + 1);
+    loadcount = macho->loadcount;
+  } else {
+    loadcommand = 0;
+    loadcount = 0;
+  }
   if (want_freebsd) {
     elf->e_ident[EI_OSABI] = ELFOSABI_FREEBSD;
   }

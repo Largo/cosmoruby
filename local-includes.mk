@@ -2,6 +2,13 @@
 # This file is not committed to the repository
 # Add it to .git/info/exclude
 
+# Use objbincopy instead of GNU objcopy (fixes intermittent segfaults)
+# Write to temp file then mv to handle "Text file busy" on running executables
+OBJBINCOPY = build/bootstrap/objbincopy
+ifneq ($(ARCH), aarch64)
+MAKE_OBJCOPY = $(OBJBINCOPY) -o $@.tmp $< && mv -f $@.tmp $@ && $(MAKE_ZIPCOPY)
+endif
+
 # Mexican Toaster / Ruby development
 include third_party/libyaml/BUILD.mk
 include third_party/ruby/BUILD.mk

@@ -8,6 +8,7 @@
  */
 
 #include "libc/calls/calls.h"
+#include "libc/dce.h"
 #include "libc/calls/struct/timespec.h"
 #include "libc/calls/weirdtypes.h"
 #include "libc/errno.h"
@@ -83,7 +84,7 @@ void _mi_prim_mem_init(mi_os_mem_config_t* config) {
 
   /* OS capabilities */
   config->has_overcommit = true;         /* Most Unix systems overcommit */
-  config->has_partial_free = true;       /* mmap can free in parts */
+  config->has_partial_free = !IsWindows(); /* Windows VirtualFree can't free partial allocations */
   config->has_virtual_reserve = true;    /* mmap PROT_NONE works */
   config->has_transparent_huge_pages = false;  /* Disabled for portability */
 }

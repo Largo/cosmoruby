@@ -79,6 +79,20 @@ const int ruby_api_version[] = {
 #else
 #define GC_DESCRIPTION ""
 #endif
+
+/* Cosmopolitan allocator detection */
+#ifdef __COSMOPOLITAN__
+# if defined(COSMO_USE_MIMALLOC) && COSMO_USE_MIMALLOC
+#  define COSMO_ALLOCATOR_NAME "mimalloc"
+#  define COSMO_ALLOCATOR_DESCRIPTION " +MIMALLOC"
+# else
+#  define COSMO_ALLOCATOR_NAME "dlmalloc"
+#  define COSMO_ALLOCATOR_DESCRIPTION " +DLMALLOC"
+# endif
+#else
+# define COSMO_ALLOCATOR_NAME NULL
+# define COSMO_ALLOCATOR_DESCRIPTION ""
+#endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
@@ -174,6 +188,15 @@ Init_version(void)
     rb_define_const(mRuby, "ENGINE_VERSION", /* MKSTR(version) */ version);
 
     rb_provide("ruby2_keywords.rb");
+
+#ifdef __COSMOPOLITAN__
+    /*
+     * The memory allocator used by Cosmopolitan Ruby.
+     * Either "mimalloc" or "dlmalloc".
+     */
+    rb_define_const(mRuby, "COSMO_ALLOCATOR",
+        rb_obj_freeze(rb_usascii_str_new_cstr(COSMO_ALLOCATOR_NAME)));
+#endif
 }
 
 #if USE_YJIT
@@ -224,7 +247,9 @@ define_ruby_description(const char *const jit_opt)
         // qualifier from desc.
         + RB_GC_MAX_NAME_LEN + 3
 #endif
-
+#ifdef __COSMOPOLITAN__
+        + rb_strlen_lit(COSMO_ALLOCATOR_DESCRIPTION)
+#endif
     ];
 
     int n = ruby_description_opt_point;
@@ -241,6 +266,9 @@ define_ruby_description(const char *const jit_opt)
         append(rb_gc_active_gc_name());
         append("]");
     }
+#endif
+#ifdef __COSMOPOLITAN__
+    append(COSMO_ALLOCATOR_DESCRIPTION);
 #endif
     append(ruby_description + ruby_description_opt_point);
 # undef append
@@ -304,3 +332,39 @@ ruby_show_copyright(void)
     PRINT(copyright);
     fflush(stdout);
 }
+
+#ifdef __COSMOPOLITAN__
+void
+ruby_show_cosmo_info(void)
+{
+    puts("Cosmopolitan Ruby Build Information");
+    puts("====================================");
+    printf("Ruby version:    %s\n", ruby_version);
+    printf("Platform:        %s\n", ruby_platform);
+    printf("Allocator:       %s\n", COSMO_ALLOCATOR_NAME);
+#if defined(COSMO_USE_MIMALLOC) && COSMO_USE_MIMALLOC
+    puts("Allocator info:  mimalloc - general purpose allocator by Microsoft");
+    puts("                 https://github.com/microsoft/mimalloc");
+#else
+    puts("Allocator info:  dlmalloc - Doug Lea's malloc implementation");
+    puts("                 Classic allocator, smaller binary size");
+#endif
+#if USE_YJIT
+    puts("JIT:             YJIT available");
+#else
+    puts("JIT:             Not available");
+#endif
+    puts("");
+    puts("Build flags:");
+#ifdef RUBY_DEBUG
+    puts("  RUBY_DEBUG=1");
+#endif
+#ifdef NDEBUG
+    puts("  NDEBUG (assertions disabled)");
+#endif
+    puts("");
+    puts("To check allocator at runtime:");
+    puts("  ruby -e 'puts RUBY_COSMO_ALLOCATOR'");
+    fflush(stdout);
+}
+#endif

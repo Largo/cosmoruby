@@ -124,6 +124,11 @@ void ruby_show_version(void);
 void ruby_show_copyright(void);
 #endif
 
+#ifdef __COSMOPOLITAN__
+/** Prints Cosmopolitan build information (allocator, etc.) to stdout. */
+void ruby_show_cosmo_info(void);
+#endif
+
 /**
  * A convenience macro to call ruby_init_stack().
  * Must be placed just after variable declarations.

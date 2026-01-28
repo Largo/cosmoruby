@@ -19,6 +19,7 @@
 
 # Common CFLAGS for all Ruby files
 # -DRUBY_SEARCH_PATH=\"/zip/lib/ruby/4.0.0\"
+# $(LIBC_MEM_ALLOCATOR_FLAGS) passes -DCOSMO_USE_MIMALLOC=1 when using mimalloc
 $(THIRD_PARTY_RUBY_A_OBJS): private				\
     CFLAGS +=							\
             -Ithird_party/ruby/include				\
@@ -30,6 +31,7 @@ $(THIRD_PARTY_RUBY_A_OBJS): private				\
             -DRUBY_COSMOPOLITAN					\
             -include third_party/ruby/include/ruby/cosmo.h	\
             -UHAVE_DLADDR					\
+            $(LIBC_MEM_ALLOCATOR_FLAGS)				\
             -Wno-deprecated-declarations			\
             -Wno-unused-value					\
             -Wno-return-type					\

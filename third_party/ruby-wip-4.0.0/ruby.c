@@ -153,6 +153,8 @@ enum feature_flag_bits {
     X(parsetree) \
     SEP \
     X(insns) \
+    SEP \
+    X(cosmo_info) \
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
@@ -362,6 +364,9 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message help_msg[] = {
         M("--backtrace-limit=num",        "",            "Set backtrace limit."),
         M("--copyright",                  "",            "Print Ruby copyright."),
+#ifdef __COSMOPOLITAN__
+        M("--cosmo-info",                 "",            "Print Cosmopolitan build info (allocator, etc.)."),
+#endif
         M("--crash-report=template",      "",            "Set template for crash report file."),
         M("--disable=features",           "",            "Disable features; see list below."),
         M("--dump=items",                 "",            "Dump items; see list below."),
@@ -1421,6 +1426,10 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         if (envopt) goto noenvopt_long;
         opt->dump |= DUMP_BIT(copyright);
     }
+    else if (strcmp("cosmo-info", s) == 0) {
+        if (envopt) goto noenvopt_long;
+        opt->dump |= DUMP_BIT(cosmo_info);
+    }
     else if (is_option_with_optarg("debug", Qtrue, Qtrue, Qfalse, Qfalse)) {
         if (s && *s) {
             ruby_each_words(s, debug_option, &opt->features);
@@ -2401,6 +2410,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         ruby_show_copyright();
         return Qtrue;
     }
+#ifdef __COSMOPOLITAN__
+    if (opt->dump & DUMP_BIT(cosmo_info)) {
+        ruby_show_cosmo_info();
+        return Qtrue;
+    }
+#endif
 
     if (!opt->e_script) {
         if (argc <= 0) {	/* no more args */

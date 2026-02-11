@@ -1,21 +1,74 @@
 #!/bin/sh
 # Trigger the cosmo-hello-world CI workflow.
 #
-# Checks that the hello binary is uploaded to a GitHub release,
-# creates an empty commit if needed so push has something to send,
-# pushes, and watches the workflow run.
+# Checks that the hello binary is a fat APE (both x86_64 and aarch64),
+# uploads it to a GitHub release, pushes to trigger CI, and watches
+# the workflow run.
 #
 # Usage: ./trigger_hello_test.sh [release-tag]
 #   Default release tag: hello-test
+#
+# To build a fat binary:
+#   .cosmocc/current/bin/cosmocc -o hello.com examples/hello.c
 
 set -e
 
 REPO="igravious/cosmoruby"
 TAG="${1:-hello-test}"
-BINARY="o//examples/hello"
+BINARY="hello.com"
 WORKFLOW="cosmo-hello-world.yml"
 
 echo "=== Phase 0: APE Hello World Cross-Platform Test ==="
+echo ""
+
+# ── Check binary exists ──────────────────────────────────────────────
+
+if [ ! -f "$BINARY" ]; then
+    echo "Error: $BINARY not found in current directory."
+    echo ""
+    echo "Build a fat binary first:"
+    echo "  .cosmocc/current/bin/cosmocc -o hello.com examples/hello.c"
+    exit 1
+fi
+
+# ── Check it's an APE binary (MZqFpD magic) ─────────────────────────
+
+MAGIC=$(head -c 6 "$BINARY" | od -A n -t x1 | tr -d ' ')
+if [ "$MAGIC" != "4d5a71467044" ]; then
+    echo "Error: $BINARY does not have APE magic bytes (MZqFpD)."
+    echo "Got: $MAGIC"
+    echo "This doesn't look like a Cosmopolitan binary."
+    exit 1
+fi
+
+echo "APE magic: OK"
+
+# ── Check it's a fat binary (supports both architectures) ────────────
+
+if strings "$BINARY" | grep -q "this ape binary only supports x86_64"; then
+    echo ""
+    echo "Error: $BINARY is x86_64-only, not a fat binary."
+    echo "It will fail on aarch64 runners."
+    echo ""
+    echo "Build a fat binary with cosmocc instead:"
+    echo "  .cosmocc/current/bin/cosmocc -o hello.com examples/hello.c"
+    echo ""
+    echo "The Makefile builds single-arch binaries. cosmocc builds fat ones."
+    exit 1
+fi
+
+echo "Fat binary:  OK (no x86_64-only marker found)"
+
+# ── Quick local sanity check ─────────────────────────────────────────
+
+OUTPUT=$(./hello.com 2>&1) || true
+if [ "$OUTPUT" = "hello world" ]; then
+    echo "Local run:   OK"
+else
+    echo "Warning: local run output unexpected: $OUTPUT"
+    echo "Continuing anyway (might work on other platforms)."
+fi
+
 echo ""
 
 # ── Check release exists and has the binary ──────────────────────────
@@ -23,36 +76,17 @@ echo ""
 echo "Checking release '$TAG' on $REPO..."
 
 if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    echo ""
-    echo "Release '$TAG' not found."
-    if [ -f "$BINARY" ]; then
-        echo "Creating release with local binary: $BINARY"
-        gh release create "$TAG" "$BINARY" \
-            --repo "$REPO" \
-            --title "Phase 0 hello test" \
-            --notes "APE fat binary for cross-platform testing"
-        echo "Release created."
-    else
-        echo "Error: $BINARY not found. Build it first:"
-        echo "  make -j1 o//examples/hello"
-        exit 1
-    fi
+    echo "Release '$TAG' not found. Creating..."
+    gh release create "$TAG" "$BINARY" \
+        --repo "$REPO" \
+        --title "Phase 0 hello test" \
+        --notes "APE fat binary for cross-platform testing"
+    echo "Release created."
 else
-    # Release exists -- check it has the hello asset
-    if gh release view "$TAG" --repo "$REPO" --json assets -q '.assets[].name' | grep -q '^hello$'; then
-        echo "Release '$TAG' exists with hello binary. Good."
-    else
-        echo "Release '$TAG' exists but missing hello binary."
-        if [ -f "$BINARY" ]; then
-            echo "Uploading $BINARY to release..."
-            gh release upload "$TAG" "$BINARY" --repo "$REPO" --clobber
-            echo "Uploaded."
-        else
-            echo "Error: $BINARY not found. Build it first:"
-            echo "  make -j1 o//examples/hello"
-            exit 1
-        fi
-    fi
+    # Release exists -- update the binary
+    echo "Release '$TAG' exists. Uploading binary..."
+    gh release upload "$TAG" "$BINARY" --repo "$REPO" --clobber
+    echo "Uploaded."
 fi
 
 echo ""

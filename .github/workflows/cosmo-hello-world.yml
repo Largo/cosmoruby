@@ -7,15 +7,24 @@ name: cosmo-hello-world
 # Usage:
 #   1. Build locally:  make -j1 o//examples/hello
 #   2. Create release:  gh release create hello-test o//examples/hello
-#   3. Trigger this workflow (push or manual dispatch)
+#   3. Push (or use the trigger script):  ./trigger_hello_test.sh
 
 on:
+  push:
+    branches:
+      - master
+      - "feature/ruby-*"
+    paths:
+      - '.github/workflows/cosmo-hello-world.yml'
   workflow_dispatch:
     inputs:
       release_tag:
         description: 'Release tag containing hello binary'
         required: true
         default: 'hello-test'
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || 'hello-test' }}
 
 jobs:
   test:
@@ -47,7 +56,7 @@ jobs:
       - name: download hello binary (unix)
         if: runner.os != 'Windows'
         run: |
-          gh release download '${{ inputs.release_tag }}' --pattern 'hello' --dir .
+          gh release download "$RELEASE_TAG" --pattern 'hello' --dir .
           chmod +x hello
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +64,7 @@ jobs:
       - name: download hello binary (windows)
         if: runner.os == 'Windows'
         run: |
-          gh release download '${{ inputs.release_tag }}' --pattern 'hello' --dir .
+          gh release download "$env:RELEASE_TAG" --pattern 'hello' --dir .
           Rename-Item -Path hello -NewName hello.com
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

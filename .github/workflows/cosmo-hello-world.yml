@@ -1,0 +1,157 @@
+name: cosmo-hello-world
+
+# Phase 0: Validate APE binary execution across all CI platforms.
+# Build hello.com once on Linux, then run it on every available runner
+# to confirm the APE fat binary format works before testing Ruby.
+
+env:
+  COSMOCC_VERSION: 3.9.2
+
+on:
+  push:
+    branches:
+      - master
+      - "feature/ruby-*"
+  pull_request:
+    paths:
+      - '.github/workflows/cosmo-hello-world.yml'
+      - 'examples/hello.c'
+      - 'ape/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: chetan/git-restore-mtime-action@v2
+
+      - uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            .cosmocc
+            o
+          key: hello-${{ env.COSMOCC_VERSION }}-${{ github.sha }}
+          restore-keys: |
+            hello-${{ env.COSMOCC_VERSION }}-
+
+      - name: support ape bins 1
+        run: sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
+
+      - name: support ape bins 2
+        run: sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
+
+      - name: build hello
+        run: make -j2 o//examples/hello
+
+      - name: verify hello runs on build host
+        run: o//examples/hello
+
+      - uses: actions/cache/save@v4
+        with:
+          path: |
+            .cosmocc
+            o
+          key: hello-${{ env.COSMOCC_VERSION }}-${{ github.sha }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hello-com
+          path: o/examples/hello
+          retention-days: 7
+
+  test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, arch: x86_64, name: linux-x86, shell: bash }
+          - { os: ubuntu-24.04-arm, arch: aarch64, name: linux-arm64, shell: bash }
+          - { os: macos-15-intel, arch: x86_64, name: macos-x86, shell: bash }
+          - { os: macos-15, arch: aarch64, name: macos-arm64, shell: bash }
+          - { os: windows-latest, arch: x86_64, name: windows-x86, shell: pwsh }
+          - { os: windows-11-arm, arch: aarch64, name: windows-arm64, shell: pwsh }
+
+    runs-on: ${{ matrix.os }}
+    name: test-${{ matrix.name }}
+    continue-on-error: true
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            build/bootstrap
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: hello-com
+          path: .
+
+      - name: setup ape loader (linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
+          sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
+
+      - name: make executable (unix)
+        if: runner.os != 'Windows'
+        run: chmod +x hello
+
+      - name: run hello (unix)
+        if: runner.os != 'Windows'
+        run: |
+          OUTPUT=$(./hello)
+          echo "Output: $OUTPUT"
+          if [ "$OUTPUT" = "hello world" ]; then
+            echo "PASS: hello.com works on ${{ matrix.name }}"
+          else
+            echo "FAIL: unexpected output on ${{ matrix.name }}"
+            exit 1
+          fi
+
+      - name: rename for windows
+        if: runner.os == 'Windows'
+        run: Rename-Item -Path hello -NewName hello.com
+
+      - name: run hello (windows)
+        if: runner.os == 'Windows'
+        run: |
+          $output = & .\hello.com
+          Write-Host "Output: $output"
+          if ($output -eq "hello world") {
+            Write-Host "PASS: hello.com works on ${{ matrix.name }}"
+          } else {
+            Write-Host "FAIL: unexpected output on ${{ matrix.name }}"
+            exit 1
+          }
+
+  summary:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: generate summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## APE Hello World Cross-Platform Results
+
+          | Platform | Status |
+          |----------|--------|
+          | linux-x86 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
+          | linux-arm64 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
+          | macos-x86 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
+          | macos-arm64 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
+          | windows-x86 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
+          | windows-arm64 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
+
+          > See individual job logs for detailed output.
+          EOF

@@ -1,71 +1,24 @@
 name: cosmo-hello-world
 
 # Phase 0: Validate APE binary execution across all CI platforms.
-# Build hello.com once on Linux, then run it on every available runner
-# to confirm the APE fat binary format works before testing Ruby.
-
-env:
-  COSMOCC_VERSION: 3.9.2
+# Binary is built locally and uploaded to a GitHub release.
+# This workflow downloads it and runs it on every available runner.
+#
+# Usage:
+#   1. Build locally:  make -j1 o//examples/hello
+#   2. Create release:  gh release create hello-test o//examples/hello
+#   3. Trigger this workflow (push or manual dispatch)
 
 on:
-  push:
-    branches:
-      - master
-      - "feature/ruby-*"
-  pull_request:
-    paths:
-      - '.github/workflows/cosmo-hello-world.yml'
-      - 'examples/hello.c'
-      - 'ape/**'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag containing hello binary'
+        required: true
+        default: 'hello-test'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: chetan/git-restore-mtime-action@v2
-
-      - uses: actions/cache/restore@v4
-        id: cache
-        with:
-          path: |
-            .cosmocc
-            o
-          key: hello-${{ env.COSMOCC_VERSION }}-${{ github.sha }}
-          restore-keys: |
-            hello-${{ env.COSMOCC_VERSION }}-
-
-      - name: support ape bins 1
-        run: sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
-
-      - name: support ape bins 2
-        run: sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
-
-      - name: build hello
-        run: make -j2 o//examples/hello
-
-      - name: verify hello runs on build host
-        run: o//examples/hello
-
-      - uses: actions/cache/save@v4
-        with:
-          path: |
-            .cosmocc
-            o
-          key: hello-${{ env.COSMOCC_VERSION }}-${{ github.sha }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hello-com
-          path: o/examples/hello
-          retention-days: 7
-
   test:
-    needs: build
     strategy:
       fail-fast: false
       matrix:
@@ -91,20 +44,27 @@ jobs:
             build/bootstrap
           sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: hello-com
-          path: .
+      - name: download hello binary (unix)
+        if: runner.os != 'Windows'
+        run: |
+          gh release download '${{ inputs.release_tag }}' --pattern 'hello' --dir .
+          chmod +x hello
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download hello binary (windows)
+        if: runner.os == 'Windows'
+        run: |
+          gh release download '${{ inputs.release_tag }}' --pattern 'hello' --dir .
+          Rename-Item -Path hello -NewName hello.com
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: setup ape loader (linux)
         if: runner.os == 'Linux'
         run: |
           sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
           sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
-
-      - name: make executable (unix)
-        if: runner.os != 'Windows'
-        run: chmod +x hello
 
       - name: run hello (unix)
         if: runner.os != 'Windows'
@@ -117,10 +77,6 @@ jobs:
             echo "FAIL: unexpected output on ${{ matrix.name }}"
             exit 1
           fi
-
-      - name: rename for windows
-        if: runner.os == 'Windows'
-        run: Rename-Item -Path hello -NewName hello.com
 
       - name: run hello (windows)
         if: runner.os == 'Windows'
@@ -144,14 +100,5 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
           ## APE Hello World Cross-Platform Results
 
-          | Platform | Status |
-          |----------|--------|
-          | linux-x86 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
-          | linux-arm64 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
-          | macos-x86 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
-          | macos-arm64 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
-          | windows-x86 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
-          | windows-arm64 | ${{ needs.test.result == 'success' && 'PASS' || 'CHECK' }} |
-
-          > See individual job logs for detailed output.
+          See individual job logs for per-platform pass/fail.
           EOF

@@ -1131,9 +1131,14 @@ THIRD_PARTY_RUBY_A_SRCS_C =					\
 # - Modifying an extension only rebuilds that .a + relink (~5 seconds)
 # - Adding/removing an extension rebuilds extinit.o + relink (~5 seconds)
 
-# Assembly files
+# Assembly files (select coroutine implementation by architecture)
+ifeq ($(ARCH),aarch64)
+THIRD_PARTY_RUBY_A_SRCS_S =					\
+    third_party/ruby/coroutine/arm64/Context.S
+else
 THIRD_PARTY_RUBY_A_SRCS_S =					\
     third_party/ruby/coroutine/amd64/Context.S
+endif
 
 # encinit.c references Init_trans_* symbols - only include in static mode
 # dmyenc.c is used in plugin mode to load enc/encdb dynamically

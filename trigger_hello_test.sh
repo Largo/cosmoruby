@@ -31,33 +31,11 @@ if [ ! -f "$BINARY" ]; then
     exit 1
 fi
 
-# ── Check it's an APE binary (MZqFpD magic) ─────────────────────────
+# ── Verify APE binary ─────────────────────────────────────────────────
 
-MAGIC=$(head -c 6 "$BINARY" | od -A n -t x1 | tr -d ' ')
-if [ "$MAGIC" != "4d5a71467044" ]; then
-    echo "Error: $BINARY does not have APE magic bytes (MZqFpD)."
-    echo "Got: $MAGIC"
-    echo "This doesn't look like a Cosmopolitan binary."
-    exit 1
-fi
-
-echo "APE magic: OK"
-
-# ── Check it's a fat binary (supports both architectures) ────────────
-
-if strings "$BINARY" | grep -q "this ape binary only supports x86_64"; then
-    echo ""
-    echo "Error: $BINARY is x86_64-only, not a fat binary."
-    echo "It will fail on aarch64 runners."
-    echo ""
-    echo "Build a fat binary with cosmocc instead:"
-    echo "  .cosmocc/current/bin/cosmocc -o hello.com examples/hello.c"
-    echo ""
-    echo "The Makefile builds single-arch binaries. cosmocc builds fat ones."
-    exit 1
-fi
-
-echo "Fat binary:  OK (no x86_64-only marker found)"
+. ./check_ape.sh
+check_ape_magic "$BINARY" || exit 1
+check_fat_binary "$BINARY"
 
 # ── Quick local sanity check ─────────────────────────────────────────
 

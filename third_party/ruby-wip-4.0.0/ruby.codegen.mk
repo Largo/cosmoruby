@@ -71,6 +71,7 @@ RUBY_TIMESTAMP_TARGETS :=					\
 	third_party/ruby/prism/.time				\
 	third_party/ruby/prism/util/.time			\
 	third_party/ruby/coroutine/amd64/.time		\
+	third_party/ruby/coroutine/arm64/.time		\
 	third_party/ruby/.ext/.timestamp/.enc-trans.time	\
 	third_party/ruby/.rbconfig.time
 

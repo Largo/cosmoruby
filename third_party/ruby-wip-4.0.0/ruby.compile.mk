@@ -155,7 +155,8 @@ o/$(MODE)/third_party/ruby/enc/trans/transdb.o: private	\
 
 # Coroutine assembly: .S files are preprocessed, so define PREFIXED_SYMBOL
 # On Linux/Cosmopolitan we don't need symbol prefixes (unlike macOS which uses _)
-o/$(MODE)/third_party/ruby/coroutine/amd64/Context.o: private	\
+o/$(MODE)/third_party/ruby/coroutine/amd64/Context.o		\
+o/$(MODE)/third_party/ruby/coroutine/arm64/Context.o: private	\
     CPPFLAGS +=							\
             -D'PREFIXED_SYMBOL(name)=name'
 

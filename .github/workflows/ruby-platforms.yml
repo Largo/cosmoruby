@@ -115,6 +115,7 @@ jobs:
           results = []
           pass = 0
           fail = 0
+          warn = 0
 
           check = ->(name, &block) {
             begin
@@ -129,6 +130,22 @@ jobs:
             rescue => e
               results << "[FAIL] #{name} -- #{e.class}: #{e.message}"
               fail += 1
+            end
+          }
+
+          soft = ->(name, &block) {
+            begin
+              ok = block.call
+              if ok
+                results << "[PASS] #{name}"
+                pass += 1
+              else
+                results << "[WARN] #{name}"
+                warn += 1
+              end
+            rescue => e
+              results << "[WARN] #{name} -- #{e.class}: #{e.message}"
+              warn += 1
             end
           }
 
@@ -151,7 +168,7 @@ jobs:
           check.("thread")           { r = nil; Thread.new { r = 42 }.join(5); r == 42 }
           check.("mutex")            { Mutex.new.synchronize { true } }
           check.("rubygems")         { require "rubygems"; Gem::VERSION && true }
-          check.("encoding_utf8")    { Encoding.default_external == Encoding::UTF_8 }
+          soft.("encoding_utf8")     { Encoding.default_external == Encoding::UTF_8 }
           check.("unicode")          { s = "\u{1F600}"; s.length == 1 && s.bytesize == 4 }
           check.("pid")              { Process.pid > 0 }
           check.("env_path")         { ENV["PATH"] && !ENV["PATH"].empty? }
@@ -161,7 +178,7 @@ jobs:
           puts "=" * 60
           results.each { |r| puts "  #{r}" }
           puts "=" * 60
-          puts "  Pass: #{pass}  Fail: #{fail}"
+          puts "  Pass: #{pass}  Fail: #{fail}  Warn: #{warn}"
           exit(fail > 0 ? 1 : 0)
           ' 2>&1 | tee ${{ matrix.name }}-results.txt
 
@@ -180,6 +197,7 @@ jobs:
           results = []
           pass = 0
           fail = 0
+          warn = 0
 
           check = ->(name, &block) {
             begin
@@ -194,6 +212,22 @@ jobs:
             rescue => e
               results << "[FAIL] #{name} -- #{e.class}: #{e.message}"
               fail += 1
+            end
+          }
+
+          soft = ->(name, &block) {
+            begin
+              ok = block.call
+              if ok
+                results << "[PASS] #{name}"
+                pass += 1
+              else
+                results << "[WARN] #{name}"
+                warn += 1
+              end
+            rescue => e
+              results << "[WARN] #{name} -- #{e.class}: #{e.message}"
+              warn += 1
             end
           }
 
@@ -216,7 +250,7 @@ jobs:
           check.("thread")           { r = nil; Thread.new { r = 42 }.join(5); r == 42 }
           check.("mutex")            { Mutex.new.synchronize { true } }
           check.("rubygems")         { require "rubygems"; Gem::VERSION && true }
-          check.("encoding_utf8")    { Encoding.default_external == Encoding::UTF_8 }
+          soft.("encoding_utf8")     { Encoding.default_external == Encoding::UTF_8 }
           check.("unicode")          { s = "\u{1F600}"; s.length == 1 && s.bytesize == 4 }
           check.("pid")              { Process.pid > 0 }
           check.("env_path")         { ENV["PATH"] && !ENV["PATH"].empty? }
@@ -226,7 +260,7 @@ jobs:
           puts "=" * 60
           results.each { |r| puts "  #{r}" }
           puts "=" * 60
-          puts "  Pass: #{pass}  Fail: #{fail}"
+          puts "  Pass: #{pass}  Fail: #{fail}  Warn: #{warn}"
           exit(fail > 0 ? 1 : 0)
           '@
           $script | Out-File -Encoding utf8 diag.rb

@@ -1850,8 +1850,9 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT
 #ifdef __COSMOPOLITAN__
-    // YJIT uses Rust thread-local storage which doesn't work on Windows with Cosmopolitan
-    if (!IsWindows()) {
+    // YJIT Rust code is built targeting x86_64-unknown-linux-gnu,
+    // so it only works on Linux within Cosmopolitan's multi-platform binary
+    if (IsLinux()) {
         rb_yjit_init(opt->yjit);
     }
 #else

@@ -145,49 +145,40 @@ rb_cosmo_configure_load_path(void)
 {
 #if defined(RUBY_COSMO_RESET_LOAD_PATH)
 	VALUE load_path = rb_gv_get("$LOAD_PATH");
-	const char *plugin_path = getenv("COSMO_RUBY_PLUGIN_PATH");
-	const char *default_plugin_path = "/zip/lib/ruby/4.0.0/extensions/x86_64-cosmo";
-	const char *rubylib;
-	const char *segment;
-	const char *cursor;
 
-	/* Only clear load_path if it's empty - preserve user's -I flags */
-	if (RARRAY_LEN(load_path) == 0) {
-		/* Load path is empty, populate it from RUBYLIB */
-	} else {
-		/* Load path already has entries (from -I flags), don't clear */
-		return;
-	}
+	/* If loadpath.c provided initial paths (zip variant), nothing to do */
+	if (RARRAY_LEN(load_path) > 0) return;
 
-	rb_ary_clear(load_path);
-
-	rubylib = getenv("RUBYLIB");
-	if (rubylib && *rubylib) {
-		segment = rubylib;
-		cursor = rubylib;
-		while (1) {
-			if (*cursor == PATH_SEP_CHAR || *cursor == '\0') {
-				if (cursor > segment) {
-					rb_ary_push(load_path, rb_str_new(segment, cursor - segment));
-				}
-				if (*cursor == '\0') {
-					break;
-				}
-				cursor++;
-				segment = cursor;
-				continue;
-			}
-			cursor++;
+	/* Zipless variant: loadpath.c used NO_INITIAL_LOAD_PATH so paths are
+	 * empty. Populate from compile-time -D defines on this main.o. */
+	{
+		const char *paths[5];
+		size_t count = rb_cosmo_collect_paths(paths, sizeof(paths)/sizeof(paths[0]));
+		for (size_t i = 0; i < count; i++) {
+			rb_ary_push(load_path, rb_str_new_cstr(paths[i]));
 		}
 	}
 
-	if (plugin_path && *plugin_path) {
-		rb_ary_push(load_path, rb_str_new2(plugin_path));
+	/* Also honour RUBYLIB env var for user-specified additional paths */
+	{
+		const char *rubylib = getenv("RUBYLIB");
+		if (rubylib && *rubylib) {
+			const char *segment = rubylib;
+			const char *cursor = rubylib;
+			while (1) {
+				if (*cursor == PATH_SEP_CHAR || *cursor == '\0') {
+					if (cursor > segment) {
+						rb_ary_push(load_path, rb_str_new(segment, cursor - segment));
+					}
+					if (*cursor == '\0') break;
+					cursor++;
+					segment = cursor;
+					continue;
+				}
+				cursor++;
+			}
+		}
 	}
-	else {
-		rb_ary_push(load_path, rb_str_new2(default_plugin_path));
-	}
-
 #endif
 }
 

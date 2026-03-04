@@ -1,0 +1,24 @@
+ORIGIN
+
+    Ruby 4.0.0
+    https://github.com/ruby/ruby/tree/v4_0_0
+    https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.0.tar.gz
+
+LICENSE
+
+    2-clause BSD License / Ruby License (dual-licensed)
+    https://www.ruby-lang.org/en/about/license.txt
+
+LOCAL CHANGES
+
+    - Builds as Actually Portable Executable (APE) that runs natively on
+      seven operating systems (Linux, macOS, Windows, FreeBSD, OpenBSD,
+      NetBSD, bare metal) across two architectures (x86_64, aarch64)
+      from a single binary
+    - Links against Cosmopolitan libc instead of platform-native C libraries
+    - Embeds Ruby standard library into /zip filesystem for single-file
+      distribution (ruby.com contains everything needed to run)
+    - Uses mimalloc as primary memory allocator instead of system malloc
+    - YJIT currently only works on Linux (x86_64). The Rust JIT compiler
+      is built targeting x86_64-unknown-linux-gnu which is not portable
+      across the other platforms Cosmopolitan supports

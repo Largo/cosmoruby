@@ -17,6 +17,10 @@
 #   - Workaround: Break into multiple rules or simplify command logic
 ################################################################################
 
+# Derive CosmoRuby version from the third_party/ruby symlink target.
+# e.g. ruby -> ruby-wip-4.0.0 gives COSMO_RUBY_VERSION = 4.0.0
+COSMO_RUBY_VERSION := $(patsubst ruby-wip-%,%,$(notdir $(realpath third_party/ruby)))
+
 # Detect preferred Ruby interpreter for build tooling.
 # Favour a prebuilt Cosmopolitan ruby.com, fall back to system ruby.
 
@@ -30,15 +34,15 @@ COSMO_RUBY ?= $(firstword $(foreach path,$(COSMO_RUBY_CANDIDATES),$(if $(wildcar
 HOST_RUBY ?= $(if $(COSMO_RUBY),$(COSMO_RUBY),$(strip $(shell command -v ruby 2>/dev/null)))
 
 ifeq ($(strip $(HOST_RUBY)),)
-$(error No Ruby interpreter found. Build requires ruby.com or system ruby 4.0.0 on PATH.)
+$(error No Ruby interpreter found. Build requires ruby.com or system ruby $(COSMO_RUBY_VERSION) on PATH.)
 endif
 
-# Verify Ruby version matches exactly (4.0.0) to avoid rbconfig.rb mismatches
-# Only check if using system Ruby (not CosmoRuby which has version baked in)
+# Verify Ruby version matches exactly to avoid rbconfig.rb mismatches.
+# Only check if using system Ruby (not CosmoRuby which has version baked in).
 ifeq ($(COSMO_RUBY),)
 RUBY_VERSION_CHECK := $(shell $(HOST_RUBY) -e 'puts RUBY_VERSION' 2>/dev/null)
-ifneq ($(RUBY_VERSION_CHECK),4.0.0)
-$(error System Ruby version is $(RUBY_VERSION_CHECK), but CosmoRuby 4.0.0 build requires exactly 4.0.0. Install with: rbenv install 4.0.0)
+ifneq ($(RUBY_VERSION_CHECK),$(COSMO_RUBY_VERSION))
+$(error System Ruby version is $(RUBY_VERSION_CHECK), but CosmoRuby $(COSMO_RUBY_VERSION) build requires exactly $(COSMO_RUBY_VERSION). Install with: rbenv install $(COSMO_RUBY_VERSION))
 endif
 endif
 

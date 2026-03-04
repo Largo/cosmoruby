@@ -1,15 +1,15 @@
 #!/bin/sh
-# Build a fat APE binary (x86_64 + aarch64) from a Makefile target.
+# Build fat APE binaries (x86_64 + aarch64) from Makefile targets.
 #
 # Usage:
 #   ./bake o//examples/hello
-#   ./bake o//third_party/ruby/ruby
-#   ./bake -j8 o//examples/hello        # pass flags to make
+#   ./bake o//third_party/ruby/ruby o//third_party/ruby/irb
+#   ./bake -j8 o//third_party/ruby/ruby o//third_party/ruby/irb
 #
 # Output:
 #   <target>.com in the current directory (e.g. hello.com, ruby.com)
 #
-# What it does:
+# What it does for each target:
 #   1. make <target>              -- builds x86_64
 #   2. make m=aarch64 <target>    -- builds aarch64
 #   3. apelink                    -- combines into fat binary
@@ -23,39 +23,37 @@ APE_ARM="$COSMOCC/ape-aarch64.elf"
 APE_M1="$COSMOCC/ape-m1.c"
 
 # ── Parse arguments ──────────────────────────────────────────────────
-# Everything before the last argument is make flags.
-# The last argument is the target.
+# Make flags start with - (e.g. -j8, -k).
+# Targets start with o/ (e.g. o//examples/hello).
 
-if [ $# -eq 0 ]; then
-    echo "Usage: ./bake [make-flags] <target>"
+MAKE_FLAGS=""
+TARGETS=""
+TARGET_COUNT=0
+
+for arg in "$@"; do
+    case "$arg" in
+        -*)
+            MAKE_FLAGS="$MAKE_FLAGS $arg"
+            ;;
+        o/*)
+            TARGETS="$TARGETS $arg"
+            TARGET_COUNT=$((TARGET_COUNT + 1))
+            ;;
+        *)
+            # Could be a make variable (e.g. RUBY_TEST_EXTENSIONS=1)
+            MAKE_FLAGS="$MAKE_FLAGS $arg"
+            ;;
+    esac
+done
+
+if [ "$TARGET_COUNT" -eq 0 ]; then
+    echo "Usage: ./bake [make-flags] <target> [target...]"
     echo ""
     echo "Examples:"
     echo "  ./bake o//examples/hello"
-    echo "  ./bake -j8 o//examples/hello"
-    echo "  ./bake -j8 o//third_party/ruby/ruby"
+    echo "  ./bake -j8 o//third_party/ruby/ruby o//third_party/ruby/irb"
     exit 1
 fi
-
-# Last argument is the target
-TARGET=""
-MAKE_FLAGS=""
-for arg in "$@"; do
-    if [ -n "$TARGET" ]; then
-        MAKE_FLAGS="$MAKE_FLAGS $TARGET"
-    fi
-    TARGET="$arg"
-done
-
-# Derive the aarch64 target path: o//<path> -> o/aarch64/<path>
-ARM_TARGET=$(echo "$TARGET" | sed 's|^o//|o/aarch64/|; s|^o/[^/]*/|o/aarch64/|')
-
-# Derive the .dbg paths
-X86_DBG="$TARGET.dbg"
-ARM_DBG="$ARM_TARGET.dbg"
-
-# Derive output name from target basename
-BASENAME=$(basename "$TARGET")
-OUTPUT="${BASENAME}.com"
 
 # ── Preflight checks ────────────────────────────────────────────────
 
@@ -75,63 +73,79 @@ if [ ! -f "$APE_ARM" ]; then
     exit 1
 fi
 
-echo "=== bake: building fat APE binary ==="
-echo "Target:  $TARGET"
-echo "Output:  $OUTPUT"
-echo ""
-
-# ── Step 1: Build x86_64 ────────────────────────────────────────────
-
-echo "--- Step 1/3: Building x86_64 ---"
-# shellcheck disable=SC2086
-make $MAKE_FLAGS "$TARGET"
-
-if [ ! -f "$X86_DBG" ]; then
-    echo "Error: x86_64 build succeeded but $X86_DBG not found."
-    echo "The target may not produce a .dbg file."
-    exit 1
-fi
-
-echo ""
-
-# ── Step 2: Build aarch64 ───────────────────────────────────────────
-
-echo "--- Step 2/3: Building aarch64 ---"
-# shellcheck disable=SC2086
-make $MAKE_FLAGS m=aarch64 "$ARM_TARGET"
-
-if [ ! -f "$ARM_DBG" ]; then
-    echo "Error: aarch64 build succeeded but $ARM_DBG not found."
-    echo "The target may not produce a .dbg file."
-    exit 1
-fi
-
-echo ""
-
-# ── Step 3: Link fat binary ─────────────────────────────────────────
-
-echo "--- Step 3/3: Linking fat binary ---"
-"$APELINK" \
-    -o "$OUTPUT" \
-    -l "$APE_X86" \
-    -l "$APE_ARM" \
-    -M "$APE_M1" \
-    "$X86_DBG" \
-    "$ARM_DBG"
-
-echo ""
-
-# ── Verify ───────────────────────────────────────────────────────────
-
-if [ ! -f "$OUTPUT" ]; then
-    echo "Error: apelink did not produce $OUTPUT"
-    exit 1
-fi
-
-echo "=== Done ==="
-echo "Output: $OUTPUT ($(wc -c < "$OUTPUT" | tr -d ' ') bytes)"
-
 . ./check_ape.sh
-check_ape_magic "$OUTPUT"
-check_fat_binary "$OUTPUT" "$TARGET" "$ARM_TARGET"
-check_ape_components "$OUTPUT"
+
+# ── Build and link each target ────────────────────────────────────────
+
+STEP=0
+TOTAL_STEPS=$((TARGET_COUNT * 3))
+OUTPUTS=""
+
+for TARGET in $TARGETS; do
+    # Derive paths
+    ARM_TARGET=$(echo "$TARGET" | sed 's|^o//|o/aarch64/|; s|^o/[^/]*/|o/aarch64/|')
+    X86_DBG="$TARGET.dbg"
+    ARM_DBG="$ARM_TARGET.dbg"
+    BASENAME=$(basename "$TARGET")
+    OUTPUT="${BASENAME}.com"
+
+    echo "=== bake: $BASENAME ==="
+    echo ""
+
+    # Step 1: Build x86_64
+    STEP=$((STEP + 1))
+    echo "--- Step $STEP/$TOTAL_STEPS: Building $BASENAME x86_64 ---"
+    # shellcheck disable=SC2086
+    make $MAKE_FLAGS "$TARGET"
+
+    if [ ! -f "$X86_DBG" ]; then
+        echo "Error: x86_64 build succeeded but $X86_DBG not found."
+        exit 1
+    fi
+    echo ""
+
+    # Step 2: Build aarch64
+    STEP=$((STEP + 1))
+    echo "--- Step $STEP/$TOTAL_STEPS: Building $BASENAME aarch64 ---"
+    # shellcheck disable=SC2086
+    make $MAKE_FLAGS m=aarch64 "$ARM_TARGET"
+
+    if [ ! -f "$ARM_DBG" ]; then
+        echo "Error: aarch64 build succeeded but $ARM_DBG not found."
+        exit 1
+    fi
+    echo ""
+
+    # Step 3: Link fat binary
+    STEP=$((STEP + 1))
+    echo "--- Step $STEP/$TOTAL_STEPS: Linking $OUTPUT ---"
+    "$APELINK" \
+        -o "$OUTPUT" \
+        -l "$APE_X86" \
+        -l "$APE_ARM" \
+        -M "$APE_M1" \
+        "$X86_DBG" \
+        "$ARM_DBG"
+    echo ""
+
+    # Verify
+    if [ ! -f "$OUTPUT" ]; then
+        echo "Error: apelink did not produce $OUTPUT"
+        exit 1
+    fi
+
+    check_ape_magic "$OUTPUT"
+    check_fat_binary "$OUTPUT" "$TARGET" "$ARM_TARGET"
+    check_ape_components "$OUTPUT"
+    echo ""
+
+    OUTPUTS="$OUTPUTS $OUTPUT"
+done
+
+# ── Summary ───────────────────────────────────────────────────────────
+
+echo "=== All done ==="
+for OUT in $OUTPUTS; do
+    SIZE=$(wc -c < "$OUT" | tr -d ' ')
+    echo "  $OUT ($SIZE bytes)"
+done

@@ -34,6 +34,13 @@ THIRD_PARTY_MEXICAN_TOASTER_RUBYBEAN_DIRECTDEPS =	\
 THIRD_PARTY_MEXICAN_TOASTER_RUBYBEAN_DEPS :=		\
 	$(call uniq,$(foreach x,$(THIRD_PARTY_MEXICAN_TOASTER_RUBYBEAN_DIRECTDEPS),$($(x))))
 
+# ksignalnames.S is pure data (rodata + strings), no x86 instructions.
+# Needs an explicit rule so aarch64 builds compile it instead of using
+# the libc/empty.s stub (see build/rules.mk).
+o/$(MODE)/third_party/mexican_toaster/ksignalnames.o:		\
+		third_party/mexican_toaster/ksignalnames.S
+	@$(COMPILE) -AOBJECTIFY.S $(OBJECTIFY.S) $(OUTPUT_OPTION) -c $<
+
 # mtsh - Mexican Toaster Shell (enhanced command interpreter)
 o/$(MODE)/third_party/mexican_toaster/mtsh.o:		\
 		third_party/mexican_toaster/mtsh.c		\

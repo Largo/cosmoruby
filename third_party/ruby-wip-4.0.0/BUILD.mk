@@ -9,9 +9,11 @@
 #   - ':' null command builtin
 # Note: mtsh will be built as a dependency before Ruby recipes run
 #
-# Prefer built mtsh, fallback to bootstrap mtsh, then default shell
-ifneq ($(wildcard o/$(MODE)/third_party/mexican_toaster/mtsh.com),)
-SHELL = o/$(MODE)/third_party/mexican_toaster/mtsh.com
+# IMPORTANT: Always use the HOST (x86_64) mtsh for make's SHELL,
+# even when cross-compiling for aarch64. The aarch64 binary can't
+# execute on the x86_64 build machine.
+ifneq ($(wildcard o//third_party/mexican_toaster/mtsh.com),)
+SHELL = o//third_party/mexican_toaster/mtsh.com
 else ifneq ($(wildcard build/bootstrap/mtsh),)
 SHELL = build/bootstrap/mtsh
 endif

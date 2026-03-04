@@ -18,6 +18,11 @@ __pycache__
 /perf.data.old
 /qemu*core
 
+# Bootstrap APE binaries (built by cosmo_configure.sh --bootstrap,
+# copied from o//third_party/mexican_toaster/ into build/bootstrap/)
+/build/bootstrap/automate_mkdeps
+/build/bootstrap/mtdeps
+
 # Ruby generated configuration files
 /third_party/ruby/.cosmo_configured
 /third_party/ruby/include/ruby/config.mode.h

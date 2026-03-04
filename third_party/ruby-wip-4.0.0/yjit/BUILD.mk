@@ -9,6 +9,14 @@
 
 RUBY_YJIT_ENABLED ?= 1
 
+# YJIT's Rust code targets x86_64-unknown-linux-gnu. Cross-compiling
+# Rust to aarch64 with Cosmopolitan's libc is not supported, so
+# disable YJIT on aarch64 builds (the x86_64 half of a fat binary
+# still gets YJIT).
+ifeq ($(ARCH),aarch64)
+RUBY_YJIT_ENABLED := 0
+endif
+
 ifeq ($(RUBY_YJIT_ENABLED),1)
 
 CARGO := $(shell command -v cargo 2>/dev/null)

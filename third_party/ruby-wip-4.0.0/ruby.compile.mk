@@ -160,6 +160,15 @@ o/$(MODE)/third_party/ruby/coroutine/arm64/Context.o: private	\
     CPPFLAGS +=							\
             -D'PREFIXED_SYMBOL(name)=name'
 
+# On aarch64, build/rules.mk compiles ALL .S files from libc/empty.s
+# (to prevent x86_64 assembly from leaking into aarch64 builds).
+# Ruby's arm64 coroutine is genuine aarch64 assembly, so we need an
+# explicit rule to override the empty stub — same pattern used by
+# libc/intrin/BUILD.mk for Arm Optimized Routines.
+o/$(MODE)/third_party/ruby/coroutine/arm64/Context.o:		\
+		third_party/ruby/coroutine/arm64/Context.S
+	@$(COMPILE) -AOBJECTIFY.S $(OBJECTIFY.S) $(OUTPUT_OPTION) -c $<
+
 # Extension-specific compiler flags are now in ext/*/BUILD.mk
 o/$(MODE)/third_party/ruby/ext/%.o: private			\
     CFLAGS +=							\
@@ -182,6 +191,16 @@ o/$(MODE)/third_party/ruby/loadpath.o: private			\
             # Dev paths removed to prevent duplicate constant warnings when using packaged ruby.com
             # -DRUBY_COSMO_DEV_LIB=\"$(abspath third_party/ruby/lib)\" \
             # -DRUBY_COSMO_DEV_MONITOR=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+
+# zipless variant: empty initial load paths (populated at runtime by
+# rb_cosmo_configure_load_path() using -D defines on each main.*.zipless.o)
+o/$(MODE)/third_party/ruby/loadpath.zipless.o: third_party/ruby/loadpath.c
+	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) \
+		-Ithird_party/ruby/include \
+		-Ithird_party/ruby \
+		-DNO_INITIAL_LOAD_PATH \
+		$(OUTPUT_OPTION) $<
+	@$(COMPILE) -AFIXUPOBJ -wT$@ $(FIXUPOBJ) $@
 
 # miniruby.zipless - uses filesystem paths only
 o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: third_party/ruby/miniruby.main.c
@@ -209,18 +228,10 @@ o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\
     CFLAGS +=							\
             -DRUBY_COSMO_RESET_LOAD_PATH			\
             -DRUBY_COSMO_LOAD_PATH0=\"$(abspath third_party/ruby/lib)\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\" \
-            -DRUBY_MINI_LIBDIR=\"$(abspath third_party/ruby/lib)\" \
-            -DRUBY_MINI_MONITOR_LIBDIR=\"$(abspath third_party/ruby/ext/monitor/lib)\"
+            -DRUBY_COSMO_LOAD_PATH1=\"$(abspath third_party/ruby/ext/monitor/lib)\"
 
-# miniruby - uses ZIP paths only
-o/$(MODE)/third_party/ruby/miniruby.main.o: private		\
-    CFLAGS +=							\
-            -DRUBY_COSMO_RESET_LOAD_PATH			\
-            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/4.0.0\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\" \
-            -DRUBY_MINI_LIBDIR=\"/zip/lib/ruby/4.0.0\" \
-            -DRUBY_MINI_MONITOR_LIBDIR=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\"
+# miniruby zip main.o: no RUBY_COSMO_RESET_LOAD_PATH needed — loadpath.o
+# in ruby.a already provides /zip paths via ruby_initial_load_paths[].
 
 # ruby - filesystem paths (zipless)
 o/$(MODE)/third_party/ruby/ruby.main.zipless.o: private		\
@@ -292,18 +303,8 @@ o/$(MODE)/third_party/ruby/miniruby_exports.c: o/$(MODE)/third_party/ruby/miniru
 
 o/$(MODE)/third_party/ruby/miniruby_exports.o: o/$(MODE)/third_party/ruby/miniruby_exports.c
 
-# ruby/irb/miniruby - ZIP paths
-o/$(MODE)/third_party/ruby/ruby.main.o: private			\
-    CFLAGS +=							\
-            -DRUBY_COSMO_RESET_LOAD_PATH			\
-            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/4.0.0\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\"
-
-o/$(MODE)/third_party/ruby/irb.main.o: private			\
-    CFLAGS +=							\
-            -DRUBY_COSMO_RESET_LOAD_PATH			\
-            -DRUBY_COSMO_LOAD_PATH0=\"/zip/lib/ruby/4.0.0\" \
-            -DRUBY_COSMO_LOAD_PATH1=\"/zip/lib/ruby/4.0.0/x86_64-cosmo\"
+# ruby/irb zip main.o: no RUBY_COSMO_RESET_LOAD_PATH needed — loadpath.o
+# in ruby.a already provides /zip paths via ruby_initial_load_paths[].
 
 ################################################################################
 # ruby

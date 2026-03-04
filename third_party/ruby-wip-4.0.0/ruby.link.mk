@@ -156,6 +156,7 @@ o/$(MODE)/third_party/ruby/ruby.dbg: private			\
 
 o/$(MODE)/third_party/ruby/ruby.zipless.pkg:			\
     o/$(MODE)/third_party/ruby/ruby.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
     $(foreach x,$(THIRD_PARTY_RUBY_RUBY_DIRECTDEPS),$($(x)_A).pkg)
 
 o/$(MODE)/third_party/ruby/ruby.zipless.dbg: | ruby.codegen
@@ -171,6 +172,7 @@ o/$(MODE)/third_party/ruby/ruby.zipless.dbg:			\
         $(THIRD_PARTY_RUBY_RUBY_DEPS)				\
         o/$(MODE)/third_party/ruby/ruby.zipless.pkg		\
         o/$(MODE)/third_party/ruby/ruby.main.zipless.o		\
+        o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
         o/$(MODE)/third_party/ruby/ruby_exports.o		\
         $(RUBY_LINK_EXT_ARCHIVES)				\
         $(CRT)							\
@@ -297,6 +299,7 @@ o/$(MODE)/third_party/ruby/irb.dbg: private			\
 
 o/$(MODE)/third_party/ruby/irb.zipless.pkg:			\
     o/$(MODE)/third_party/ruby/irb.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
     o/$(MODE)/third_party/ruby/irb_exports.o			\
     $(foreach x,$(THIRD_PARTY_RUBY_IRB_DIRECTDEPS),$($(x)_A).pkg)
 
@@ -313,6 +316,7 @@ o/$(MODE)/third_party/ruby/irb.zipless.dbg:			\
     $(THIRD_PARTY_RUBY_IRB_DEPS)				\
     o/$(MODE)/third_party/ruby/irb.zipless.pkg			\
     o/$(MODE)/third_party/ruby/irb.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
     o/$(MODE)/third_party/ruby/irb_exports.o			\
     $(RUBY_LINK_EXT_ARCHIVES)				\
     $(CRT)							\
@@ -366,6 +370,7 @@ MINIRUBY_ALL_ORDER_ONLY = $(if $(MINIRUBY_ALL_ORDER_ONLY_DEPS),| $(MINIRUBY_ALL_
 # miniruby.zipless - filesystem paths only
 o/$(MODE)/third_party/ruby/miniruby.zipless.pkg:		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
     o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(foreach x,$(THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS),$($(x)_A).pkg)
 
@@ -376,6 +381,7 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.pre.dbg:		\
     $(THIRD_PARTY_RUBY_MINIRUBY_DEPS)				\
     $(MINIRUBY_LINK_EXT_ARCHIVES)				\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\
     | $(RUBY_YJIT_ORDER_ONLY)
@@ -393,6 +399,7 @@ o/$(MODE)/third_party/ruby/miniruby.zipless.dbg:		\
     $(MINIRUBY_LINK_EXT_ARCHIVES)				\
     o/$(MODE)/third_party/ruby/miniruby.zipless.pkg		\
     o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+    o/$(MODE)/third_party/ruby/loadpath.zipless.o		\
     o/$(MODE)/third_party/ruby/miniruby_exports.o		\
     $(CRT)							\
     $(APE_NO_MODIFY_SELF)					\

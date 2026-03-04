@@ -1,9 +1,18 @@
 #!/bin/bash
-# Package Ruby with embedded stdlib
+# Package CosmoRuby 4.0.0 with embedded stdlib
+#
+# Assembles the Ruby standard library, extensions, gems, and terminfo
+# into a ZIP file, then embeds it into the fat APE binaries produced
+# by bake.
 #
 # Usage: package_ruby.sh [RUBY_BINARY]
-# Where RUBY_BINARY is the path to the Ruby interpreter to use (defaults to third_party/ruby/ruby)
-# This script should be called from third_party/ruby directory
+#   RUBY_BINARY  Path to Ruby interpreter for gemspec generation
+#                 (defaults to ../../o/third_party/ruby/ruby)
+#
+# Called from build_ruby.sh after bake produces fat binaries.
+# This script cd's into the o/ directory; all paths are relative from there.
+
+set -e
 
 # Get Ruby binary from parameter or use default
 RUBY_BIN="${1:-../../o/third_party/ruby/ruby}"
@@ -11,13 +20,16 @@ RUBY_BIN="${1:-../../o/third_party/ruby/ruby}"
 # Ensure we're in the o directory
 cd "$(dirname "$0")/../../o" 2>/dev/null || true
 
-# in o
-
-# Exit if current working directory is not o (does not end in /o)
 if [[ ! "$PWD" =~ /o$ ]]; then
   echo "Error: Script must be run from the 'o' directory."
   exit 1
 fi
+
+# Repo root is one level up from o/
+RUBY_SRC=../third_party/ruby
+
+# Verify zip/zipless pairs differ and have correct load paths
+bash "$RUBY_SRC/verify_zip_zipless.sh" third_party/ruby
 
 # Clean up any existing cosmo-ruby directory and ruby-stdlib.zip file
 rm -rf cosmo-ruby
@@ -29,41 +41,25 @@ mkdir -p cosmo-ruby/bin
 mkdir -p cosmo-ruby/lib/ruby/4.0.0
 
 # Copy Ruby standard library
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/lib/* cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/lib/* cosmo-ruby/lib/ruby/4.0.0/
 
-# Copy psych extension Ruby library files (required for YAML support)
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/psych/lib/psych* cosmo-ruby/lib/ruby/4.0.0/
-
-# Copy date extension Ruby library files (required by psych)
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/date/lib/date* cosmo-ruby/lib/ruby/4.0.0/
-
-# Copy digest extension Ruby library files
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/digest/lib/digest* cosmo-ruby/lib/ruby/4.0.0/
-# Copy digest/sha2 extension Ruby library files
+# Copy extension Ruby library files into stdlib tree
+cp -r "$RUBY_SRC"/ext/psych/lib/psych*          cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/date/lib/date*             cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/digest/lib/digest*         cosmo-ruby/lib/ruby/4.0.0/
 mkdir -p cosmo-ruby/lib/ruby/4.0.0/digest
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/digest/sha2/lib/* cosmo-ruby/lib/ruby/4.0.0/digest/
-
-# Copy json extension Ruby library files
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/json/lib/json* cosmo-ruby/lib/ruby/4.0.0/
-
-# Copy monitor extension Ruby library files
-cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/monitor/lib/monitor.rb cosmo-ruby/lib/ruby/4.0.0/
-
-# Copy objspace extension Ruby library files
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/objspace/lib/objspace* cosmo-ruby/lib/ruby/4.0.0/
-
-# Note: pathname is now a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
-
-# Copy socket extension Ruby library files (required for Socket methods)
-cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/socket/lib/socket.rb cosmo-ruby/lib/ruby/4.0.0/
-
-# Copy ripper extension Ruby library files (required for IRB's ruby-lex)
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/ext/ripper/lib/ripper* cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/digest/sha2/lib/*          cosmo-ruby/lib/ruby/4.0.0/digest/
+cp -r "$RUBY_SRC"/ext/json/lib/json*             cosmo-ruby/lib/ruby/4.0.0/
+cp    "$RUBY_SRC"/ext/monitor/lib/monitor.rb     cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/objspace/lib/objspace*     cosmo-ruby/lib/ruby/4.0.0/
+# Note: pathname is a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
+cp    "$RUBY_SRC"/ext/socket/lib/socket.rb       cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/ripper/lib/ripper*         cosmo-ruby/lib/ruby/4.0.0/
 
 # Get DLEXT and ARCH early for patching and plugin copying
-ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' ../third_party/ruby/lib/rbconfig.rb | head -1)"
+ARCH="$(sed -n 's/^  CONFIG\["arch"\] = "\(.*\)"/\1/p' "$RUBY_SRC"/lib/rbconfig.rb | head -1)"
 ARCH=${ARCH:-x86_64-cosmo}
-DLEXT="$(sed -n 's/^#define DLEXT "\.\?\(.*\)"/\1/p' ../third_party/ruby/include/ruby/config.mode.h | head -1)"
+DLEXT="$(sed -n 's/^#define DLEXT "\.\?\(.*\)"/\1/p' "$RUBY_SRC"/include/ruby/config.mode.h | head -1)"
 DLEXT=${DLEXT:-a}
 
 # Patch extension wrapper files to use correct DLEXT in plugin mode
@@ -75,13 +71,13 @@ fi
 
 # Copy bundled gems (rake, minitest, etc.)
 mkdir -p cosmo-ruby/lib/ruby/gems/4.0.0
-cp -r /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/* cosmo-ruby/lib/ruby/gems/4.0.0/
+cp -r "$RUBY_SRC"/.bundle/* cosmo-ruby/lib/ruby/gems/4.0.0/
 
 # Copy plugin extension archives when building in plugin mode (EXTSTATIC=0)
 # Plugins must go in the archdir (lib/ruby/4.0.0/x86_64-cosmo/) which is in $LOAD_PATH,
 # NOT in extensions/ subdirectory which is NOT searched by require.
-EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.mode.h | head -1)"
-SLIM_STATIC="$(sed -n 's/^#define[[:space:]]\+SLIM_STATIC[[:space:]]\+\([0-9]\+\)/\1/p' ../third_party/ruby/include/ruby/config.mode.h | head -1)"
+EXTSTATIC="$(sed -n 's/^#define[[:space:]]\+EXTSTATIC[[:space:]]\+\([0-9]\+\)/\1/p' "$RUBY_SRC"/include/ruby/config.mode.h | head -1)"
+SLIM_STATIC="$(sed -n 's/^#define[[:space:]]\+SLIM_STATIC[[:space:]]\+\([0-9]\+\)/\1/p' "$RUBY_SRC"/include/ruby/config.mode.h | head -1)"
 if [[ "$EXTSTATIC" == "0" ]]; then
   plugins_dir="cosmo-ruby/lib/ruby/4.0.0/${ARCH}"
   mkdir -p "${plugins_dir}"
@@ -283,9 +279,9 @@ Gem::Specification.new do |s|
   s.version     = "2.6.9"
   s.license     = "MIT"
   s.authors     = [
-    "André Arko", "Samuel Giddins", "Colby Swandale", "Hiroshi Shibata",
-    "David Rodríguez", "Grey Baker", "Stephanie Morillo", "Chris Morris", "James Wen", "Tim Moore",
-    "André Medeiros", "Jessica Lynn Suttles", "Terence Lee", "Carl Lerche",
+    "Andre Arko", "Samuel Giddins", "Colby Swandale", "Hiroshi Shibata",
+    "David Rodriguez", "Grey Baker", "Stephanie Morillo", "Chris Morris", "James Wen", "Tim Moore",
+    "Andre Medeiros", "Jessica Lynn Suttles", "Terence Lee", "Carl Lerche",
     "Yehuda Katz"
   ]
   s.email       = ["team@bundler.io"]
@@ -304,15 +300,13 @@ EOF
 # Generate default gemspecs for built-in extensions and stdlib
 # Ruby 4.0.0 moved IRB and other components to bundled gems, which depend on
 # built-in extensions and stdlib gems. These need default gemspecs for gem resolution.
-# With cosmo_plugin integration, we can now generate gemspecs even in plugin mode
-# since extensions will be dynamically loaded when needed
 echo "Generating default gemspecs for built-in extensions and stdlib..."
-RUBYOPT=--disable-gems RUBYLIB="${RUBYLIB:-../third_party/ruby/lib}" "$RUBY_BIN" --disable-gems - <<'RUBY'
+RUBYOPT=--disable-gems RUBYLIB="${RUBYLIB:-$RUBY_SRC/lib}" "$RUBY_BIN" --disable-gems - "$RUBY_SRC" <<'RUBY'
 require 'rubygems'
 require 'rubygems/specification'
 require 'find'
 
-ruby_root = '/home/groobiest/Code/jart/cosmopolitan/third_party/ruby'
+ruby_root = File.expand_path(ARGV[0])
 dest_dir = 'cosmo-ruby/lib/ruby/gems/4.0.0/specifications/default'
 
 # Find all .gemspec files in lib/ and ext/ directories
@@ -340,31 +334,29 @@ gemspec_files.each do |gemspec_path|
 end
 RUBY
 
-#
+# Copy terminfo database for terminal support
 mkdir -p cosmo-ruby/usr/share/terminfo
-
-#
-cp -r /home/groobiest/Code/jart/cosmopolitan/usr/share/terminfo/* cosmo-ruby/usr/share/terminfo
+cp -r ../usr/share/terminfo/* cosmo-ruby/usr/share/terminfo
 
 # Copy executable scripts to /zip/bin for ruby.com -S to find them
 echo "Copying executable scripts to bin/..."
 
 # Copy libexec scripts (erb, syntax_suggest, bundle, bundler)
-for exe in /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/libexec/*; do
+for exe in "$RUBY_SRC"/libexec/*; do
   [ -f "$exe" ] && cp "$exe" "cosmo-ruby/bin/$(basename "$exe")"
 done
 
 # Copy gem executables from .bundle/gems/*/exe/* (the real scripts, not binstubs)
-for exe in /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/gems/*/exe/*; do
+for exe in "$RUBY_SRC"/.bundle/gems/*/exe/*; do
   [ -f "$exe" ] && cp "$exe" "cosmo-ruby/bin/$(basename "$exe")"
 done
 
 # Copy bin/gem
-cp /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/bin/gem cosmo-ruby/bin/
+cp "$RUBY_SRC"/bin/gem cosmo-ruby/bin/
 
 # Copy additional useful executables from bundled gems (in bin/, not exe/)
 for exe in racc typeprof test-unit; do
-  src=$(find /home/groobiest/Code/jart/cosmopolitan/third_party/ruby/.bundle/gems -path "*/bin/$exe" -type f 2>/dev/null | head -1)
+  src=$(find "$RUBY_SRC"/.bundle/gems -path "*/bin/$exe" -type f 2>/dev/null | head -1)
   [ -f "$src" ] && cp "$src" "cosmo-ruby/bin/$exe"
 done
 
@@ -389,13 +381,9 @@ echo "  Shebang patching complete"
 
 cd cosmo-ruby
 
-# in o/cosmo-ruby !!
-# NOTE: We used to extract existing ZIP content here, but that overwrites our patched files!
-# Since we're rebuilding stdlib from scratch (copying from ext/*/lib and patching .so->.a),
-# we don't need to preserve old ZIP content. If you need to preserve user-added content,
-# extract BEFORE the file copying step above.
-# RUBYOPT=--disable-gems RUBYLIB=../../third_party/ruby/lib \
-#   ../third_party/ruby/ruby --disable-gems ../../third_party/ruby/extract_zip.rb /zip/
+# in o/cosmo-ruby
+# NOTE: We rebuild stdlib from scratch (copying from ext/*/lib and patching .so->.a),
+# so we don't need to preserve old ZIP content.
 echo "ZIP extraction skipped (rebuilding from source)"
 touch .cosmo
 
@@ -404,17 +392,29 @@ touch .cosmo
 echo "CosmoRuby packaged $(date -Iseconds)" > .cosmo_ruby_packaged
 
 # Create the ZIP file (include dotfiles like .cosmo_ruby_packaged)
-RUBYOPT=--disable-gems RUBYLIB=../third_party/ruby/lib zip -q -r -dd ../ruby-stdlib.zip * .cosmo_ruby_packaged
+RUBYOPT=--disable-gems RUBYLIB="$RUBY_SRC/lib" zip -q -r -dd ../ruby-stdlib.zip * .cosmo_ruby_packaged
 
 cd ..
 
 # in o
 
-# Prepare the Ruby binary for packaging
-cp third_party/ruby/ruby third_party/ruby/ruby.com
-cp third_party/ruby/irb third_party/ruby/irb.com
-cp third_party/ruby/miniruby third_party/ruby/miniruby.com
-# Use zipcopy to embed the stdlib ZIP into the Ruby binary
-../.cosmocc/current/bin/zipcopy ruby-stdlib.zip third_party/ruby/ruby.com
-../.cosmocc/current/bin/zipcopy ruby-stdlib.zip third_party/ruby/irb.com
-../.cosmocc/current/bin/zipcopy ruby-stdlib.zip third_party/ruby/miniruby.com
+# Embed stdlib ZIP into fat binaries (produced by bake in repo root)
+ZIPCOPY=../.cosmocc/current/bin/zipcopy
+for bin in ruby.com irb.com miniruby.com; do
+  if [ -f "../$bin" ]; then
+    echo "Packaging ../$bin with stdlib"
+    "$ZIPCOPY" ruby-stdlib.zip "../$bin"
+  else
+    echo "Warning: ../$bin not found (run bake first)"
+  fi
+done
+
+# Also package single-arch binaries in o// for development use
+for bin in ruby irb miniruby; do
+  src="third_party/ruby/$bin"
+  dst="third_party/ruby/${bin}.com"
+  if [ -f "$src" ]; then
+    cp "$src" "$dst"
+    "$ZIPCOPY" ruby-stdlib.zip "$dst"
+  fi
+done

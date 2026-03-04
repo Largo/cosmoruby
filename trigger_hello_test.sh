@@ -36,6 +36,7 @@ fi
 . ./check_ape.sh
 check_ape_magic "$BINARY" || exit 1
 check_fat_binary "$BINARY"
+check_ape_components "$BINARY" || exit 1
 
 # ── Quick local sanity check ─────────────────────────────────────────
 

@@ -20,6 +20,7 @@ COSMOCC=".cosmocc/current/bin"
 APELINK="$COSMOCC/apelink"
 APE_X86="$COSMOCC/ape-x86_64.elf"
 APE_ARM="$COSMOCC/ape-aarch64.elf"
+APE_M1="$COSMOCC/ape-m1.c"
 
 # ── Parse arguments ──────────────────────────────────────────────────
 # Everything before the last argument is make flags.
@@ -114,6 +115,7 @@ echo "--- Step 3/3: Linking fat binary ---"
     -o "$OUTPUT" \
     -l "$APE_X86" \
     -l "$APE_ARM" \
+    -M "$APE_M1" \
     "$X86_DBG" \
     "$ARM_DBG"
 
@@ -132,3 +134,4 @@ echo "Output: $OUTPUT ($(wc -c < "$OUTPUT" | tr -d ' ') bytes)"
 . ./check_ape.sh
 check_ape_magic "$OUTPUT"
 check_fat_binary "$OUTPUT" "$TARGET" "$ARM_TARGET"
+check_ape_components "$OUTPUT"

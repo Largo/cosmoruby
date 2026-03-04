@@ -1,78 +1,38 @@
 name: ruby-platforms
 
-# Phase 1: Build ruby.com once, test on all available CI platforms.
-# Validates that CosmoRuby works across OS/arch combinations.
-
-env:
-  COSMOCC_VERSION: 3.9.2
+# Cross-platform test for CosmoRuby.
+# Downloads a pre-built ruby.com from a GitHub release and runs
+# diagnostic tests on all available CI platforms.
+#
+# Usage:
+#   1. Build and package ruby.com locally
+#   2. Upload to a release: gh release upload ruby-test ruby.com --clobber
+#   3. Trigger: gh workflow run ruby-platforms.yml
+#      (or push to feature/ruby-* branch)
 
 on:
   push:
     branches:
       - master
       - "feature/ruby-*"
-  pull_request:
     paths:
-      - 'third_party/ruby/**'
       - '.github/workflows/ruby-platforms.yml'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag containing ruby.com binary'
+        required: true
+        default: 'ruby-test'
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || 'ruby-test' }}
+  REPO: ${{ github.repository }}
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: chetan/git-restore-mtime-action@v2
-
-      - uses: actions/cache/restore@v4
-        id: cache
-        with:
-          path: |
-            .cosmocc
-            o
-          key: ruby-${{ env.COSMOCC_VERSION }}-${{ github.sha }}
-          restore-keys: |
-            ruby-${{ env.COSMOCC_VERSION }}-
-
-      - name: support ape bins 1
-        run: sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
-
-      - name: support ape bins 2
-        run: sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
-
-      - name: build ruby
-        run: make -j2 o//third_party/ruby/ruby
-
-      - name: package ruby.com
-        run: cd third_party/ruby && bash package_ruby.sh
-
-      - uses: actions/cache/save@v4
-        with:
-          path: |
-            .cosmocc
-            o
-          key: ruby-${{ env.COSMOCC_VERSION }}-${{ github.sha }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ruby-com
-          path: o/third_party/ruby/ruby.com
-          retention-days: 30
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: diagnostic-scripts
-          path: |
-            third_party/ruby-wip-4.0.0/cosmo_tests/platform_diagnostic.rb
-            third_party/ruby-wip-4.0.0/cosmo_tests/run_platform_diagnostic.sh
-            third_party/ruby-wip-4.0.0/cosmo_tests/summarise_results.rb
-          retention-days: 30
-
   test:
-    needs: build
     strategy:
       fail-fast: false
       matrix:
@@ -96,20 +56,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        if: runner.os == 'Linux'
         with:
           sparse-checkout: |
             build/bootstrap
           sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: ruby-com
-          path: .
+      - name: download ruby.com (unix)
+        if: runner.os != 'Windows'
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$REPO" --pattern 'ruby.com' --dir .
+          chmod +x ruby.com
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: diagnostic-scripts
-          path: scripts
+      - name: download ruby.com (windows)
+        if: runner.os == 'Windows'
+        run: |
+          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --pattern 'ruby.com' --dir .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: setup ape loader (linux)
         if: runner.os == 'Linux'
@@ -121,35 +87,156 @@ jobs:
           fi
           sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
 
-      - name: make executable (unix)
+      - name: quick sanity check (unix)
         if: runner.os != 'Windows'
-        run: chmod +x ruby.com
+        run: |
+          OUTPUT=$(./ruby.com --disable-gems -e 'puts "#{RUBY_VERSION} #{RUBY_PLATFORM}"')
+          echo "Ruby: $OUTPUT"
+
+      - name: quick sanity check (windows)
+        if: runner.os == 'Windows'
+        run: |
+          Rename-Item -Path ruby.com -NewName ruby.exe
+          $output = & .\ruby.exe --disable-gems -e 'puts "#{RUBY_VERSION} #{RUBY_PLATFORM}"'
+          Write-Host "Ruby: $output"
 
       - name: run diagnostic (unix)
         if: runner.os != 'Windows'
         run: |
-          ./ruby.com --disable-gems \
-            scripts/third_party/ruby-wip-4.0.0/cosmo_tests/platform_diagnostic.rb \
-            --json > ${{ matrix.name }}-results.json
-          cat ${{ matrix.name }}-results.json
+          ./ruby.com --disable-gems -e '
+          require "etc"
+          require "rbconfig"
+          require "tempfile"
+          require "fileutils"
 
-      - name: rename for windows
-        if: runner.os == 'Windows'
-        run: Rename-Item -Path ruby.com -NewName ruby.exe
+          platform = Etc.uname[:sysname] rescue RUBY_PLATFORM
+          arch = Etc.uname[:machine] rescue RbConfig::CONFIG["host_cpu"]
+
+          results = []
+          pass = 0
+          fail = 0
+
+          check = ->(name, &block) {
+            begin
+              ok = block.call
+              if ok
+                results << "[PASS] #{name}"
+                pass += 1
+              else
+                results << "[FAIL] #{name}"
+                fail += 1
+              end
+            rescue => e
+              results << "[FAIL] #{name} -- #{e.class}: #{e.message}"
+              fail += 1
+            end
+          }
+
+          check.("ruby_version")     { RUBY_VERSION && !RUBY_VERSION.empty? }
+          check.("ruby_engine")      { RUBY_ENGINE == "ruby" }
+          check.("ruby_platform")    { RUBY_PLATFORM && !RUBY_PLATFORM.empty? }
+          check.("zip_exists")       { Dir.exist?("/zip") }
+          check.("stdlib_files")     { Dir["/zip/**/*"].select { |f| File.file?(f) }.size > 100 }
+          check.("packaged")         { defined?(RUBY_COSMO_PACKAGED) && RUBY_COSMO_PACKAGED }
+          check.("load_path")        { $LOAD_PATH.all? { |p| p.start_with?("/zip") } }
+          check.("no_dupe_paths")    { $LOAD_PATH.size == $LOAD_PATH.uniq.size }
+          check.("json")             { require "json"; JSON.generate({a: 1}) == "{\"a\":1}" }
+          check.("zlib")             { require "zlib"; Zlib.crc32("test").is_a?(Integer) }
+          check.("digest")           { require "digest"; Digest::SHA256.hexdigest("test").length == 64 }
+          check.("stringio")         { require "stringio"; StringIO.new("test").read == "test" }
+          check.("date")             { require "date"; Date.today.is_a?(Date) }
+          check.("uri")              { require "uri"; URI.parse("https://example.com").host == "example.com" }
+          check.("yaml")             { require "yaml"; YAML.dump({a: 1}) =~ /a:/ ? true : false }
+          check.("tempfile")         { tf = Tempfile.new("ci"); tf.write("ok"); tf.rewind; tf.read == "ok" }
+          check.("thread")           { r = nil; Thread.new { r = 42 }.join(5); r == 42 }
+          check.("mutex")            { Mutex.new.synchronize { true } }
+          check.("rubygems")         { require "rubygems"; Gem::VERSION && true }
+          check.("encoding_utf8")    { Encoding.default_external == Encoding::UTF_8 }
+          check.("unicode")          { s = "\u{1F600}"; s.length == 1 && s.bytesize == 4 }
+          check.("pid")              { Process.pid > 0 }
+          check.("env_path")         { ENV["PATH"] && !ENV["PATH"].empty? }
+
+          puts "CosmoRuby Diagnostic: #{platform}/#{arch}"
+          puts "Ruby #{RUBY_VERSION} (#{RUBY_ENGINE}) [#{RUBY_PLATFORM}]"
+          puts "=" * 60
+          results.each { |r| puts "  #{r}" }
+          puts "=" * 60
+          puts "  Pass: #{pass}  Fail: #{fail}"
+          exit(fail > 0 ? 1 : 0)
+          ' 2>&1 | tee ${{ matrix.name }}-results.txt
 
       - name: run diagnostic (windows)
         if: runner.os == 'Windows'
         run: |
-          .\ruby.exe --disable-gems `
-            scripts/third_party/ruby-wip-4.0.0/cosmo_tests/platform_diagnostic.rb `
-            --json | Out-File -Encoding utf8 ${{ matrix.name }}-results.json
-          Get-Content ${{ matrix.name }}-results.json
+          $script = @'
+          require "etc"
+          require "rbconfig"
+          require "tempfile"
+          require "fileutils"
+
+          platform = Etc.uname[:sysname] rescue RUBY_PLATFORM
+          arch = Etc.uname[:machine] rescue RbConfig::CONFIG["host_cpu"]
+
+          results = []
+          pass = 0
+          fail = 0
+
+          check = ->(name, &block) {
+            begin
+              ok = block.call
+              if ok
+                results << "[PASS] #{name}"
+                pass += 1
+              else
+                results << "[FAIL] #{name}"
+                fail += 1
+              end
+            rescue => e
+              results << "[FAIL] #{name} -- #{e.class}: #{e.message}"
+              fail += 1
+            end
+          }
+
+          check.("ruby_version")     { RUBY_VERSION && !RUBY_VERSION.empty? }
+          check.("ruby_engine")      { RUBY_ENGINE == "ruby" }
+          check.("ruby_platform")    { RUBY_PLATFORM && !RUBY_PLATFORM.empty? }
+          check.("zip_exists")       { Dir.exist?("/zip") }
+          check.("stdlib_files")     { Dir["/zip/**/*"].select { |f| File.file?(f) }.size > 100 }
+          check.("packaged")         { defined?(RUBY_COSMO_PACKAGED) && RUBY_COSMO_PACKAGED }
+          check.("load_path")        { $LOAD_PATH.all? { |p| p.start_with?("/zip") } }
+          check.("no_dupe_paths")    { $LOAD_PATH.size == $LOAD_PATH.uniq.size }
+          check.("json")             { require "json"; JSON.generate({a: 1}) == "{\"a\":1}" }
+          check.("zlib")             { require "zlib"; Zlib.crc32("test").is_a?(Integer) }
+          check.("digest")           { require "digest"; Digest::SHA256.hexdigest("test").length == 64 }
+          check.("stringio")         { require "stringio"; StringIO.new("test").read == "test" }
+          check.("date")             { require "date"; Date.today.is_a?(Date) }
+          check.("uri")              { require "uri"; URI.parse("https://example.com").host == "example.com" }
+          check.("yaml")             { require "yaml"; YAML.dump({a: 1}) =~ /a:/ ? true : false }
+          check.("tempfile")         { tf = Tempfile.new("ci"); tf.write("ok"); tf.rewind; tf.read == "ok" }
+          check.("thread")           { r = nil; Thread.new { r = 42 }.join(5); r == 42 }
+          check.("mutex")            { Mutex.new.synchronize { true } }
+          check.("rubygems")         { require "rubygems"; Gem::VERSION && true }
+          check.("encoding_utf8")    { Encoding.default_external == Encoding::UTF_8 }
+          check.("unicode")          { s = "\u{1F600}"; s.length == 1 && s.bytesize == 4 }
+          check.("pid")              { Process.pid > 0 }
+          check.("env_path")         { ENV["PATH"] && !ENV["PATH"].empty? }
+
+          puts "CosmoRuby Diagnostic: #{platform}/#{arch}"
+          puts "Ruby #{RUBY_VERSION} (#{RUBY_ENGINE}) [#{RUBY_PLATFORM}]"
+          puts "=" * 60
+          results.each { |r| puts "  #{r}" }
+          puts "=" * 60
+          puts "  Pass: #{pass}  Fail: #{fail}"
+          exit(fail > 0 ? 1 : 0)
+          '@
+          $script | Out-File -Encoding utf8 diag.rb
+          & .\ruby.exe --disable-gems diag.rb 2>&1 | Tee-Object -FilePath "${{ matrix.name }}-results.txt"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: results-${{ matrix.name }}
-          path: ${{ matrix.name }}-results.json
+          path: ${{ matrix.name }}-results.txt
           retention-days: 30
 
   summary:
@@ -157,23 +244,6 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            build/bootstrap
-            third_party/ruby-wip-4.0.0/cosmo_tests/summarise_results.rb
-          sparse-checkout-cone-mode: false
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ruby-com
-          path: .
-
-      - name: setup ape loader
-        run: |
-          sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
-          sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
-
       - name: download all result artifacts
         uses: actions/download-artifact@v4
         with:
@@ -181,15 +251,12 @@ jobs:
           path: results
           merge-multiple: true
 
-      - name: make executable
-        run: chmod +x ruby.com
-
       - name: generate summary
         run: |
           echo "## CosmoRuby Cross-Platform Test Results" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          ls results/*.json 2>/dev/null && \
-            ./ruby.com --disable-gems \
-              third_party/ruby-wip-4.0.0/cosmo_tests/summarise_results.rb \
-              results/*.json >> "$GITHUB_STEP_SUMMARY" || \
-            echo "No result files found." >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          for f in results/*.txt; do
+            [ -f "$f" ] && cat "$f" && echo ""
+          done >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

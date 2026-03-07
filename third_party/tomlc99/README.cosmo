@@ -1,0 +1,19 @@
+DESCRIPTION
+
+  tomlc99 is a pure C99 parser for TOML configuration files.
+  Parse-only (no serialisation); writing is done via fprintf.
+
+LICENSE
+
+  MIT License
+
+ORIGIN
+
+  Origin: https://github.com/cktan/tomlc99
+  Author: CK Tan
+  Commit: 5221b3d3d66c25a1dc6f0571b00f4f8285607965
+  Date:   2024
+
+LOCAL CHANGES
+
+  None.

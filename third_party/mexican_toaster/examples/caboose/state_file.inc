@@ -188,6 +188,27 @@ static int LoadStateFile(const char *path, const char *binary_path,
   return 0;
 }
 
+// Write a TOML-escaped string value (escapes \, ", and control chars).
+static void TomlWriteString(FILE *fp, const char *key, const char *val) {
+  fprintf(fp, "%s = \"", key);
+  for (const char *s = val; *s; ++s) {
+    switch (*s) {
+      case '"':  fputs("\\\"", fp); break;
+      case '\\': fputs("\\\\", fp); break;
+      case '\n': fputs("\\n", fp);  break;
+      case '\r': fputs("\\r", fp);  break;
+      case '\t': fputs("\\t", fp);  break;
+      default:
+        if ((unsigned char)*s < 0x20)
+          fprintf(fp, "\\u%04x", (unsigned char)*s);
+        else
+          fputc(*s, fp);
+        break;
+    }
+  }
+  fprintf(fp, "\"\n");
+}
+
 // Save state to a TOML file.  Uses temp-then-rename for atomicity.
 // Returns 0 on success, -1 on error.
 static int SaveStateFile(const char *path,
@@ -207,10 +228,10 @@ static int SaveStateFile(const char *path,
   // [toaster]
   fprintf(fp, "# Mexican Toaster state file (v%d)\n\n", TOASTER_STATE_FILE_VERSION);
   fprintf(fp, "[toaster]\n");
-  fprintf(fp, "state = \"%s\"\n", ToasterStateName(sf->state));
-  fprintf(fp, "binary_path = \"%s\"\n", sf->binary_path);
+  TomlWriteString(fp, "state", ToasterStateName(sf->state));
+  TomlWriteString(fp, "binary_path", sf->binary_path);
   if (sf->orig_path[0])
-    fprintf(fp, "orig_path = \"%s\"\n", sf->orig_path);
+    TomlWriteString(fp, "orig_path", sf->orig_path);
   fprintf(fp, "\n");
 
   // [overlay]
@@ -218,13 +239,13 @@ static int SaveStateFile(const char *path,
       sf->work_path[0] || sf->mount_path[0]) {
     fprintf(fp, "[overlay]\n");
     if (sf->upper_path[0])
-      fprintf(fp, "upper = \"%s\"\n", sf->upper_path);
+      TomlWriteString(fp, "upper", sf->upper_path);
     if (sf->lower_path[0])
-      fprintf(fp, "lower = \"%s\"\n", sf->lower_path);
+      TomlWriteString(fp, "lower", sf->lower_path);
     if (sf->work_path[0])
-      fprintf(fp, "work = \"%s\"\n", sf->work_path);
+      TomlWriteString(fp, "work", sf->work_path);
     if (sf->mount_path[0])
-      fprintf(fp, "mount = \"%s\"\n", sf->mount_path);
+      TomlWriteString(fp, "mount", sf->mount_path);
     fprintf(fp, "\n");
   }
 
@@ -234,7 +255,23 @@ static int SaveStateFile(const char *path,
     fprintf(fp, "count = %d\n", sf->persist_count);
     fprintf(fp, "names = [\n");
     for (int i = 0; i < sf->persist_count; i++) {
-      fprintf(fp, "  \"%s\",\n", sf->persist_names[i]);
+      fprintf(fp, "  \"");
+      for (const char *s = sf->persist_names[i]; *s; ++s) {
+        switch (*s) {
+          case '"':  fputs("\\\"", fp); break;
+          case '\\': fputs("\\\\", fp); break;
+          case '\n': fputs("\\n", fp);  break;
+          case '\r': fputs("\\r", fp);  break;
+          case '\t': fputs("\\t", fp);  break;
+          default:
+            if ((unsigned char)*s < 0x20)
+              fprintf(fp, "\\u%04x", (unsigned char)*s);
+            else
+              fputc(*s, fp);
+            break;
+        }
+      }
+      fprintf(fp, "\",\n");
     }
     fprintf(fp, "]\n");
   }

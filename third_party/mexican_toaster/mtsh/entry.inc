@@ -123,6 +123,10 @@ int _mtsh(int argc, char **argv, char **envp) {
         globrc = glob(arg, globFlags, NULL, &globTheBuilder);
         if (globrc == 0) {
           for (; globCount < globTheBuilder.gl_pathc; globCount++) {
+            if (n + 1 >= ARRAYLEN(args)) {
+              tinyprint(2, prog, ": error: too many args after glob expansion\n", NULL);
+              _Exit(13);
+            }
             args[n++] = globTheBuilder.gl_pathv[globCount];
           }
         } else if (globrc != GLOB_NOMATCH) {

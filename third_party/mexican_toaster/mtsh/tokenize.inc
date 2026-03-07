@@ -221,7 +221,7 @@ static char *Tokenize(void) {
         if (*p == '\'') {
           t = STATE_CMD;
         } else {
-          *q++ = *p;
+          Append(*p);
         }
         break;
 
@@ -287,15 +287,16 @@ static char *Tokenize(void) {
             case '$':
             case '`':
             case '"':
-              *q++ = c;
+            case '\\':
+              Append(c);
               break;
             default:
-              *q++ = '\\';
-              *q++ = c;
+              Append('\\');
+              Append(c);
               break;
           }
         } else {
-          *q++ = *p;
+          Append(*p);
         }
         break;
 

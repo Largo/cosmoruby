@@ -64,6 +64,80 @@ struct Config {
 
 static enum ShimStrategy g_shim_strategy = SHIM_STRATEGY_PER_HEADER;
 
+/* Reject strings containing shell metacharacters.
+ * Returns true if the string is safe to interpolate into a shell command.
+ * This is a defence-in-depth measure for inputs passed to system()/popen(). */
+static bool IsShellSafe(const char *s) {
+  if (!s) return false;
+  for (; *s; ++s) {
+    switch (*s) {
+      case ';': case '&': case '|': case '$': case '`':
+      case '(': case ')': case '{': case '}':
+      case '<': case '>': case '!': case '\\':
+      case '\'': case '"': case '\n': case '#':
+        return false;
+    }
+  }
+  return true;
+}
+
+/* Count files with given extensions recursively under dir.
+ * exts is a null-terminated array of extensions (e.g., {".h", ".c", NULL}). */
+static int CountFilesRecursive(const char *dir, const char **exts) {
+  int count = 0;
+  DIR *dp = opendir(dir);
+  if (!dp) return 0;
+  struct dirent *de;
+  while ((de = readdir(dp)) != NULL) {
+    if (de->d_name[0] == '.' &&
+        (!de->d_name[1] || (de->d_name[1] == '.' && !de->d_name[2])))
+      continue;
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/%s", dir, de->d_name);
+    struct stat st;
+    if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+      count += CountFilesRecursive(path, exts);
+    } else {
+      size_t nlen = strlen(de->d_name);
+      for (const char **e = exts; *e; ++e) {
+        size_t elen = strlen(*e);
+        if (nlen > elen && !strcmp(de->d_name + nlen - elen, *e)) {
+          count++;
+          break;
+        }
+      }
+    }
+  }
+  closedir(dp);
+  return count;
+}
+
+/* Search recursively for files named basename under dir.
+ * Prints up to max_results matches to stderr. Returns count found. */
+static int FindFileRecursive(const char *dir, const char *basename,
+                             int max_results) {
+  int found = 0;
+  DIR *dp = opendir(dir);
+  if (!dp) return 0;
+  struct dirent *de;
+  while ((de = readdir(dp)) != NULL && found < max_results) {
+    if (de->d_name[0] == '.' &&
+        (!de->d_name[1] || (de->d_name[1] == '.' && !de->d_name[2])))
+      continue;
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), "%s/%s", dir, de->d_name);
+    struct stat st;
+    if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+      found += FindFileRecursive(path, basename, max_results - found);
+    } else if (!strcmp(de->d_name, basename)) {
+      fprintf(stderr, "  %s\n", path);
+      found++;
+    }
+  }
+  closedir(dp);
+  return found;
+}
+
 static void LoadIncludePathsFromPkgConfig(struct Config *cfg, const char *pc_file);
 
 static char *ReadWholeFile(const char *path, size_t *out_size) {
@@ -612,6 +686,13 @@ static char *RunMakeCapture(const char *mode, const char *mkdeps, const char *o,
                             const char *outpath, const char *shim_prefix) {
   char cmd[4096];
 
+  // Validate all shell-interpolated inputs against injection
+  if (!IsShellSafe(mkdeps) || !IsShellSafe(o) || !IsShellSafe(outpath) ||
+      (shim_prefix && !IsShellSafe(shim_prefix))) {
+    fprintf(stderr, "error: shell metacharacters in mkdeps/outpath/shim_prefix\n");
+    return NULL;
+  }
+
   // First ensure txt files exist (make generates them from Makefile variables)
   snprintf(cmd, sizeof(cmd),
            "make -j1 o/%ssrcs.txt o/%shdrs.txt o/%sincs.txt >/dev/null 2>&1",
@@ -907,6 +988,14 @@ static void LoadIncludePathsFromPkgConfig(struct Config *cfg, const char *pc_fil
   /* Build command: PKG_CONFIG_PATH=<dir> pkg-config --cflags <module> */
   char cmd[1024];
   char *dir = PathDirname(pc_file);
+
+  // Validate inputs against shell injection
+  if (!IsShellSafe(dir) || !IsShellSafe(cfg->module_name)) {
+    fprintf(stderr, "Warning: shell metacharacters in pkg-config path/module, skipping\n");
+    free(dir);
+    return;
+  }
+
   snprintf(cmd, sizeof(cmd), "PKG_CONFIG_PATH=%s pkg-config --cflags %s 2>/dev/null",
            dir, cfg->module_name);
   free(dir);
@@ -1068,6 +1157,18 @@ int main(int argc, char *argv[]) {
     mkdeps = "build/bootstrap/mtdeps";
   }
 
+  /* Reject shell metacharacters in MKDEPS and MODE early, before any
+   * system()/popen() call.  These are interpolated into shell commands
+   * by RunMakeCapture and the txt-generation step. */
+  if (!IsShellSafe(mkdeps)) {
+    fprintf(stderr, "error: shell metacharacters in MKDEPS environment variable\n");
+    return 1;
+  }
+  if (!IsShellSafe(orel)) {
+    fprintf(stderr, "error: shell metacharacters in MODE environment variable\n");
+    return 1;
+  }
+
   const char *deps_mk = cfg.deps_mk_path;
   char mkdeps_log[128];
   snprintf(mkdeps_log, sizeof(mkdeps_log), "o/%smkdeps_output.log", orel);
@@ -1194,15 +1295,8 @@ int main(int argc, char *argv[]) {
     } else {
       strcpy(shims_dir, "shims/");
     }
-    char shims_count_cmd[PATH_MAX + 64];
-    snprintf(shims_count_cmd, sizeof(shims_count_cmd),
-             "find %s -name '*.h' -o -name '*.c' 2>/dev/null | wc -l", shims_dir);
-    FILE *fp = popen(shims_count_cmd, "r");
-    int shims_count = 0;
-    if (fp) {
-      fscanf(fp, "%d", &shims_count);
-      pclose(fp);
-    }
+    const char *shim_exts[] = {".h", ".c", NULL};
+    int shims_count = CountFilesRecursive(shims_dir, shim_exts);
 
     printf("%s dependency automation status:\n", cfg.module_name);
     printf("  %s entries: %d\n", cfg.hdrs_var_name, hdrs_count);
@@ -1324,24 +1418,34 @@ int main(int argc, char *argv[]) {
       free(output_copy);
       fprintf(stderr, "\n");
 
-      fprintf(stderr, "Searching for %s in %s:\n",
-              stage2_filename, cfg.search_dir);
-      char find_cmd[512];
       const char *basename_start = strrchr(stage2_filename, '/');
       const char *basename = basename_start ? basename_start + 1 : stage2_filename;
-      snprintf(find_cmd, sizeof(find_cmd),
-               "find %s -name '%s' -type f 2>/dev/null | head -10",
-               cfg.search_dir, basename);
-      system(find_cmd);
+
+      // Search for file recursively (no shell injection)
+      fprintf(stderr, "Searching for %s in %s:\n",
+              stage2_filename, cfg.search_dir);
+      if (!FindFileRecursive(cfg.search_dir, basename, 10))
+        fprintf(stderr, "  (not found)\n");
       fprintf(stderr, "\n");
 
+      // Search stage-1 log safely using fgets (no shell injection)
       fprintf(stderr, "Checking Stage 1 log for previous processing:\n");
       if (FileExists(stage1_log)) {
-        char grep_cmd[512];
-        snprintf(grep_cmd, sizeof(grep_cmd),
-                 "grep '^%s' %s || echo '  (not found in Stage 1 log)'",
-                 basename, stage1_log);
-        system(grep_cmd);
+        FILE *logfp = fopen(stage1_log, "r");
+        int found = 0;
+        if (logfp) {
+          char logline[4096];
+          size_t blen = strlen(basename);
+          while (fgets(logline, sizeof(logline), logfp)) {
+            if (!strncmp(logline, basename, blen)) {
+              fprintf(stderr, "  %s", logline);
+              found++;
+            }
+          }
+          fclose(logfp);
+        }
+        if (!found)
+          fprintf(stderr, "  (not found in Stage 1 log)\n");
       } else {
         fprintf(stderr, "  (Stage 1 log not found)\n");
       }

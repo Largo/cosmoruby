@@ -7,7 +7,7 @@
 #   ./bake -j8 o//third_party/ruby/ruby o//third_party/ruby/irb
 #
 # Output:
-#   <target>.com in the current directory (e.g. hello.com, ruby.com)
+#   releases/<target>.com (e.g. releases/hello.com, releases/ruby.com)
 #
 # What it does for each target:
 #   1. make <target>              -- builds x86_64
@@ -87,7 +87,8 @@ for TARGET in $TARGETS; do
     X86_DBG="$TARGET.dbg"
     ARM_DBG="$ARM_TARGET.dbg"
     BASENAME=$(basename "$TARGET")
-    OUTPUT="${BASENAME}.com"
+    mkdir -p releases
+    OUTPUT="releases/${BASENAME}.com"
 
     echo "=== bake: $BASENAME ==="
     echo ""

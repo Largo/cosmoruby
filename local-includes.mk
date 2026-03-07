@@ -2,22 +2,24 @@
 # This file is not committed to the repository
 # Add it to .git/info/exclude
 
-# Use objbincopy instead of GNU objcopy (fixes intermittent segfaults)
+# Use toolchain objcopy (resolves to correct arch via $(OBJCOPY) variable)
 # Write to temp file then mv to handle "Text file busy" on running executables
-#OBJBINCOPY = build/bootstrap/objbincopy
-#ifneq ($(ARCH), aarch64)
-#MAKE_OBJCOPY = $(OBJBINCOPY) -o $@.tmp $< && mv -f $@.tmp $@ && $(MAKE_ZIPCOPY)
-#endif
-MAKE_OBJCOPY = strace -f -o /tmp/objcopy-strace.log /usr/bin/objcopy -S -O binary $< $@
+ifneq ($(ARCH), aarch64)
+MAKE_OBJCOPY = $(COMPILE) -AOBJCOPY -T$@ $(OBJCOPY) -S -O binary $< $@.tmp && mv -f $@.tmp $@ && $(MAKE_ZIPCOPY)
+else
+MAKE_OBJCOPY = $(COMPILE) -AOBJCOPY -T$@ $(OBJCOPY) -S $< $@.tmp && mv -f $@.tmp $@ && $(MAKE_ZIPCOPY)
+endif
 
 # Mexican Toaster / Ruby development
+# cosmo_plugin must load before ruby — ruby.compile.mk uses := (immediate
+# expansion) for DEPS/pkg and THIRD_PARTY_COSMO_PLUGIN is in DIRECTDEPS.
+include third_party/cosmo_plugin/BUILD.mk
+include test/third_party/cosmo_plugin/BUILD.mk
 include third_party/libyaml/BUILD.mk
+include third_party/tomlc99/BUILD.mk
 include third_party/ruby/BUILD.mk
 include examples/rubyapp/BUILD.mk
 include third_party/mexican_toaster/BUILD.mk
-# Cosmo plugin loader + tests
-include third_party/cosmo_plugin/BUILD.mk
-include test/third_party/cosmo_plugin/BUILD.mk
 
 # Require bootstrap mtdeps for dependency generation.
 ifeq ($(wildcard build/bootstrap/mtdeps),)
@@ -30,6 +32,7 @@ endif
 # append the local packages to those aggregates here.
 LOCAL_PKGS :=							\
 	THIRD_PARTY_LIBYAML					\
+	THIRD_PARTY_TOMLC99					\
 	THIRD_PARTY_RUBY					\
 	RUBYAPP							\
 	THIRD_PARTY_MEXICAN_TOASTER				\

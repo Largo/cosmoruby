@@ -308,12 +308,19 @@ include third_party/openmp/BUILD.mk		# │
 include third_party/pcre/BUILD.mk		# │
 include third_party/less/BUILD.mk		# │
 include net/https/BUILD.mk			#─┘
+include tool/args/BUILD.mk			#─┐
+# Local project customizations (e.g. Ruby, libyaml, cosmo_plugin).
+# The - prefix means Make silently skips this if the file is missing,
+# which is expected on a clean checkout (it's not committed to the repo).
+# Must be included before tool/net/BUILD.mk because its TOOL_NET_DEPS
+# uses := (immediate expansion), so THIRD_PARTY_RUBY_A etc. must
+# already be defined or the .pkg prerequisites resolve to empty.
+-include local-includes.mk
 include third_party/tidy/BUILD.mk
 include third_party/BUILD.mk
 include third_party/nsync/testing/BUILD.mk
 include libc/testlib/BUILD.mk
 include tool/viz/lib/BUILD.mk
-include tool/args/BUILD.mk
 include tool/chat/BUILD.mk
 include test/math/BUILD.mk
 include test/posix/BUILD.mk
@@ -664,5 +671,5 @@ $(INCS):
 
 -include o/$(MODE)/depend
 
-# Local project customizations (add includes to local-includes.mk)
--include local-includes.mk
+# Local project customizations loaded earlier (after net/https, before tool/net)
+# See: -include local-includes.mk (line 311)

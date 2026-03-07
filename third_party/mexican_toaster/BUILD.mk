@@ -122,7 +122,7 @@ o/$(MODE)/third_party/mexican_toaster/caboose.dbg:	\
 		o/$(MODE)/third_party/mexican_toaster/mtsh_embed.o	\
 		o/$(MODE)/third_party/mexican_toaster/ksignalnames.o	\
 		$(CRT)						\
-		$(APE)					\
+		$(APE_NO_MODIFY_SELF)				\
 		| o/$(MODE)/third_party/mexican_toaster/lsdir.com
 	@$(APELINK)
 

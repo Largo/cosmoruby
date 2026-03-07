@@ -88,7 +88,12 @@ for TARGET in $TARGETS; do
     ARM_DBG="$ARM_TARGET.dbg"
     BASENAME=$(basename "$TARGET")
     mkdir -p releases
-    OUTPUT="releases/${BASENAME}.com"
+    # Don't double-add .com if target already has it (e.g., mtsh.com -> mtsh.com, not mtsh.com.com)
+    if [ "${BASENAME%.com}" != "$BASENAME" ]; then
+        OUTPUT="releases/${BASENAME}"
+    else
+        OUTPUT="releases/${BASENAME}.com"
+    fi
 
     echo "=== bake: $BASENAME ==="
     echo ""

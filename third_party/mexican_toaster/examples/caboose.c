@@ -16,7 +16,8 @@
 #include "libc/runtime/runtime.h"
 #include "libc/stdio/stdio.h"
 #include "libc/fmt/conv.h"
-#include "libc/stdbool.h"
+#include <stdbool.h>
+#include <stdlib.h>
 #include "libc/stdlib.h"
 #include "libc/dlopen/dlfcn.h"
 #include "libc/str/str.h"
@@ -28,9 +29,11 @@
 #include "libc/sysv/consts/o.h"
 #include "libc/sysv/consts/s.h"
 #include "libc/sysv/consts/clone.h"
+#include "libc/nexgen32e/crc32.h"
 #include "libc/temp.h"
 #include "libc/time.h"
 #include "libc/x/x.h"
+#include "third_party/tomlc99/toml.h"
 
 #include "third_party/mexican_toaster/examples/caboose/usage.inc"
 #include "third_party/mexican_toaster/examples/caboose/overlay_backend.inc"
@@ -43,4 +46,11 @@
 #include "third_party/mexican_toaster/examples/caboose/overlay_cmd.inc"
 #include "third_party/mexican_toaster/examples/caboose/toast_piz.inc"
 #include "third_party/mexican_toaster/examples/caboose/zip_tools.inc"
+#include "third_party/mexican_toaster/examples/caboose/state.inc"
+#include "third_party/mexican_toaster/examples/caboose/state_file.inc"
+#include "third_party/mexican_toaster/examples/caboose/thaw.inc"
+#include "third_party/mexican_toaster/examples/caboose/freeze.inc"
+#include "third_party/mexican_toaster/examples/caboose/persist.inc"
+#include "third_party/mexican_toaster/examples/caboose/discard.inc"
+#include "third_party/mexican_toaster/examples/caboose/status_cmd.inc"
 #include "third_party/mexican_toaster/examples/caboose/main.inc"

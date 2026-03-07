@@ -27,6 +27,36 @@ int main(int argc, char **argv) {
     return Toast(argv[0]);
   }
 
+  if (!strcmp(argv[1], "thaw")) {
+    // --thaw toast: thaw then enter shell
+    if (argc >= 3 && !strcmp(argv[2], "toast")) {
+      int rc = Thaw(argv[0]);
+      if (rc != EX_OK) return rc;
+      return Toast(argv[0]);
+    }
+    return Thaw(argv[0]);
+  }
+
+  if (!strcmp(argv[1], "freeze")) {
+    return Freeze(argv[0]);
+  }
+
+  if (!strcmp(argv[1], "persist")) {
+    return Persist(argv[0]);
+  }
+
+  if (!strcmp(argv[1], "discard")) {
+    return Discard(argv[0]);
+  }
+
+  if (!strcmp(argv[1], "status")) {
+    return Status(argv[0]);
+  }
+
+  if (!strcmp(argv[1], "list")) {
+    return ListPersisted(argv[0]);
+  }
+
   if (!strcmp(argv[1], "ls")) {
     return ListZip(argv[0]);
   }

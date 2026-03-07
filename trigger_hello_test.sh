@@ -2,8 +2,8 @@
 # Trigger the cosmo-hello-world CI workflow.
 #
 # Checks that the hello binary is a fat APE (both x86_64 and aarch64),
-# uploads it to a GitHub release, pushes to trigger CI, and watches
-# the workflow run.
+# uploads it to a GitHub release, triggers CI on 6 runners, and watches
+# the workflow run with live output.
 #
 # Usage: ./trigger_hello_test.sh [release-tag]
 #   Default release tag: hello-test
@@ -13,10 +13,15 @@
 
 set -e
 
-REPO="igravious/cosmoruby"
+# Report which command failed and where
+trap 'echo "Error: Command failed at line $LINENO"' ERR
+
 TAG="${1:-hello-test}"
 BINARY="releases/hello.com"
 WORKFLOW="cosmo-hello-world.yml"
+
+. ./check_ape.sh
+. ./trigger_ci.sh
 
 echo "=== Phase 0: APE Hello World Cross-Platform Test ==="
 echo ""
@@ -24,21 +29,20 @@ echo ""
 # ── Check binary exists ──────────────────────────────────────────────
 
 if [ ! -f "$BINARY" ]; then
-    echo "Error: $BINARY not found in current directory."
+    echo "Error: $BINARY not found."
     echo ""
     echo "Build a fat binary first:"
     echo "  ./bake o//examples/hello"
     exit 1
 fi
 
-# ── Verify APE binary ─────────────────────────────────────────────────
+# ── Verify APE binary ───────────────────────────────────────────────
 
-. ./check_ape.sh
 check_ape_magic "$BINARY" || exit 1
 check_fat_binary "$BINARY"
 check_ape_components "$BINARY" || exit 1
 
-# ── Quick local sanity check ─────────────────────────────────────────
+# ── Quick local sanity check ────────────────────────────────────────
 
 OUTPUT=$(./"$BINARY" 2>&1) || true
 if [ "$OUTPUT" = "hello world" ]; then
@@ -50,59 +54,11 @@ fi
 
 echo ""
 
-# ── Check release exists and has the binary ──────────────────────────
+# ── Upload, trigger, watch ──────────────────────────────────────────
 
-echo "Checking release '$TAG' on $REPO..."
+upload_release "$TAG" "$BINARY" \
+    "Phase 0 hello test" \
+    "APE fat binary for cross-platform testing"
 
-if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    echo "Release '$TAG' not found. Creating..."
-    gh release create "$TAG" "$BINARY" \
-        --repo "$REPO" \
-        --title "Phase 0 hello test" \
-        --notes "APE fat binary for cross-platform testing"
-    echo "Release created."
-else
-    # Release exists -- update the binary
-    echo "Release '$TAG' exists. Uploading binary..."
-    gh release upload "$TAG" "$BINARY" --repo "$REPO" --clobber
-    echo "Uploaded."
-fi
-
-echo ""
-
-# ── Push (empty commit if needed) ───────────────────────────────────
-
-echo "Pushing to trigger workflow..."
-
-PUSH_OUTPUT=$(git push cosmoruby 2>&1) || true
-
-if echo "$PUSH_OUTPUT" | grep -q "Everything up-to-date"; then
-    echo "Nothing to push. Creating empty trigger commit..."
-    git commit --allow-empty -m "Trigger cosmo-hello-world CI run"
-    git push cosmoruby
-fi
-
-echo ""
-
-# ── Watch the workflow ───────────────────────────────────────────────
-
-echo "Waiting for workflow to appear..."
-sleep 5
-
-RUN_ID=$(gh run list --workflow="$WORKFLOW" --repo="$REPO" --limit=1 --json databaseId -q '.[0].databaseId')
-
-if [ -z "$RUN_ID" ]; then
-    echo "Could not find workflow run. Check Actions tab manually:"
-    echo "  https://github.com/$REPO/actions/workflows/$WORKFLOW"
-    exit 1
-fi
-
-echo "Watching workflow run $RUN_ID..."
-echo "  https://github.com/$REPO/actions/runs/$RUN_ID"
-echo ""
-
-gh run watch "$RUN_ID" --repo "$REPO" --exit-status || true
-
-echo ""
-echo "=== Final status ==="
-gh run view "$RUN_ID" --repo "$REPO"
+trigger_workflow "$WORKFLOW"
+watch_workflow "$WORKFLOW"

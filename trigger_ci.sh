@@ -37,6 +37,16 @@ upload_release() {
     echo ""
 }
 
+# Get the most recent run ID for a workflow, or empty string if none.
+_latest_run_id() {
+    gh run list \
+        --workflow="$1" \
+        --repo="$TRIGGER_CI_REPO" \
+        --limit=1 \
+        --json databaseId \
+        -q '.[0].databaseId' 2>/dev/null || true
+}
+
 # Trigger a GitHub Actions workflow.
 #
 # Tries workflow_dispatch first (cleaner, shows as "manually triggered").
@@ -45,12 +55,19 @@ upload_release() {
 # branch (master). GitHub only recognises workflow_dispatch triggers
 # for workflows that are on the default branch.
 #
+# Sets TRIGGER_CI_BEFORE_ID so watch_workflow knows which run existed
+# before we triggered, and can wait for a genuinely new one.
+#
 # Usage: trigger_workflow WORKFLOW [DISPATCH_ARGS]
 #   DISPATCH_ARGS: extra flags for gh workflow run (e.g. -f key=value)
 trigger_workflow() {
     _workflow="$1"
     shift
     _dispatch_args="$*"
+
+    # Snapshot the latest run ID before triggering, so watch_workflow
+    # can distinguish "new run" from "stale run that was already there".
+    TRIGGER_CI_BEFORE_ID=$(_latest_run_id "$_workflow")
 
     # Try workflow_dispatch first
     echo "Triggering workflow (trying dispatch)..."
@@ -67,40 +84,62 @@ trigger_workflow() {
     echo "Dispatch unavailable (workflow not on default branch)."
     echo "Falling back to push trigger..."
 
-    PUSH_OUTPUT=$(git push cosmoruby 2>&1) || true
-
-    if echo "$PUSH_OUTPUT" | grep -q "Everything up-to-date"; then
-        echo "Nothing to push. Creating empty trigger commit..."
-        git commit --allow-empty -m "Trigger $_workflow CI run"
-        git push cosmoruby
+    # Touch the workflow file so the push satisfies any paths: filter.
+    # Many workflows only trigger on push when their own .yml changes.
+    # We append/update a timestamp comment — harmless but enough to
+    # make git see a diff.
+    _wf_path=".github/workflows/$_workflow"
+    if [ -f "$_wf_path" ]; then
+        _stamp="# last-triggered: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        if grep -q '^# last-triggered:' "$_wf_path"; then
+            sed -i "s/^# last-triggered:.*/$_stamp/" "$_wf_path"
+        else
+            echo "$_stamp" >> "$_wf_path"
+        fi
+        git add "$_wf_path"
+        git commit -m "Trigger $_workflow CI run"
     fi
+
+    git push cosmoruby
 
     echo ""
 }
 
-# Wait for a workflow run to appear, then watch it to completion.
+# Poll until a new workflow run appears, then watch it to completion.
+#
+# Uses TRIGGER_CI_BEFORE_ID (set by trigger_workflow) to ensure we
+# pick up the run we just triggered, not a stale older run.
 #
 # Usage: watch_workflow WORKFLOW
 watch_workflow() {
     _workflow="$1"
+    _max_wait=30
+    _waited=0
 
-    echo "Waiting for workflow to appear..."
-    sleep 5
+    echo "Waiting for new workflow run..."
 
-    RUN_ID=$(gh run list \
-        --workflow="$_workflow" \
-        --repo="$TRIGGER_CI_REPO" \
-        --limit=1 \
-        --json databaseId \
-        -q '.[0].databaseId')
+    # Poll until a run with a different (newer) ID appears.
+    while [ "$_waited" -lt "$_max_wait" ]; do
+        RUN_ID=$(_latest_run_id "$_workflow")
 
-    if [ -z "$RUN_ID" ]; then
-        echo "Could not find workflow run. Check Actions tab manually:"
+        if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "${TRIGGER_CI_BEFORE_ID:-}" ]; then
+            break
+        fi
+
+        _waited=$((_waited + 2))
+        printf "  polling... (%ds)\r" "$_waited"
+        sleep 2
+    done
+
+    if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "${TRIGGER_CI_BEFORE_ID:-}" ]; then
+        echo ""
+        echo "Timed out waiting for new run after ${_max_wait}s."
+        echo "Check Actions tab manually:"
         echo "  https://github.com/$TRIGGER_CI_REPO/actions/workflows/$_workflow"
         return 1
     fi
 
-    echo "Watching workflow run $RUN_ID..."
+    echo "Found run $RUN_ID                    "
     echo "  https://github.com/$TRIGGER_CI_REPO/actions/runs/$RUN_ID"
     echo ""
 

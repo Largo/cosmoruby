@@ -27,3 +27,19 @@ __pycache__
 /third_party/ruby/.cosmo_configured
 /third_party/ruby/include/ruby/config.mode.h
 /third_party/ruby/lib/rbconfig.mode.rb
+
+# IDE settings (AI agent configurations)
+/.claude/
+/.kimi/
+
+# Temporary directory (repo root only)
+/tmp/
+
+# Build outputs (fat binaries)
+/releases/
+
+# Ruby pristine sources and tarballs
+third_party/ruby-*.tar.gz
+third_party/ruby-4.0.0/
+third_party/ruby-4.0.1/
+third_party/ruby-orig-4.0.0/

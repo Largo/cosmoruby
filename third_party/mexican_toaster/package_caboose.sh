@@ -10,8 +10,7 @@
 #
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR/../.."
+REPO_ROOT="$(git rev-parse --show-toplevel)" || { echo "Error: not inside a git repo"; exit 1; }
 MODE="${MODE:-}"
 
 # Resolve the build output directory
@@ -91,7 +90,7 @@ if [ -d "$SSL_ROOT" ]; then
 fi
 
 # Record bare binary size so persist can truncate back to it
-stat -c%s "$CABOOSE" > "$STAGING/.bare_size"
+(stat -f%z "$CABOOSE" 2>/dev/null || stat -c%s "$CABOOSE") > "$STAGING/.bare_size"
 
 # Copy base binary, then append ZIP entries directly with fasterzip
 # OUTPUT must be absolute since fasterzip runs from STAGING directory

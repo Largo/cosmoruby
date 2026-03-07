@@ -11,8 +11,7 @@
 #
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR/../.."
+REPO_ROOT="$(git rev-parse --show-toplevel)" || { echo "Error: not inside a git repo"; exit 1; }
 CABOOSE=o//third_party/mexican_toaster/caboose
 CABOOSE_COM=o//third_party/mexican_toaster/caboose.com
 TEST_BIN=o//third_party/mexican_toaster/caboose_state_test
@@ -307,7 +306,7 @@ RACKFILE
   step "10. Verify persisted binary has Sinatra embedded"
   if [ -f "$DEMO_BIN" ]; then
     info "Persisted binary: $DEMO_BIN"
-    info "Size: $(stat -c %s "$DEMO_BIN") bytes"
+    info "Size: $(stat -f%z "$DEMO_BIN" 2>/dev/null || stat -c%s "$DEMO_BIN") bytes"
     run_cmd_ok unzip -l "$DEMO_BIN" | grep -i sinatra | head -5 || true
   else
     info "Persisted binary not found (persist may have failed above)"

@@ -9,8 +9,7 @@
 #
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR/../.."
+REPO_ROOT="$(git rev-parse --show-toplevel)" || { echo "Error: not inside a git repo"; exit 1; }
 BUILD="$REPO_ROOT/o"
 CABOOSE_COM="$BUILD/third_party/mexican_toaster/caboose.com"
 BAKED_BIN="/tmp/wordapp-baked.com"

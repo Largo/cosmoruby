@@ -5,9 +5,8 @@
 
 set -euo pipefail
 
-# Resolve repo root from script location
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# Resolve repo root (works regardless of where the script lives)
+REPO_ROOT="$(git rev-parse --show-toplevel)" || { echo "Error: not inside a git repo"; exit 1; }
 
 REDBEAN="$REPO_ROOT/o/tool/net/redbean"
 PORT=8080

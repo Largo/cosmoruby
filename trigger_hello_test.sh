@@ -9,13 +9,13 @@
 #   Default release tag: hello-test
 #
 # To build a fat binary:
-#   .cosmocc/current/bin/cosmocc -o hello.com examples/hello.c
+#   ./bake o//examples/hello
 
 set -e
 
 REPO="igravious/cosmoruby"
 TAG="${1:-hello-test}"
-BINARY="hello.com"
+BINARY="releases/hello.com"
 WORKFLOW="cosmo-hello-world.yml"
 
 echo "=== Phase 0: APE Hello World Cross-Platform Test ==="
@@ -27,7 +27,7 @@ if [ ! -f "$BINARY" ]; then
     echo "Error: $BINARY not found in current directory."
     echo ""
     echo "Build a fat binary first:"
-    echo "  .cosmocc/current/bin/cosmocc -o hello.com examples/hello.c"
+    echo "  ./bake o//examples/hello"
     exit 1
 fi
 
@@ -40,7 +40,7 @@ check_ape_components "$BINARY" || exit 1
 
 # ── Quick local sanity check ─────────────────────────────────────────
 
-OUTPUT=$(./hello.com 2>&1) || true
+OUTPUT=$(./"$BINARY" 2>&1) || true
 if [ "$OUTPUT" = "hello world" ]; then
     echo "Local run:   OK"
 else

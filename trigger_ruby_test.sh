@@ -8,14 +8,14 @@
 #   Default release tag: ruby-test
 #
 # To build and package ruby.com:
-#   make -j$(nproc) o//third_party/ruby/ruby
+#   ./bake o//third_party/ruby/ruby
 #   cd third_party/ruby && bash package_ruby.sh
 
 set -e
 
 REPO="igravious/cosmoruby"
 TAG="${1:-ruby-test}"
-BINARY="ruby.com"
+BINARY="releases/ruby.com"
 WORKFLOW="ruby-platforms.yml"
 
 echo "=== CosmoRuby Cross-Platform Test ==="
@@ -27,7 +27,7 @@ if [ ! -f "$BINARY" ]; then
     echo "Error: $BINARY not found in current directory."
     echo ""
     echo "Build and package first:"
-    echo "  make -j\$(nproc) o//third_party/ruby/ruby"
+    echo "  ./bake o//third_party/ruby/ruby"
     echo "  cd third_party/ruby && bash package_ruby.sh"
     exit 1
 fi
@@ -35,7 +35,7 @@ fi
 # -- Quick local sanity check -------------------------------------------------
 
 echo "Local sanity check..."
-OUTPUT=$(./ruby.com --disable-gems -e 'puts "#{RUBY_VERSION} #{RUBY_PLATFORM}"' 2>&1) || true
+OUTPUT=$(./"$BINARY" --disable-gems -e 'puts "#{RUBY_VERSION} #{RUBY_PLATFORM}"' 2>&1) || true
 if [ -n "$OUTPUT" ]; then
     echo "  Ruby: $OUTPUT"
 else

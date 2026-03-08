@@ -29,14 +29,14 @@
 #   $ ./rubyapp
 #   cosmopolitan is cool with Ruby!
 
-PKGS           += RUBYAPP
-RUBYAPP        = $(RUBYAPP_DEPS) o/$(MODE)/examples/rubyapp/rubyapp.a
-RUBYAPP_COMS   = o/$(MODE)/examples/rubyapp/rubyapp
-RUBYAPP_BINS   = $(RUBYAPP_COMS) $(RUBYAPP_COMS:%=%.dbg)
+PKGS           += EXAMPLES_RUBYAPP
+EXAMPLES_RUBYAPP        = $(EXAMPLES_RUBYAPP_DEPS) o/$(MODE)/examples/rubyapp/rubyapp.a
+EXAMPLES_RUBYAPP_COMS   = o/$(MODE)/examples/rubyapp/rubyapp
+EXAMPLES_RUBYAPP_BINS   = $(EXAMPLES_RUBYAPP_COMS) $(EXAMPLES_RUBYAPP_COMS:%=%.dbg)
 
 # Specify our Cosmopolitan library dependencies
 # THIRD_PARTY_RUBY provides the Ruby interpreter and standard library
-RUBYAPP_DIRECTDEPS = \
+EXAMPLES_RUBYAPP_DIRECTDEPS = \
     LIBC_CALLS \
     LIBC_FMT \
     LIBC_INTRIN \
@@ -51,16 +51,16 @@ RUBYAPP_DIRECTDEPS = \
     TOOL_ARGS
 
 # Compute the transitive closure of dependencies
-RUBYAPP_DEPS := $(call uniq,$(foreach x,$(RUBYAPP_DIRECTDEPS),$($(x))))
+EXAMPLES_RUBYAPP_DEPS := $(call uniq,$(foreach x,$(EXAMPLES_RUBYAPP_DIRECTDEPS),$($(x))))
 
 # Package checking and dependency resolution
 o/$(MODE)/examples/rubyapp/rubyapp.pkg: \
         o/$(MODE)/examples/rubyapp/rubyapp.main.o \
-        $(foreach x,$(RUBYAPP_DIRECTDEPS),$($(x)_A).pkg)
+        $(foreach x,$(EXAMPLES_RUBYAPP_DIRECTDEPS),$($(x)_A).pkg)
 
 # Link the APE executable
 o/$(MODE)/examples/rubyapp/rubyapp.dbg: \
-        $(RUBYAPP_DEPS) \
+        $(EXAMPLES_RUBYAPP_DEPS) \
         o/$(MODE)/examples/rubyapp/rubyapp.pkg \
         o/$(MODE)/examples/rubyapp/rubyapp.main.o \
         $(CRT) \

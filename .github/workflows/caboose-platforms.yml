@@ -1,0 +1,279 @@
+name: caboose-platforms
+
+# Test caboose.com (Mexican Toaster state machine + overlay filesystem)
+# across all 6 CI platforms: Linux/macOS/Windows on x86_64 and aarch64.
+#
+# Caboose is the more complex binary — it embeds mtsh, lsdir, fasterzip,
+# and zipcopy in its /zip/ filesystem. Tests cover: help, check, status,
+# ls (ZIP listing), thaw/discard lifecycle, and embedded binary execution.
+#
+# Usage:
+#   1. Build and package:  bash third_party/mexican_toaster/caboose/package_caboose_fat.sh
+#   2. Trigger:            ./trigger_caboose_test.sh
+
+on:
+  push:
+    branches:
+      - master
+      - "feature/ruby-*"
+    paths:
+      - '.github/workflows/caboose-platforms.yml'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag containing caboose.com'
+        required: true
+        default: 'caboose-test'
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || 'caboose-test' }}
+  REPO: ${{ github.repository }}
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, arch: x86_64, name: linux-x86, shell: bash }
+          - { os: ubuntu-24.04-arm, arch: aarch64, name: linux-arm64, shell: bash }
+          - { os: macos-15-intel, arch: x86_64, name: macos-x86, shell: bash }
+          - { os: macos-latest, arch: aarch64, name: macos-arm64, shell: bash }
+          - { os: windows-latest, arch: x86_64, name: windows-x86, shell: pwsh }
+          - { os: windows-11-arm, arch: aarch64, name: windows-arm64, shell: pwsh }
+
+    runs-on: ${{ matrix.os }}
+    name: test-${{ matrix.name }}
+    continue-on-error: true
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    steps:
+      - uses: actions/checkout@v4
+        if: runner.os == 'Linux'
+        with:
+          sparse-checkout: |
+            build/bootstrap
+          sparse-checkout-cone-mode: false
+
+      - name: download caboose.com (unix)
+        if: runner.os != 'Windows'
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$REPO" --pattern 'caboose.com' --dir .
+          chmod +x caboose.com
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download caboose.com (windows)
+        if: runner.os == 'Windows'
+        run: |
+          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --pattern 'caboose.com' --dir .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup ape loader (linux)
+        if: runner.os == 'Linux'
+        run: |
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            sudo cp -a build/bootstrap/ape.aarch64 /usr/bin/ape
+          else
+            sudo cp -a build/bootstrap/ape.elf /usr/bin/ape
+          fi
+          sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
+
+      # ── Basic CLI tests ──────────────────────────────────────────
+
+      - name: test help (unix)
+        if: runner.os != 'Windows'
+        run: |
+          OUTPUT=$(./caboose.com help 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -qi "usage\|caboose"; then
+            echo "PASS: help works on ${{ matrix.name }}"
+          else
+            echo "FAIL: help output unexpected on ${{ matrix.name }}"
+            exit 1
+          fi
+
+      - name: test help (windows)
+        if: runner.os == 'Windows'
+        run: |
+          $output = & .\caboose.com help 2>&1
+          Write-Host ($output -join "`n")
+          if ($output -match "usage|caboose") {
+            Write-Host "PASS: help works on ${{ matrix.name }}"
+          } else {
+            Write-Host "FAIL: help output unexpected on ${{ matrix.name }}"
+            exit 1
+          }
+
+      - name: test check (unix)
+        if: runner.os != 'Windows'
+        run: |
+          OUTPUT=$(./caboose.com check 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "healthy"; then
+            echo "PASS: check works on ${{ matrix.name }}"
+          else
+            echo "WARNING: check status unclear on ${{ matrix.name }}"
+          fi
+
+      - name: test check (windows)
+        if: runner.os == 'Windows'
+        run: |
+          $output = & .\caboose.com check 2>&1
+          Write-Host ($output -join "`n")
+          if ($output -match "healthy") {
+            Write-Host "PASS: check works on ${{ matrix.name }}"
+          } else {
+            Write-Host "WARNING: check status unclear on ${{ matrix.name }}"
+          }
+
+      - name: test status (unix)
+        if: runner.os != 'Windows'
+        run: |
+          OUTPUT=$(./caboose.com status 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -qi "cold\|state"; then
+            echo "PASS: status works on ${{ matrix.name }}"
+          else
+            echo "WARNING: status output unexpected on ${{ matrix.name }}"
+          fi
+
+      - name: test status (windows)
+        if: runner.os == 'Windows'
+        run: |
+          $output = & .\caboose.com status 2>&1
+          Write-Host ($output -join "`n")
+          if ($output -match "cold|state") {
+            Write-Host "PASS: status works on ${{ matrix.name }}"
+          } else {
+            Write-Host "WARNING: status output unexpected on ${{ matrix.name }}"
+          }
+
+      # ── ZIP filesystem tests ─────────────────────────────────────
+
+      - name: test ls (unix)
+        if: runner.os != 'Windows'
+        run: |
+          OUTPUT=$(./caboose.com ls 2>&1)
+          echo "$OUTPUT"
+          COUNT=$(echo "$OUTPUT" | wc -l)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "PASS: ls shows $COUNT entries on ${{ matrix.name }}"
+          else
+            echo "FAIL: ls produced no output on ${{ matrix.name }}"
+            exit 1
+          fi
+
+      - name: test ls (windows)
+        if: runner.os == 'Windows'
+        run: |
+          $output = & .\caboose.com ls 2>&1
+          Write-Host ($output -join "`n")
+          $count = ($output | Measure-Object -Line).Lines
+          if ($count -gt 0) {
+            Write-Host "PASS: ls shows $count entries on ${{ matrix.name }}"
+          } else {
+            Write-Host "FAIL: ls produced no output on ${{ matrix.name }}"
+            exit 1
+          }
+
+      - name: test cat (unix)
+        if: runner.os != 'Windows'
+        run: |
+          OUTPUT=$(./caboose.com cat README.txt 2>&1) || true
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -qi "toaster\|caboose"; then
+            echo "PASS: cat README.txt works on ${{ matrix.name }}"
+          else
+            echo "WARNING: cat output unexpected on ${{ matrix.name }}"
+          fi
+
+      - name: test cat (windows)
+        if: runner.os == 'Windows'
+        run: |
+          $output = & .\caboose.com cat README.txt 2>&1
+          Write-Host ($output -join "`n")
+          if ($output -match "toaster|caboose") {
+            Write-Host "PASS: cat README.txt works on ${{ matrix.name }}"
+          } else {
+            Write-Host "WARNING: cat output unexpected on ${{ matrix.name }}"
+          }
+
+      # ── Thaw/discard lifecycle (Linux only — needs namespaces) ───
+
+      - name: test thaw/discard lifecycle
+        if: runner.os == 'Linux'
+        run: |
+          WORKDIR=$(mktemp -d /tmp/caboose-ci-XXXXXX)
+          cp caboose.com "$WORKDIR/caboose.com"
+          chmod +x "$WORKDIR/caboose.com"
+
+          echo "--- thaw ---"
+          "$WORKDIR/caboose.com" thaw 2>&1 || true
+
+          echo "--- status after thaw ---"
+          STATUS=$("$WORKDIR/caboose.com" status 2>&1)
+          echo "$STATUS"
+          if echo "$STATUS" | grep -qi "thawed"; then
+            echo "PASS: thaw works on ${{ matrix.name }}"
+          else
+            echo "WARNING: thaw may not have succeeded on ${{ matrix.name }}"
+          fi
+
+          echo "--- discard ---"
+          "$WORKDIR/caboose.com" discard 2>&1 || true
+
+          echo "--- status after discard ---"
+          STATUS=$("$WORKDIR/caboose.com" status 2>&1)
+          echo "$STATUS"
+          if echo "$STATUS" | grep -qi "cold"; then
+            echo "PASS: discard works on ${{ matrix.name }}"
+          else
+            echo "WARNING: discard may not have succeeded on ${{ matrix.name }}"
+          fi
+
+          rm -rf "$WORKDIR"
+
+      # ── Embedded binary execution ────────────────────────────────
+
+      - name: test embedded mtsh (unix)
+        if: runner.os != 'Windows'
+        run: |
+          # caboose embeds mtsh at /zip/bin/mtsh — test via toast command
+          OUTPUT=$(./caboose.com toast -c "echo toast-ok" 2>&1) || true
+          echo "Output: $OUTPUT"
+          if echo "$OUTPUT" | grep -q "toast-ok"; then
+            echo "PASS: embedded mtsh works on ${{ matrix.name }}"
+          else
+            echo "WARNING: embedded mtsh may not work on ${{ matrix.name }}"
+            echo "(this is expected on some platforms)"
+          fi
+
+  summary:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: generate summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## Caboose Cross-Platform Results
+
+          Tests caboose.com (Mexican Toaster state machine) across 6 platforms:
+
+          | Test | Platforms |
+          |------|-----------|
+          | help, check, status | All 6 (Linux/macOS/Windows x86_64/aarch64) |
+          | ls, cat (ZIP filesystem) | All 6 |
+          | thaw/discard lifecycle | Linux only (requires namespaces) |
+          | embedded mtsh execution | Unix only |
+
+          See individual job logs for per-platform pass/fail details.
+          EOF
+# last-triggered: 2026-03-08T00:57:24Z

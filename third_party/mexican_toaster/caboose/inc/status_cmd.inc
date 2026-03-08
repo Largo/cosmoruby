@@ -13,6 +13,8 @@ static int Status(const char *prog) {
     return EX_IOERR;
 
   printf("State:       %s\n", ToasterStateName(sf.state));
+  if (sf.state != kCold)
+    printf("Backend:     %s\n", OverlayBackendName(sf.backend));
   printf("Binary:      %s\n", sf.binary_path);
   if (sf.orig_path[0])
     printf("Original:    %s\n", sf.orig_path);

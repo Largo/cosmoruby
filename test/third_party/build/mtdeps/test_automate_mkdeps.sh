@@ -9,7 +9,7 @@
 
 set -u
 
-TOOL="o//third_party/mexican_toaster/automate_mkdeps"
+TOOL="o//third_party/build/mtdeps/automate_mkdeps"
 PASS=0
 FAIL=0
 
@@ -81,7 +81,7 @@ test_output_not_contains() {
 
 if [ ! -x "$TOOL" ]; then
     echo "Error: $TOOL not found."
-    echo "Build with: make -j1 o//third_party/mexican_toaster/automate_mkdeps"
+    echo "Build with: make -j1 o//third_party/build/mtdeps/automate_mkdeps"
     exit 1
 fi
 

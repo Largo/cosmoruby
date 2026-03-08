@@ -39,7 +39,7 @@
 #include "libc/sysv/consts/prot.h"
 #include "libc/sysv/consts/s.h"
 #include "third_party/getopt/getopt.internal.h"
-#include "third_party/mexican_toaster/mtdeps_version.h"
+#include "third_party/build/mtdeps/mtdeps_version.h"
 #include "tool/build/lib/getargs.h"
 
 #define VERSION                                                   \

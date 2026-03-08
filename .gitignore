@@ -19,7 +19,7 @@ __pycache__
 /qemu*core
 
 # Bootstrap APE binaries (built by cosmo_configure.sh --bootstrap,
-# copied from o//third_party/mexican_toaster/ into build/bootstrap/)
+# copied from o//third_party/build/mtdeps/ into build/bootstrap/)
 /build/bootstrap/automate_mkdeps
 /build/bootstrap/mtdeps
 

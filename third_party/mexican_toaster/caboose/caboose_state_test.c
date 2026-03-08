@@ -21,8 +21,9 @@
 #include "third_party/tomlc99/toml.h"
 
 // Include the units under test
-#include "third_party/mexican_toaster/examples/caboose/state.inc"
-#include "third_party/mexican_toaster/examples/caboose/state_file.inc"
+#include "third_party/mexican_toaster/caboose/inc/overlay_backend.inc"
+#include "third_party/mexican_toaster/caboose/inc/state.inc"
+#include "third_party/mexican_toaster/caboose/inc/state_file.inc"
 
 static int tests_run;
 static int tests_passed;

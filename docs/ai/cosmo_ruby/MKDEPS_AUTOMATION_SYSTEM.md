@@ -31,13 +31,13 @@ bin/create_shims.sh --module=ruby shims                   # Create shim files
 
 ### Core Components
 
-1. **`build/bootstrap/automate_mkdeps`** (C binary from `third_party/mexican_toaster/automate_mkdeps.c`)
+1. **`build/bootstrap/automate_mkdeps`** (C binary from `third_party/build/mtdeps/automate_mkdeps.c`)
    - Parses mkdeps errors
    - Resolves headers using C search rules
    - Adds entries to module's deps.mk file
    - Logs actions to stage1 log
 
-2. **`build/bootstrap/mtdeps`** (Enhanced mkdeps from `third_party/mexican_toaster/mtdeps.c`)
+2. **`build/bootstrap/mtdeps`** (Enhanced mkdeps from `third_party/build/mtdeps/mtdeps.c`)
    - Standard mkdeps with context-key synthesis
    - Accepts `-P <prefix>` for module-specific shim directories
    - Synthesizes `{module}_shims/SANITIZED_HEADER` for missing includes
@@ -261,8 +261,8 @@ Final: 350 HDRS, 383 INCS, 352 shim files
 ## Files and Paths
 
 ### Source Code
-- `third_party/mexican_toaster/automate_mkdeps.c` - Main automation logic (C)
-- `third_party/mexican_toaster/mtdeps.c` - Enhanced mkdeps with shim synthesis
+- `third_party/build/mtdeps/automate_mkdeps.c` - Main automation logic (C)
+- `third_party/build/mtdeps/mtdeps.c` - Enhanced mkdeps with shim synthesis
 - `bin/create_shims.sh` - Shim file generator (Bash)
 - `bin/loop_automate_mkdeps.sh` - Iteration driver
 - `bin/run_mkdeps_and_shims.sh` - Full orchestration
@@ -377,6 +377,6 @@ Automation completes successfully when:
 
 ## References
 
-- mkdeps source: `tool/build/mkdeps.c` (original) and `third_party/mexican_toaster/mtdeps.c` (enhanced)
+- mkdeps source: `tool/build/mkdeps.c` (original) and `third_party/build/mtdeps/mtdeps.c` (enhanced)
 - Original shell implementation: `docs/ai/historical/AUTOMATE_MKDEPS_SHELL_ORIGINAL.sh`
 - C header search rules: ISO C standard, section 6.10.2

@@ -48,7 +48,7 @@
 #include "third_party/awk/cmd.h"
 #include "third_party/getopt/getopt.internal.h"
 #include "third_party/linenoise/linenoise.h"
-#include "third_party/mexican_toaster/mtsh_version.h"
+#include "third_party/mexican_toaster/mtsh/mtsh_version.h"
 #include "third_party/musl/glob.h"
 #include "third_party/sed/cmd.h"
 #include "third_party/tr/cmd.h"
@@ -141,6 +141,6 @@ static int ShellSpawn(void);
 static int ShellExec(void);
 static int _mtsh(int argc, char **argv, char **envp);
 
-#include "mtsh/util.inc"
-#include "mtsh/tokenize.inc"
-#include "mtsh/entry.inc"
+#include "util.inc"
+#include "tokenize.inc"
+#include "entry.inc"

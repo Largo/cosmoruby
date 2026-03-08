@@ -47,13 +47,13 @@ This allows the Ruby build automation to:
 The Ruby automation scripts override the `MKDEPS` variable:
 
 ```bash
-make MODE=dbg MKDEPS=o/dbg/third_party/mexican_toaster/mtdeps o/dbg/depend
+make MODE=dbg MKDEPS=o/dbg/third_party/build/mtdeps/mtdeps o/dbg/depend
 ```
 
 ### Build mtdeps
 
 ```bash
-make -j8 o//third_party/mexican_toaster/mtdeps
+make -j8 o//third_party/build/mtdeps/mtdeps
 ```
 
 ## Integration with Ruby Build Automation
@@ -78,4 +78,4 @@ The core mkdeps logic remains unchanged, ensuring compatibility with Cosmopolita
 - Original: `tool/build/mkdeps.c` from Cosmopolitan Libc
 - License: ISC (same as Cosmopolitan)
 - Modifications: Context-key shim support added 2025-11-02
-- Location: `third_party/mexican_toaster/mtdeps.c`
+- Location: `third_party/build/mtdeps/mtdeps.c`

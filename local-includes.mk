@@ -18,8 +18,9 @@ include test/third_party/cosmo_plugin/BUILD.mk
 include third_party/libyaml/BUILD.mk
 include third_party/tomlc99/BUILD.mk
 include third_party/ruby/BUILD.mk
-include examples/rubyapp/BUILD.mk
 include third_party/mexican_toaster/BUILD.mk
+include third_party/build/mtdeps/BUILD.mk
+include examples/rubyapp/BUILD.mk
 
 # Require bootstrap mtdeps for dependency generation.
 ifeq ($(wildcard build/bootstrap/mtdeps),)
@@ -27,17 +28,20 @@ $(error Missing build/bootstrap/mtdeps. Run third_party/ruby/cosmo_configure.sh 
 else
 MKDEPS := build/bootstrap/mtdeps -P ruby_shims/
 endif
+# Note: bootstrap binaries are built from third_party/build/mtdeps/ sources
+# and copied to build/bootstrap/ by cosmo_configure.sh --bootstrap
 
 # Core Makefile computes SRCS/HDRS/INCS/BINS before loading this file, so
 # append the local packages to those aggregates here.
 LOCAL_PKGS :=							\
+	THIRD_PARTY_COSMO_PLUGIN				\
+	TEST_THIRD_PARTY_COSMO_PLUGIN				\
 	THIRD_PARTY_LIBYAML					\
 	THIRD_PARTY_TOMLC99					\
 	THIRD_PARTY_RUBY					\
-	RUBYAPP							\
 	THIRD_PARTY_MEXICAN_TOASTER				\
-	THIRD_PARTY_COSMO_PLUGIN				\
-	TEST_THIRD_PARTY_COSMO_PLUGIN
+	THIRD_PARTY_BUILD_MTDEPS				\
+	EXAMPLES_RUBYAPP
 
 OBJS   += $(foreach x,$(LOCAL_PKGS),$($(x)_OBJS))
 SRCS   += $(foreach x,$(LOCAL_PKGS),$($(x)_SRCS))

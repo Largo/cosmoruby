@@ -498,8 +498,8 @@ o/$(MODE)/third_party/ruby/miniruby.dbg: private		\
 		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)			\
 		$(RUBY_YJIT_LINK_FLAGS)
 
-# automate_mkdeps has been moved to third_party/mexican_toaster/
-# See third_party/mexican_toaster/BUILD.mk for build rules
+# automate_mkdeps has been moved to third_party/build/mtdeps/
+# See third_party/build/mtdeps/BUILD.mk for build rules
 
 ################################################################################
 

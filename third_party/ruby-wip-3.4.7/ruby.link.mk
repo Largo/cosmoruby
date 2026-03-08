@@ -413,8 +413,8 @@ o/$(MODE)/third_party/ruby/miniruby.dbg: private		\
 		$(RUBY_EXPORT_UNDEFS)				\
 		$(MINIRUBY_WHOLE_ARCHIVE_EXTS)
 
-# automate_mkdeps has been moved to third_party/mexican_toaster/
-# See third_party/mexican_toaster/BUILD.mk for build rules
+# automate_mkdeps has been moved to third_party/build/mtdeps/
+# See third_party/build/mtdeps/BUILD.mk for build rules
 
 ################################################################################
 

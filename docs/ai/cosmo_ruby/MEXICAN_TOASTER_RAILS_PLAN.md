@@ -109,7 +109,7 @@ This doc tracks the steps to turn Mexican Toaster into a self-contained, cross-p
 ## Current Caboose/Mtsh Snapshot
 - `third_party/mexican_toaster/caboose.c`: commands `check`, `overlay` (portable skeleton), `toast`, `ls`, `cat`, `help`; `check` runs the full overlay health check (ZIP verification + upper prep/probe); `overlay` derives lower/upper paths, prepares upper layout (`.toast`/journal/tomb, bin, tmp), runs a write/read/fsync probe, and reports backend choice (still userland-only); `toast` copies `/zip/bin/mtsh` to `/tmp/.mtsh.<pid>` then execs, with fallbacks to `o//third_party/mexican_toaster/mtsh.com` or `mtsh` on `PATH`.
 - `third_party/mexican_toaster/mtsh.c`: supports `MTSH_MODE`/`TOASTER_MODE` or argv-name heuristic to enter toast mode; toast mode only changes prompt (`toast$ `) and banner text; no overlay wiring or rc sourcing split yet.
-- `third_party/mexican_toaster/package_caboose.sh`: builds sample ZIP with `/zip/bin/mtsh`, `/zip/app/hello.txt`, `/zip/README.txt`, `.cosmo` marker; uses `zipcopy` to embed ZIP into caboose binary.
+- `third_party/mexican_toaster/caboose/package_caboose.sh`: builds sample ZIP with `/zip/bin/mtsh`, `/zip/app/hello.txt`, `/zip/README.txt`, `.cosmo` marker; uses `zipcopy` to embed ZIP into caboose binary.
 - `bin/build_caboose.sh`: convenience wrapper to build `mtsh.com` + `caboose` then run the packaging script.
 
 ## Immediate Execution Plan (next two iterations)

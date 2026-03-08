@@ -21,8 +21,9 @@ static int Freeze(const char *prog) {
     return EX_USAGE;
   }
 
-  // Unmount the overlay but keep the upper layer on tmpfs
-  if (sf.mount_path[0]) {
+  // Unmount the overlay but keep the upper layer
+  // (Userland mode has no mount, so this is a no-op)
+  if (sf.mount_path[0] && sf.backend != kOverlayUserland) {
     // EINVAL = not a mount point, EPERM = mount belonged to a dead
     // user namespace (re-entry model), ENOENT = path already gone.
     // All three are expected; only warn on genuinely unexpected errors.

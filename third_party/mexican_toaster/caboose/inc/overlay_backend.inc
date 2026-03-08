@@ -19,6 +19,16 @@ static const char *OverlayBackendName(enum OverlayBackend b) {
   }
 }
 
+static const char *OverlayBackendKey(enum OverlayBackend b) {
+  switch (b) {
+    case kOverlayKernel:   return "kernel";
+    case kOverlayFuse:     return "fuse";
+    case kOverlayUserland: return "userland";
+    case kOverlayAuto:
+    default:               return "auto";
+  }
+}
+
 static enum OverlayBackend ParseOverlayBackend(const char *s) {
   if (!s || !*s) return kOverlayAuto;
   if (!strcasecmp(s, "kernel") || !strcasecmp(s, "overlayfs")) return kOverlayKernel;

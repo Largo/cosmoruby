@@ -7,7 +7,7 @@
 #   -> persist -> verify persisted binary has sinatra -> discard
 #
 # Usage:
-#   bash third_party/mexican_toaster/demo_lifecycle.sh
+#   bash third_party/mexican_toaster/caboose/demo_lifecycle.sh
 #
 set -euo pipefail
 
@@ -15,7 +15,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)" || { echo "Error: not inside a git 
 CABOOSE=o//third_party/mexican_toaster/caboose
 CABOOSE_COM=o//third_party/mexican_toaster/caboose.com
 TEST_BIN=o//third_party/mexican_toaster/caboose_state_test
-PACKAGE_SCRIPT=third_party/mexican_toaster/package_caboose.sh
+PACKAGE_SCRIPT=third_party/mexican_toaster/caboose/package_caboose.sh
 
 # Colours for output
 C_BOLD='\033[1m'
@@ -151,12 +151,13 @@ elif command -v ruby >/dev/null 2>&1; then
   RUBY_BIN="ruby"
 fi
 
-if [ "$CAN_UNSHARE" = false ]; then
-  echo -e "  ${C_YELLOW}Skipping live lifecycle demo (requires Linux with user namespaces).${C_RESET}"
-elif [ -z "$RUBY_BIN" ]; then
+if [ -z "$RUBY_BIN" ]; then
   echo -e "  ${C_YELLOW}Skipping live lifecycle demo (requires ruby or ruby.com on PATH).${C_RESET}"
 else
-  step "System supports user namespaces and Ruby is available ($RUBY_BIN)"
+  if [ "$CAN_UNSHARE" = false ]; then
+    echo -e "  ${C_CYAN}Note: Kernel overlay unavailable, will use userland fallback.${C_RESET}"
+  fi
+  step "Ruby is available ($RUBY_BIN)"
   echo ""
 
   # Package caboose with embedded mtsh so thaw works

@@ -180,18 +180,30 @@ static int Persist(const char *prog) {
     return EX_CANTCREAT;
   }
 
-  printf("Merging /zip/ + overlay into staging...\n");
-  if (CopyDirectoryRecursive("/zip", staging) == -1) {
-    fprintf(stderr, "Failed to copy /zip/ content\n");
-    CleanupTempDir(staging);
-    unlink(tmp_path);
-    return EX_IOERR;
-  }
-  if (CopyDirectoryRecursive(sf.upper_path, staging) == -1) {
-    fprintf(stderr, "Failed to copy overlay content\n");
-    CleanupTempDir(staging);
-    unlink(tmp_path);
-    return EX_IOERR;
+  if (sf.backend == kOverlayUserland) {
+    // Userland mode: upper already contains full copy of /zip/ + modifications
+    printf("Copying userland overlay to staging...\n");
+    if (CopyDirectoryRecursive(sf.upper_path, staging) == -1) {
+      fprintf(stderr, "Failed to copy upper layer content\n");
+      CleanupTempDir(staging);
+      unlink(tmp_path);
+      return EX_IOERR;
+    }
+  } else {
+    // Kernel mode: merge /zip/ base + upper modifications
+    printf("Merging /zip/ + overlay into staging...\n");
+    if (CopyDirectoryRecursive("/zip", staging) == -1) {
+      fprintf(stderr, "Failed to copy /zip/ content\n");
+      CleanupTempDir(staging);
+      unlink(tmp_path);
+      return EX_IOERR;
+    }
+    if (CopyDirectoryRecursive(sf.upper_path, staging) == -1) {
+      fprintf(stderr, "Failed to copy overlay content\n");
+      CleanupTempDir(staging);
+      unlink(tmp_path);
+      return EX_IOERR;
+    }
   }
 
   printf("Embedding merged content into %s...\n", tmp_path);

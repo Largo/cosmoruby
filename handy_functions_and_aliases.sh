@@ -41,33 +41,33 @@ build_automate_mkdeps() {
     local mode="${1:-}"
     if [[ -n "$mode" ]]; then
         echo "Building automate_mkdeps (MODE=$mode)..."
-        make MKDEPS=build/bootstrap/mkdeps_stub.sh -j1 MODE="$mode" o/"$mode"/third_party/mexican_toaster/automate_mkdeps
+        make MKDEPS=build/bootstrap/mkdeps_stub.sh -j1 MODE="$mode" o/"$mode"/third_party/build/mtdeps/automate_mkdeps
     else
         echo "Building automate_mkdeps (default mode)..."
-        make MKDEPS=build/bootstrap/mkdeps_stub.sh -j1 o//third_party/mexican_toaster/automate_mkdeps
+        make MKDEPS=build/bootstrap/mkdeps_stub.sh -j1 o//third_party/build/mtdeps/automate_mkdeps
     fi
 }
 
 # Run automate_mkdeps to fix dependency errors
 fix_ruby_deps() {
     echo "Running automate_mkdeps for Ruby..."
-    o//third_party/mexican_toaster/automate_mkdeps --module=ruby
+    o//third_party/build/mtdeps/automate_mkdeps --module=ruby
 }
 
 # Truncate Ruby dependency blocks (start fresh)
 truncate_ruby_deps() {
     echo "Truncating Ruby dependency blocks..."
-    o//third_party/mexican_toaster/automate_mkdeps --module=ruby --truncate
+    o//third_party/build/mtdeps/automate_mkdeps --module=ruby --truncate
 }
 
 # Show Ruby dependency info
 ruby_deps_info() {
-    o//third_party/mexican_toaster/automate_mkdeps --module=ruby --info
+    o//third_party/build/mtdeps/automate_mkdeps --module=ruby --info
 }
 
 # Show Ruby dependency counts
 ruby_deps_count() {
-    o//third_party/mexican_toaster/automate_mkdeps --module=ruby --count
+    o//third_party/build/mtdeps/automate_mkdeps --module=ruby --count
 }
 
 # Package Ruby with embedded stdlib
@@ -143,7 +143,7 @@ clean_all() {
 # Build mtdeps
 build_mtdeps() {
     echo "Building mtdeps..."
-    make -j1 MKDEPS=build/bootstrap/mkdeps_stub.sh o//third_party/mexican_toaster/mtdeps
+    make -j1 MKDEPS=build/bootstrap/mkdeps_stub.sh o//third_party/build/mtdeps/mtdeps
 }
 
 # Build mtsh

@@ -54,8 +54,8 @@ o/$(MODE)/third_party/mexican_toaster/ksignalnames.o:		\
 
 # mtsh - Mexican Toaster Shell (enhanced command interpreter)
 o/$(MODE)/third_party/mexican_toaster/mtsh.o:		\
-		third_party/mexican_toaster/mtsh.c		\
-		third_party/mexican_toaster/mtsh_version.h	\
+		third_party/mexican_toaster/mtsh/mtsh.c		\
+		third_party/mexican_toaster/mtsh/mtsh_version.h	\
 		third_party/mexican_toaster/mtsh/util.inc	\
 		third_party/mexican_toaster/mtsh/tokenize.inc	\
 		third_party/mexican_toaster/mtsh/entry.inc
@@ -68,50 +68,35 @@ o/$(MODE)/third_party/mexican_toaster/mtsh.com.dbg:	\
 		$(APE_NO_MODIFY_SELF)
 	@$(APELINK)
 
-# mtdeps - Mexican Toaster dependency analyzer (mkdeps with context-key shim support)
-o/$(MODE)/third_party/mexican_toaster/mtdeps.dbg:	\
-		$$(THIRD_PARTY_MEXICAN_TOASTER_DEPS)		\
-		o/$(MODE)/third_party/mexican_toaster/mtdeps.o	\
-		$(CRT)						\
-		$(APE_NO_MODIFY_SELF)
-	@$(APELINK)
-
-# automate_mkdeps - Generic mkdeps automation for third-party modules
-o/$(MODE)/third_party/mexican_toaster/automate_mkdeps.dbg:	\
-		$$(THIRD_PARTY_MEXICAN_TOASTER_DEPS)		\
-		o/$(MODE)/third_party/mexican_toaster/automate_mkdeps.o	\
-		$(CRT)						\
-		$(APE_NO_MODIFY_SELF)
-	@$(APELINK)
-
 # caboose - Proof of concept for "getting toasted"
 # Build without .com extension first so zipcopy can embed the ZIP
 o/$(MODE)/third_party/mexican_toaster/caboose.o:	\
-		third_party/mexican_toaster/examples/caboose.c		\
-		third_party/mexican_toaster/examples/caboose/usage.inc	\
-		third_party/mexican_toaster/examples/caboose/overlay_backend.inc	\
-		third_party/mexican_toaster/examples/caboose/paths.inc	\
-		third_party/mexican_toaster/examples/caboose/zip_check.inc	\
-		third_party/mexican_toaster/examples/caboose/env_probe.inc	\
-		third_party/mexican_toaster/examples/caboose/namespace_setup.inc	\
-		third_party/mexican_toaster/examples/caboose/recursive_copy.inc	\
-		third_party/mexican_toaster/examples/caboose/piz_setup.inc	\
-		third_party/mexican_toaster/examples/caboose/overlay_cmd.inc	\
-		third_party/mexican_toaster/examples/caboose/toast_piz.inc	\
-		third_party/mexican_toaster/examples/caboose/zip_tools.inc	\
-		third_party/mexican_toaster/examples/caboose/state.inc	\
-		third_party/mexican_toaster/examples/caboose/state_file.inc	\
-		third_party/mexican_toaster/examples/caboose/thaw.inc	\
-		third_party/mexican_toaster/examples/caboose/freeze.inc	\
-		third_party/mexican_toaster/examples/caboose/persist.inc	\
-		third_party/mexican_toaster/examples/caboose/discard.inc	\
-		third_party/mexican_toaster/examples/caboose/status_cmd.inc	\
-		third_party/mexican_toaster/examples/caboose/main.inc
+		third_party/mexican_toaster/caboose/caboose.c		\
+		third_party/mexican_toaster/caboose/inc/usage.inc	\
+		third_party/mexican_toaster/caboose/inc/overlay_backend.inc	\
+		third_party/mexican_toaster/caboose/inc/paths.inc	\
+		third_party/mexican_toaster/caboose/inc/zip_check.inc	\
+		third_party/mexican_toaster/caboose/inc/env_probe.inc	\
+		third_party/mexican_toaster/caboose/inc/namespace_setup.inc	\
+		third_party/mexican_toaster/caboose/inc/recursive_copy.inc	\
+		third_party/mexican_toaster/caboose/inc/piz_setup.inc	\
+		third_party/mexican_toaster/caboose/inc/overlay_cmd.inc	\
+		third_party/mexican_toaster/caboose/inc/toast_piz.inc	\
+		third_party/mexican_toaster/caboose/inc/zip_tools.inc	\
+		third_party/mexican_toaster/caboose/inc/state.inc	\
+		third_party/mexican_toaster/caboose/inc/state_file.inc	\
+		third_party/mexican_toaster/caboose/inc/thaw_userland.inc	\
+		third_party/mexican_toaster/caboose/inc/thaw.inc	\
+		third_party/mexican_toaster/caboose/inc/freeze.inc	\
+		third_party/mexican_toaster/caboose/inc/persist.inc	\
+		third_party/mexican_toaster/caboose/inc/discard.inc	\
+		third_party/mexican_toaster/caboose/inc/status_cmd.inc	\
+		third_party/mexican_toaster/caboose/inc/main.inc
 	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) -c $< -o $@
 
 o/$(MODE)/third_party/mexican_toaster/mtsh_embed.o:	\
-		third_party/mexican_toaster/mtsh_embed.c	\
-		third_party/mexican_toaster/mtsh.c		\
+		third_party/mexican_toaster/mtsh/mtsh_embed.c	\
+		third_party/mexican_toaster/mtsh/mtsh.c		\
 		third_party/mexican_toaster/mtsh/util.inc	\
 		third_party/mexican_toaster/mtsh/tokenize.inc	\
 		third_party/mexican_toaster/mtsh/entry.inc
@@ -137,9 +122,10 @@ o/$(MODE)/third_party/mexican_toaster/lsdir.com.dbg:	\
 
 # caboose_state_test - Unit tests for state machine + state file
 o/$(MODE)/third_party/mexican_toaster/caboose_state_test.o:	\
-		third_party/mexican_toaster/examples/caboose_state_test.c	\
-		third_party/mexican_toaster/examples/caboose/state.inc	\
-		third_party/mexican_toaster/examples/caboose/state_file.inc
+		third_party/mexican_toaster/caboose/caboose_state_test.c	\
+		third_party/mexican_toaster/caboose/inc/overlay_backend.inc	\
+		third_party/mexican_toaster/caboose/inc/state.inc	\
+		third_party/mexican_toaster/caboose/inc/state_file.inc
 	@$(COMPILE) -AOBJECTIFY.c $(OBJECTIFY.c) -c $< -o $@
 
 o/$(MODE)/third_party/mexican_toaster/caboose_state_test.dbg:	\
@@ -155,8 +141,6 @@ THIRD_PARTY_MEXICAN_TOASTER_BINS =			\
 
 THIRD_PARTY_MEXICAN_TOASTER_COMS =			\
 	o/$(MODE)/third_party/mexican_toaster/mtsh.com		\
-	o/$(MODE)/third_party/mexican_toaster/mtdeps		\
-	o/$(MODE)/third_party/mexican_toaster/automate_mkdeps	\
 	o/$(MODE)/third_party/mexican_toaster/caboose		\
 	o/$(MODE)/third_party/mexican_toaster/lsdir.com
 

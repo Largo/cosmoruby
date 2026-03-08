@@ -446,11 +446,11 @@ one `thaw` used -- it just reads from `/zip/` + upper and merges them.
 
 | File | Purpose |
 |------|---------|
-| `third_party/mexican_toaster/examples/caboose/thaw.inc` | Current Linux-only thaw |
-| `third_party/mexican_toaster/examples/caboose/piz_setup.inc` | Kernel overlay setup |
-| `third_party/mexican_toaster/examples/caboose/namespace_setup.inc` | Linux namespace setup |
-| `third_party/mexican_toaster/examples/caboose/overlay_backend.inc` | Backend enum (already has kOverlayUserland) |
-| `third_party/mexican_toaster/examples/caboose/persist.inc` | Persist (already portable) |
+| `third_party/mexican_toaster/caboose/inc/thaw.inc` | Current Linux-only thaw |
+| `third_party/mexican_toaster/caboose/inc/piz_setup.inc` | Kernel overlay setup |
+| `third_party/mexican_toaster/caboose/inc/namespace_setup.inc` | Linux namespace setup |
+| `third_party/mexican_toaster/caboose/inc/overlay_backend.inc` | Backend enum (already has kOverlayUserland) |
+| `third_party/mexican_toaster/caboose/inc/persist.inc` | Persist (already portable) |
 | `libc/runtime/zipos-open.c` | Cosmopolitan /zip/ VFS open |
 | `libc/runtime/zipos-stat.c` | Cosmopolitan /zip/ VFS stat |
 | `libc/runtime/zipos-access.c` | Cosmopolitan /zip/ VFS access |

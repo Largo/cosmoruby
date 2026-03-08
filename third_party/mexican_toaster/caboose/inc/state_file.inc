@@ -11,6 +11,7 @@
 
 struct ToasterStateFile {
   enum ToasterState state;
+  enum OverlayBackend backend;   // which overlay backend was used
   char binary_path[PATH_MAX];    // absolute path to original binary
   char orig_path[PATH_MAX];      // path to -orig.com backup
   char upper_path[PATH_MAX];     // overlayfs upper layer
@@ -137,6 +138,11 @@ static int LoadStateFile(const char *path, const char *binary_path,
   // [overlay] section
   section = toml_table_in(root, "overlay");
   if (section) {
+    datum = toml_string_in(section, "backend");
+    if (datum.ok) {
+      sf->backend = ParseOverlayBackend(datum.u.s);
+      free(datum.u.s);
+    }
     datum = toml_string_in(section, "upper");
     if (datum.ok) {
       snprintf(sf->upper_path, sizeof(sf->upper_path), "%s", datum.u.s);
@@ -235,9 +241,11 @@ static int SaveStateFile(const char *path,
   fprintf(fp, "\n");
 
   // [overlay]
-  if (sf->upper_path[0] || sf->lower_path[0] ||
+  if (sf->backend || sf->upper_path[0] || sf->lower_path[0] ||
       sf->work_path[0] || sf->mount_path[0]) {
     fprintf(fp, "[overlay]\n");
+    if (sf->backend)
+      TomlWriteString(fp, "backend", OverlayBackendKey(sf->backend));
     if (sf->upper_path[0])
       TomlWriteString(fp, "upper", sf->upper_path);
     if (sf->lower_path[0])

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Trigger the ruby-platforms CI workflow.
 #
 # Checks that the ruby binary is a fat APE (both x86_64 and aarch64),

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Trigger the mexican-toaster-platforms CI workflow.
 #
 # Checks that all Mexican Toaster binaries are fat APEs (x86_64 and aarch64),

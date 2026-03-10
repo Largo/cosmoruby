@@ -1,0 +1,47 @@
+# filename	language	role
+# Licence files
+GPL	plain-text	documentation
+PSFL	plain-text	documentation
+BSD-MIT	plain-text	documentation
+CC0	plain-text	documentation
+license_of_rb-readline	plain-text	documentation
+# Documentation
+README.EXT	plain-text	documentation
+Contents	plain-text	documentation
+# Dotfile configs
+.indent.pro	plain-text	config
+.rspec_parallel	plain-text	config
+.mspec.constants	plain-text	config
+.tidyrc	plain-text	config
+# Language-specific
+__config_site	cpp	config
+gem	ruby	source
+Executable.bundler	ruby	source
+activate	shell	source
+command_template	python	source
+# Data/config
+keywords	plain-text	data
+words0	plain-text	data
+words1	plain-text	data
+words2	plain-text	data
+words3	plain-text	data
+prototype	plain-text	config
+Setup.sample	plain-text	config
+turtle.cfg	plain-text	config
+ruby_logo.aa	plain-text	data
+# Ruby build/config
+Setup	plain-text	config
+bundled_gems	plain-text	metadata
+Executable	ruby	source
+Dockerfile-copy	docker	config
+colors	plain-text	data
+MIT	plain-text	documentation
+rbs_skip_tests	plain-text	config
+rbs_skip_tests_windows	plain-text	config
+.gitkeep	plain-text	revision-control
+.time	binary	build
+# Relay ephemeral
+.active	binary	metadata
+.launches	plain-text	metadata
+# Misc
+last_updated	plain-text	metadata

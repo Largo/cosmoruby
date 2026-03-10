@@ -1,0 +1,65 @@
+[
+  {"comment": "── Cosmopolitan-specific patterns ──"},
+
+  {"pattern": "trigger_*_test.sh", "role": "utility"},
+  {"pattern": "quick_n_dirty_*.sh", "role": "utility"},
+  {"pattern": "release_*.sh", "role": "utility"},
+
+  {"comment": "── Ruby ChangeLog trees ──"},
+  {"pattern": "third_party/ruby-*/doc/ChangeLog/*", "lang": "plain-text", "role": "documentation"},
+  {"pattern": "third_party/ruby-wip-*/doc/ChangeLog/*", "lang": "plain-text", "role": "documentation"},
+  {"pattern": "third_party/ruby-orig-*/doc/ChangeLog/*", "lang": "plain-text", "role": "documentation"},
+
+  {"comment": "── Third-party vendored trees ──"},
+  {"pattern": "third_party/ruby-wip-*/test/prism/fixtures/*.txt", "lang": "ruby", "role": "fixture"},
+  {"pattern": "third_party/ruby-wip-*/test/**/fixtures/{,**/}*", "role": "fixture"},
+  {"pattern": "third_party/*/README.cosmo", "lang": "plain-text", "role": "provenance"},
+  {"pattern": "third_party/**/README.cosmo", "lang": "plain-text", "role": "provenance"},
+  {"pattern": "third_party/mbedtls/test/**/*.data", "lang": "plain-text", "role": "fixture"},
+  {"pattern": "third_party/python/Lib/test/{,**/}*", "role": "test"},
+  {"pattern": "third_party/*/test/{,**/}*", "role": "test"},
+  {"pattern": "third_party/*/spec/{,**/}*", "role": "test"},
+
+  {"comment": "── Zoneinfo database ──"},
+  {"pattern": "usr/share/zoneinfo/{,**/}*", "lang": "zoneinfo", "role": "data"},
+
+  {"comment": "── GCC RTL dump files (configure artefacts) ──"},
+  {"pattern": "third_party/ruby-orig-*/.aarch64/{,**/}*", "lang": "plain-text", "role": "build"},
+
+  {"comment": "── Release binaries ──"},
+  {"pattern": "releases/{,**/}*", "lang": "binary", "role": "data"},
+
+  {"comment": "── Embedded resources ──"},
+  {"pattern": "usr/share/{,**/}*", "role": "data"},
+
+  {"comment": "── Cosmo assembly ──"},
+  {"pattern": "libc/nexgen32e/**/*.S", "lang": "asm"},
+  {"pattern": "libc/sysv/**/*.S", "lang": "asm"},
+  {"pattern": "libc/testlib/{,**/}*", "role": "test"},
+
+  {"comment": "── Cosmo extensionless C headers ──"},
+  {"pattern": "libc/isystem/{,**/}*", "lang": "c", "role": "source"},
+
+  {"comment": "── Cosmo C++ extensionless headers (before catch-all) ──"},
+  {"pattern": ".cosmocc/**/include/{experimental,ext}/*", "lang": "cpp", "role": "build"},
+
+  {"comment": "── Cosmo tool tree ──"},
+  {"pattern": "tool/{,**/}*", "role": "utility"},
+
+  {"comment": "── Cosmo build output trees ──"},
+  {"pattern": "o/{,**/}*", "role": "build"},
+  {"pattern": ".cosmocc/{,**/}*", "role": "build"},
+
+  {"comment": "── Ruby ERB templates (Linguist misclassifies as Go Template) ──"},
+  {"pattern": "{,**/}template/**/*.tmpl", "lang": "ruby", "role": "build", "template": true},
+
+  {"comment": "── Ruby scripts Linguist misclassifies based on content ──"},
+  {"pattern": "{,**/}tool/gen_dummy_probes.rb", "lang": "ruby", "role": "utility"},
+
+  {"comment": "── Cosmo-specific generated/build artefacts ──"},
+  {"pattern": "**/*.blt", "generated": true},
+  {"pattern": "third_party/ruby-wip-*/tool/lrama/lib/lrama/parser.rb", "generated": true},
+  {"pattern": "third_party/ruby-*/tool/lrama/lib/lrama/parser.rb", "generated": true},
+  {"pattern": "third_party/ruby-wip-*/ext/ripper/ripper.c", "generated": true},
+  {"pattern": "third_party/ruby-*/ext/ripper/ripper.c", "generated": true}
+]

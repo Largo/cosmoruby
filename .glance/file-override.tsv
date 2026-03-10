@@ -1,0 +1,6 @@
+# path	language	role
+# Exact-path overrides for one-off anomalies.
+# Hash-keyed on relative path — O(1) lookup.
+ape/notice.inc	binary	data
+libc/runtime/.cosmo	plain-text	metadata
+.ape-1.10	binary	utility

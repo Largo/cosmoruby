@@ -1,0 +1,30 @@
+# extension	language	role
+# Ruby ChangeLog suffixes (extensionless numbered files)
+.52	plain-text	documentation
+.60	plain-text	documentation
+# Ruby platform setup files
+.nt	plain-text	config
+.atheos	plain-text	config
+.status	plain-text	data
+# Yacc/parser output
+.output	plain-text	data
+# Misc one-offs
+.aa	plain-text	data
+.dmyh	c	source
+.rbbin	ruby	source
+.ansi	plain-text	data
+.msvc	make	build
+.msc	make	build
+.asdl	plain-text	data
+.wprp	xml	config
+.ctypes	plain-text	documentation
+.types	plain-text	data
+.ref	plain-text	test
+.backup	plain-text	config
+.EXT	plain-text	documentation
+# Build artefacts (ruby-orig)
+.old	plain-text	data
+# NES ROMs
+.nes	binary	data
+# DLL
+.dll	binary	data

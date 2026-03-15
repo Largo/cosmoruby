@@ -180,7 +180,9 @@ o/$(MODE)/third_party/ruby/ruby.main.zipless.o			\
 o/$(MODE)/third_party/ruby/irb.main.o				\
 o/$(MODE)/third_party/ruby/irb.main.zipless.o			\
 o/$(MODE)/third_party/ruby/miniruby.main.o			\
-o/$(MODE)/third_party/ruby/miniruby.main.zipless.o: private	\
+o/$(MODE)/third_party/ruby/miniruby.main.zipless.o		\
+o/$(MODE)/third_party/ruby/rubyobj.o				\
+o/$(MODE)/third_party/ruby/launch.o: private			\
     CFLAGS +=							\
             -Ithird_party/ruby/include				\
             -Ithird_party/ruby

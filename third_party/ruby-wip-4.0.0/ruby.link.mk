@@ -336,6 +336,7 @@ THIRD_PARTY_RUBY_MINIRUBY_DIRECTDEPS =				\
     LIBC_FMT							\
     LIBC_INTRIN							\
     LIBC_NEXGEN32E						\
+    LIBC_RUNTIME						\
     LIBC_STDIO							\
     LIBC_LOG							\
     LIBC_MEM							\
@@ -502,12 +503,60 @@ o/$(MODE)/third_party/ruby/miniruby.dbg: private		\
 # See third_party/build/mtdeps/BUILD.mk for build rules
 
 ################################################################################
+# rubyobj - Ruby Objectifier
+#
+# Compiles .rb source files into ELF .o files containing ISEQ bytecode.
+# Usage: rubyobj -m -o app.o app.rb
+
+THIRD_PARTY_RUBY_RUBYOBJ_DIRECTDEPS =				\
+    LIBC_CALLS							\
+    LIBC_FMT							\
+    LIBC_INTRIN							\
+    LIBC_LOG							\
+    LIBC_NEXGEN32E						\
+    LIBC_RUNTIME						\
+    LIBC_STDIO							\
+    LIBC_MEM							\
+    LIBC_STR							\
+    LIBC_SYSV							\
+    LIBC_THREAD							\
+    LIBC_X							\
+    THIRD_PARTY_GETOPT						\
+    THIRD_PARTY_RUBY						\
+    TOOL_BUILD_LIB						\
+    TOOL_ARGS
+
+THIRD_PARTY_RUBY_RUBYOBJ_DEPS :=				\
+    $(call uniq,$(foreach x,$(THIRD_PARTY_RUBY_RUBYOBJ_DIRECTDEPS),$($(x))))
+
+o/$(MODE)/third_party/ruby/rubyobj.pkg:				\
+    o/$(MODE)/third_party/ruby/rubyobj.o			\
+    $(foreach x,$(THIRD_PARTY_RUBY_RUBYOBJ_DIRECTDEPS),$($(x)_A).pkg)
+
+o/$(MODE)/third_party/ruby/rubyobj.dbg:				\
+        $(THIRD_PARTY_RUBY_RUBYOBJ_DEPS)			\
+        o/$(MODE)/third_party/ruby/rubyobj.pkg			\
+        o/$(MODE)/third_party/ruby/rubyobj.o			\
+        $(RUBY_LINK_EXT_ARCHIVES)				\
+        $(CRT)							\
+        $(APE_NO_MODIFY_SELF)					\
+        $(RUBY_ALL_ORDER_ONLY)
+	@$(APELINK)
+
+o/$(MODE)/third_party/ruby/rubyobj.dbg: private			\
+	LDFLAGS +=						\
+		$(RUBY_WHOLE_ARCHIVE_EXTS)			\
+		$(RUBY_YJIT_LINK_FLAGS)
+
+################################################################################
 
 THIRD_PARTY_RUBY_SRCS =						\
     $(foreach x,$(THIRD_PARTY_RUBY_ARTIFACTS),$($(x)_SRCS))	\
     third_party/ruby/miniruby.main.c				\
     third_party/ruby/ruby.main.c				\
-    third_party/ruby/irb.main.c
+    third_party/ruby/irb.main.c					\
+    third_party/ruby/rubyobj.c					\
+    third_party/ruby/launch.c
 
 THIRD_PARTY_RUBY_LIBS = $(foreach x,$(THIRD_PARTY_RUBY_ARTIFACTS),$($(x)))
 THIRD_PARTY_RUBY_HDRS = $(foreach x,$(THIRD_PARTY_RUBY_ARTIFACTS),$($(x)_HDRS))

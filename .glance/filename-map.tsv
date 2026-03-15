@@ -1,10 +1,10 @@
 # filename	language	role
 # Licence files
-GPL	plain-text	documentation
-PSFL	plain-text	documentation
-BSD-MIT	plain-text	documentation
-CC0	plain-text	documentation
-license_of_rb-readline	plain-text	documentation
+GPL	plain-text	licence
+PSFL	plain-text	licence
+BSD-MIT	plain-text	licence
+CC0	plain-text	licence
+license_of_rb-readline	plain-text	licence
 # Documentation
 README.EXT	plain-text	documentation
 Contents	plain-text	documentation
@@ -35,10 +35,10 @@ bundled_gems	plain-text	metadata
 Executable	ruby	source
 Dockerfile-copy	docker	config
 colors	plain-text	data
-MIT	plain-text	documentation
+MIT	plain-text	licence
 rbs_skip_tests	plain-text	config
 rbs_skip_tests_windows	plain-text	config
-.gitkeep	plain-text	revision-control
+.gitkeep	plain-text	metadata
 .time	binary	build
 # Relay ephemeral
 .active	binary	metadata

@@ -1,0 +1,3 @@
+# Paths to exclude when scanning this project
+# Uses .gitignore conventions: globs, directory slashes, negation with !
+glance/

@@ -1,3 +1,0 @@
-# Directories to skip when scanning this project
-# (top-level only, relative to project root)
-glance

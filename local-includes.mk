@@ -13,6 +13,9 @@ endif
 # Mexican Toaster / Ruby development
 # cosmo_plugin must load before ruby — ruby.compile.mk uses := (immediate
 # expansion) for DEPS/pkg and THIRD_PARTY_COSMO_PLUGIN is in DIRECTDEPS.
+# tool/build/lib must load before ruby — rubyobj needs TOOL_BUILD_LIB (elfwriter).
+# This file has an include guard, so it's safe to load here and again from Makefile.
+include tool/build/lib/BUILD.mk
 include third_party/cosmo_plugin/BUILD.mk
 include test/third_party/cosmo_plugin/BUILD.mk
 include third_party/libyaml/BUILD.mk
@@ -20,7 +23,7 @@ include third_party/tomlc99/BUILD.mk
 include third_party/ruby/BUILD.mk
 include third_party/mexican_toaster/BUILD.mk
 include third_party/build/mtdeps/BUILD.mk
-include examples/rubyapp/BUILD.mk
+include examples/rubyapps/BUILD.mk
 
 # Require bootstrap mtdeps for dependency generation.
 ifeq ($(wildcard build/bootstrap/mtdeps),)
@@ -41,7 +44,7 @@ LOCAL_PKGS :=							\
 	THIRD_PARTY_RUBY					\
 	THIRD_PARTY_MEXICAN_TOASTER				\
 	THIRD_PARTY_BUILD_MTDEPS				\
-	EXAMPLES_RUBYAPP
+	EXAMPLES_RUBYAPPS
 
 OBJS   += $(foreach x,$(LOCAL_PKGS),$($(x)_OBJS))
 SRCS   += $(foreach x,$(LOCAL_PKGS),$($(x)_SRCS))

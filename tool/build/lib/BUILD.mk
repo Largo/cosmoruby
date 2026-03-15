@@ -1,6 +1,10 @@
 #-*-mode:makefile-gmake;indent-tabs-mode:t;tab-width:8;coding:utf-8-*-┐
 #── vi: set noet ft=make ts=8 sw=8 fenc=utf-8 :vi ────────────────────┘
 
+# Guard against double-inclusion (this file may be included from local-includes.mk
+# and also from the main Makefile)
+ifndef TOOL_BUILD_LIB_A
+
 PKGS += TOOL_BUILD_LIB
 
 TOOL_BUILD_LIB_ARTIFACTS += TOOL_BUILD_LIB_A
@@ -20,16 +24,6 @@ TOOL_BUILD_LIB_A_CHECKS =				\
 TOOL_BUILD_LIB_A_SRCS =					\
 	$(TOOL_BUILD_LIB_A_SRCS_S)			\
 	$(TOOL_BUILD_LIB_A_SRCS_C)
-
-TOOL_BUILD_LIB_COMS =					\
-	o/$(MODE)/tool/build/lib/apetest		\
-	o/$(MODE)/tool/build/lib/apetest2
-
-TOOL_BUILD_LIB_A_OBJS =					\
-	$(TOOL_BUILD_LIB_A_SRCS_S:%.S=o/$(MODE)/%.o)	\
-	$(TOOL_BUILD_LIB_A_SRCS_C:%.c=o/$(MODE)/%.o)	\
-	o/$(MODE)/tool/build/lib/apetest.zip.o	\
-	o/$(MODE)/tool/build/lib/apetest2.zip.o
 
 TOOL_BUILD_LIB_A_DIRECTDEPS =				\
 	LIBC_CALLS					\
@@ -51,22 +45,27 @@ TOOL_BUILD_LIB_A_DIRECTDEPS =				\
 	NET_HTTP					\
 	NET_HTTPS					\
 	THIRD_PARTY_COMPILER_RT				\
-	THIRD_PARTY_MBEDTLS				\
+	THIRD_PARTY_MBEDTLS					\
 	THIRD_PARTY_XED					\
-	THIRD_PARTY_ZLIB				\
+	THIRD_PARTY_ZLIB					\
 	THIRD_PARTY_TZ
 
 TOOL_BUILD_LIB_A_DEPS :=				\
 	$(call uniq,$(foreach x,$(TOOL_BUILD_LIB_A_DIRECTDEPS),$($(x))))
 
-$(TOOL_BUILD_LIB_A):					\
-		tool/build/lib/				\
-		$(TOOL_BUILD_LIB_A).pkg			\
-		$(TOOL_BUILD_LIB_A_OBJS)
+TOOL_BUILD_LIB_A_OBJS =					\
+	$(TOOL_BUILD_LIB_A_SRCS_S:%.S=o/$(MODE)/%.o)		\
+	$(TOOL_BUILD_LIB_A_SRCS_C:%.c=o/$(MODE)/%.o)		\
+	o/$(MODE)/tool/build/lib/apetest.zip.o		\
+	o/$(MODE)/tool/build/lib/apetest2.zip.o
 
-$(TOOL_BUILD_LIB_A).pkg:				\
-		$(TOOL_BUILD_LIB_A_OBJS)		\
-		$(foreach x,$(TOOL_BUILD_LIB_A_DIRECTDEPS),$($(x)_A).pkg)
+TOOL_BUILD_LIB_COMS =					\
+	o/$(MODE)/tool/build/lib/apetest		\
+	o/$(MODE)/tool/build/lib/apetest2
+
+TOOL_BUILD_LIB_BINS =					\
+	$(TOOL_BUILD_LIB_COMS)				\
+	$(TOOL_BUILD_LIB_COMS:%=%.dbg)
 
 ifeq ($(ARCH), x86_64)
 o/$(MODE)/tool/build/lib/ssefloat.o: private		\
@@ -104,12 +103,14 @@ o/$(MODE)/tool/build/lib/errnos.o: tool/build/lib/errnos.S
 TOOL_BUILD_LIB_LIBS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)))
 TOOL_BUILD_LIB_SRCS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_SRCS))
 TOOL_BUILD_LIB_HDRS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_HDRS))
-TOOL_BUILD_LIB_BINS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_BINS))
-TOOL_BUILD_LIB_CHECKS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_CHECKS))
+TOOL_BUILD_LIB_INCS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_INCS))
 TOOL_BUILD_LIB_OBJS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_OBJS))
 TOOL_BUILD_LIB_TESTS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_TESTS))
+TOOL_BUILD_LIB_CHECKS = $(foreach x,$(TOOL_BUILD_LIB_ARTIFACTS),$($(x)_CHECKS))
 
 $(TOOL_BUILD_LIB_OBJS): tool/build/lib/BUILD.mk
+
+endif  # TOOL_BUILD_LIB_A guard
 
 .PHONY: o/$(MODE)/tool/build/lib
 o/$(MODE)/tool/build/lib:				\

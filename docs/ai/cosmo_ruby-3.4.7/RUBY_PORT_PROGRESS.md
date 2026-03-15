@@ -488,7 +488,7 @@ POLLNVAL 0x0020      // Invalid request
    - Verify no regressions in Cosmopolitan build
 
 7. **Create Test Application**:
-   - Simple Ruby app in `examples/rubyapp/`
+   - Simple Ruby app in `examples/rubyapps/`
    - Verify Ruby functionality works correctly
 
 ## Configuration Analysis (2025-10-18)
@@ -903,7 +903,7 @@ make -j24 o//third_party/ruby/ruby
 make -j24 o//third_party/ruby/irb
 
 # Build embedded example
-make -j24 o//examples/rubyapp/rubyapp
+make -j24 o//examples/rubyapps/ruby_c_api_tiny_demo
 ```
 
 ### Running Tests
@@ -924,7 +924,7 @@ export RUBYLIB=$PWD/lib:$PWD/test/lib
 
 ## Embedded Ruby Example
 
-File: `examples/rubyapp/rubyapp.main.c`
+File: `examples/rubyapps/ruby_c_api_tiny_demo.main.c`
 
 ```c
 #include "ruby.h"

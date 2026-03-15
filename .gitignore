@@ -43,3 +43,6 @@ third_party/ruby-*.tar.gz
 third_party/ruby-4.0.0/
 third_party/ruby-4.0.1/
 third_party/ruby-orig-4.0.0/
+
+# Glance tool (separate repo)
+/glance/

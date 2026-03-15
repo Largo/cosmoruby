@@ -1,29 +1,32 @@
 #!/bin/bash
-# Trigger the cosmo-hello-world CI workflow.
+# Fat APE smoke test.
 #
-# Checks that the hello binary is a fat APE (both x86_64 and aarch64),
+# Checks that a binary is a fat APE (both x86_64 and aarch64),
 # uploads it to a GitHub release, triggers CI on 6 runners, and watches
 # the workflow run with live output.
 #
-# Usage: ./trigger_hello_test.sh [release-tag]
-#   Default release tag: hello-test
+# Usage: ./fat_smoke_test.sh [binary] [release-tag]
+#   Default binary: releases/hello.com
+#   Default release tag: fat-smoke-test
 #
-# To build a fat binary:
-#   ./bake o//examples/hello
+# Examples:
+#   ./fat_smoke_test.sh /path/to/the/binary
+#   ./fat_smoke_test.sh /path/to/the/ninary my-tag
+#   ./fat_smoke_test.sh
 
 set -e
 
 # Report which command failed and where
 trap 'echo "Error: Command failed at line $LINENO"' ERR
 
-TAG="${1:-hello-test}"
-BINARY="releases/hello.com"
-WORKFLOW="cosmo-hello-world.yml"
+BINARY="${1:-releases/hello.com}"
+TAG="${2:-fat-smoke-test}"
+WORKFLOW="cosmo-ci-fat-smoke-test.yml"
 
 . ./check_ape.sh
 . ./trigger_ci.sh
 
-echo "=== Phase 0: APE Hello World Cross-Platform Test ==="
+echo "=== Fat APE Smoke Test ==="
 echo ""
 
 # ── Check binary exists ──────────────────────────────────────────────
@@ -31,7 +34,9 @@ echo ""
 if [ ! -f "$BINARY" ]; then
     echo "Error: $BINARY not found."
     echo ""
-    echo "Build a fat binary first:"
+    echo "Build a fat binary first, e.g.:"
+    echo "  third_party/wrapper/ccc -o /tmp/hello examples/hello.c"
+    echo "  or"
     echo "  ./bake o//examples/hello"
     exit 1
 fi
@@ -44,11 +49,10 @@ check_ape_components "$BINARY" || exit 1
 
 # ── Quick local sanity check ────────────────────────────────────────
 
-OUTPUT=$(./"$BINARY" 2>&1) || true
-if [ "$OUTPUT" = "hello world" ]; then
-    echo "Local run:   OK"
+if ./"$BINARY" >/dev/null 2>&1; then
+    echo "Local run:   OK (exit 0)"
 else
-    echo "Warning: local run output unexpected: $OUTPUT"
+    echo "Warning: local run exited with code $?"
     echo "Continuing anyway (might work on other platforms)."
 fi
 
@@ -57,7 +61,7 @@ echo ""
 # ── Upload, trigger, watch ──────────────────────────────────────────
 
 upload_release "$TAG" "$BINARY" \
-    "Phase 0 hello test" \
+    "Phase 0 fat smoke test" \
     "APE fat binary for cross-platform testing"
 
 trigger_workflow "$WORKFLOW"

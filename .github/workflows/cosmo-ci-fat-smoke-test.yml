@@ -1,12 +1,13 @@
-name: cosmo-hello-world
+name: cosmo-ci-fat-smoke-test
 
-# Phase 0: Validate APE binary execution across all CI platforms.
-# Binary is built locally with ./bake and uploaded to a GitHub release.
+# Validate fat APE binary execution across all CI platforms.
+# Binary is built locally and uploaded to a GitHub release.
 # This workflow downloads it and runs it on every available runner.
 #
 # Usage:
-#   1. Build fat binary:  ./bake o//examples/hello
-#   2. Use trigger script: ./trigger_hello_test.sh
+#   1. Build fat binary:  third_party/wrapper/ccc -o /tmp/hello examples/hello.c
+#      or:                ./bake o//examples/hello
+#   2. Use trigger script: ./fat_smoke_test.sh /tmp/hello
 
 on:
   push:
@@ -14,7 +15,7 @@ on:
       - master
       - "feature/ruby-*"
     paths:
-      - '.github/workflows/cosmo-hello-world.yml'
+      - '.github/workflows/cosmo-ci-fat-smoke-test.yml'
   workflow_dispatch:
     inputs:
       release_tag:

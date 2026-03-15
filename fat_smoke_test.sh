@@ -49,7 +49,7 @@ check_ape_components "$BINARY" || exit 1
 
 # ── Quick local sanity check ────────────────────────────────────────
 
-if ./"$BINARY" >/dev/null 2>&1; then
+if "$BINARY" >/dev/null 2>&1; then
     echo "Local run:   OK (exit 0)"
 else
     echo "Warning: local run exited with code $?"

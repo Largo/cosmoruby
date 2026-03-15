@@ -335,15 +335,21 @@ merge_fat() {
   local output="$1"
   local x86_dbg="$2"
   local arm_elf="$3"
-  local ape_loader_x86="$O/ape/ape.elf"
-  local ape_loader_arm="$O/aarch64/ape/ape.elf"
   local loader_flags=""
 
-  if [ -f "$ape_loader_x86" ]; then
-    loader_flags="$loader_flags -l $ape_loader_x86"
+  # Use the same loader paths as ./bake
+  local ape_x86="$COSMOCC/ape-x86_64.elf"
+  local ape_arm="$COSMOCC/ape-aarch64.elf"
+  local ape_m1="$COSMOCC/ape-m1.c"
+
+  if [ -f "$ape_x86" ]; then
+    loader_flags="$loader_flags -l $ape_x86"
   fi
-  if [ -f "$ape_loader_arm" ]; then
-    loader_flags="$loader_flags -l $ape_loader_arm"
+  if [ -f "$ape_arm" ]; then
+    loader_flags="$loader_flags -l $ape_arm"
+  fi
+  if [ -f "$ape_m1" ]; then
+    loader_flags="$loader_flags -M $ape_m1"
   fi
 
   verbose_run "$APELINK_BIN" \

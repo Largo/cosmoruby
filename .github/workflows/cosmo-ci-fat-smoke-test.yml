@@ -19,15 +19,15 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag containing hello binary'
+        description: 'Release tag containing the APE binary'
         required: true
-        default: 'hello-test'
+        default: 'fat-smoke-test'
 
 permissions:
   contents: read
 
 env:
-  RELEASE_TAG: ${{ inputs.release_tag || 'hello-test' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'fat-smoke-test' }}
   REPO: ${{ github.repository }}
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
             build/bootstrap
           sparse-checkout-cone-mode: false
 
-      - name: download hello binary (unix)
+      - name: download binary (unix)
         if: runner.os != 'Windows'
         run: |
           gh release download "$RELEASE_TAG" --repo "$REPO" --pattern 'hello.com' --dir .
@@ -66,7 +66,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: download hello binary (windows)
+      - name: download binary (windows)
         if: runner.os == 'Windows'
         run: |
           gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --pattern 'hello.com' --dir .
@@ -83,7 +83,7 @@ jobs:
           fi
           sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
 
-      - name: run hello (unix)
+      - name: run binary (unix)
         if: runner.os != 'Windows'
         run: |
           OUTPUT=$(./hello.com)
@@ -95,7 +95,7 @@ jobs:
             exit 1
           fi
 
-      - name: run hello (windows)
+      - name: run binary (windows)
         if: runner.os == 'Windows'
         run: |
           $output = & .\hello.com
@@ -115,7 +115,7 @@ jobs:
       - name: generate summary
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          ## APE Hello World Cross-Platform Results
+          ## Fat APE Smoke Test Results
 
           See individual job logs for per-platform pass/fail.
           EOF

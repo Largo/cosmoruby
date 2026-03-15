@@ -1,14 +1,15 @@
 /*-*- mode:c;indent-tabs-mode:nil;c-basic-offset:4;tab-width:8;coding:utf-8 -*-│
 │ vi: set et ft=c ts=4 sts=4 sw=4 fenc=utf-8                               :vi │
 ╞══════════════════════════════════════════════════════════════════════════════╡
-│ Cosmopolitan Ruby Application - Embedded Example                             │
+│ Ruby C API Tiny Demo                                                         │
 │                                                                              │
-│ This demonstrates embedding Ruby in a Cosmopolitan application.              │
+│ Demonstrates a tiny subset of the Ruby C embedding API.                      │
 ╚─────────────────────────────────────────────────────────────────────────────*/
 
 #include "libc/stdio/stdio.h"
 #undef RUBY_EXPORT
 #include "ruby.h"
+#include "ruby/version.h"
 
 int main(int argc, char *argv[]) {
     int status;

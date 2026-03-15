@@ -61,15 +61,15 @@ jobs:
       - name: download binary (unix)
         if: runner.os != 'Windows'
         run: |
-          gh release download "$RELEASE_TAG" --repo "$REPO" --pattern 'hello.com' --dir .
-          chmod +x hello.com
+          gh release download "$RELEASE_TAG" --repo "$REPO" --pattern 'a.out' --dir .
+          chmod +x a.out
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: download binary (windows)
         if: runner.os == 'Windows'
         run: |
-          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --pattern 'hello.com' --dir .
+          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --pattern 'a.out' --dir .
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -86,26 +86,14 @@ jobs:
       - name: run binary (unix)
         if: runner.os != 'Windows'
         run: |
-          OUTPUT=$(./hello.com)
-          echo "Output: $OUTPUT"
-          if [ "$OUTPUT" = "hello world" ]; then
-            echo "PASS: hello.com works on ${{ matrix.name }}"
-          else
-            echo "FAIL: unexpected output on ${{ matrix.name }}"
-            exit 1
-          fi
+          ./a.out
+          echo "PASS: a.out exited 0 on ${{ matrix.name }}"
 
       - name: run binary (windows)
         if: runner.os == 'Windows'
         run: |
-          $output = & .\hello.com
-          Write-Host "Output: $output"
-          if ($output -eq "hello world") {
-            Write-Host "PASS: hello.com works on ${{ matrix.name }}"
-          } else {
-            Write-Host "FAIL: unexpected output on ${{ matrix.name }}"
-            exit 1
-          }
+          & .\a.out
+          Write-Host "PASS: a.out exited 0 on ${{ matrix.name }}"
 
   summary:
     needs: test

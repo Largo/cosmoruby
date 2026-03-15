@@ -60,8 +60,12 @@ echo ""
 
 # ── Upload, trigger, watch ──────────────────────────────────────────
 
-upload_release "$TAG" "$BINARY" \
-    "Phase 0 fat smoke test" \
+# Upload as a.out so the CI workflow has a stable name to download
+UPLOAD_BINARY="/tmp/a.out"
+cp "$BINARY" "$UPLOAD_BINARY"
+
+upload_release "$TAG" "$UPLOAD_BINARY" \
+    "Fat APE smoke test" \
     "APE fat binary for cross-platform testing"
 
 trigger_workflow "$WORKFLOW"

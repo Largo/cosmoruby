@@ -1,0 +1,190 @@
+#!/bin/sh
+# rcc - Ruby Cosmopolitan Compiler wrapper
+#
+# Produces fat APE binaries from Ruby source files.
+# The first .rb file is treated as the main entry point (-m flag).
+#
+# Usage:
+#   rcc [-o OUTPUT] [-v] [-l LIB] FILE...
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: rcc [-o OUTPUT] [-v] [-l LIB] FILE...
+
+Ruby Cosmopolitan Compiler - builds fat APE binaries from Ruby source.
+
+The first .rb file is the main entry point. Additional files are
+compiled as library modules.
+
+Options:
+  -o OUTPUT       output binary name (default: a.out)
+  -v              verbose - show commands being run
+  -l LIB          link additional library
+  -l kitchen_sink link everything (like examples/BUILD.mk)
+  --nostdlib      link nothing - you provide all -l flags
+  -h              show this help
+
+Common -l names:
+  -l c            C standard library (stdio, malloc, strings, threads)
+  -l m            maths (tinymath + gdtoa)
+  -l net          networking (sock + http + https + mbedtls)
+  -l crypto       TLS/crypto (mbedtls + haclstar)
+  -l z            compression (zlib)
+  -l dl           dynamic loading (dlopen)
+  -l regex        regular expressions
+  -l pthread      threads (same as what -l c includes)
+  -l kitchen_sink everything
+
+The default Ruby tier already includes -l c and most of the above.
+Any other name resolves by searching for <name>.a in the build tree.
+
+Examples:
+  rcc -o app app.rb
+  rcc -o app main.rb helper.rb utils.rb
+  rcc -v -o app examples/rubyapps/dumb_example_app.rb
+EOF
+}
+
+main() {
+  parse_common_args "$@"
+  # Default tier for rcc: default + Ruby VM + extensions
+  : "${STDLIB_TIER:=ruby}"
+  resolve_toolchain
+
+  # Locate rubyobj and launch.o
+  RUBYOBJ="$O/third_party/ruby/rubyobj"
+  LAUNCH_X86="$O/third_party/ruby/launch.o"
+  LAUNCH_ARM="$O/aarch64/third_party/ruby/launch.o"
+
+  if [ ! -x "$RUBYOBJ" ]; then
+    echo "error: rubyobj not found at $RUBYOBJ" >&2
+    echo "hint: run 'make -j1 o//third_party/ruby/rubyobj' first" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$LAUNCH_X86" ]; then
+    echo "error: launch.o not found at $LAUNCH_X86" >&2
+    echo "hint: run 'make -j1 o//third_party/ruby/launch.o' first" >&2
+    exit 1
+  fi
+
+  setup_tmp
+
+  # Compile each .rb file using rubyobj
+  # First file gets -m (main entry point), rest are libraries
+  RB_OBJS=""
+  FIRST=1
+  for src in $FILES; do
+    base="$(basename "$src" .rb)"
+    obj="$TMP/${base}.o"
+    if [ "$FIRST" = "1" ]; then
+      verbose_run "$RUBYOBJ" -m -C2 -P.ruby -o "$obj" "$src"
+      FIRST=0
+    else
+      verbose_run "$RUBYOBJ" -C2 -P.ruby -o "$obj" "$src"
+    fi
+    RB_OBJS="$RB_OBJS $obj"
+  done
+
+  # Resolve extra -l libraries
+  X86_EXTRA=""
+  ARM_EXTRA=""
+  ARM_OK=1
+  if [ ! -f "$CRT_ARM" ] || [ ! -f "$APE_LDS_ARM" ] || [ ! -f "$LAUNCH_ARM" ]; then
+    ARM_OK=0
+  fi
+
+  for lib in $EXTRA_LIBS; do
+    X86_EXTRA="$X86_EXTRA $(resolve_extra_lib "$lib" x86)"
+    if [ "$ARM_OK" = "1" ]; then
+      ARM_EXTRA="$ARM_EXTRA $(resolve_extra_lib "$lib" arm)"
+    fi
+  done
+
+  # Link x86_64
+  X86_DBG="$TMP/out.com.dbg"
+  if [ "$DISCOVER" = "1" ]; then
+    # In discover mode, retry linking and auto-add missing archives
+    # to RUBY_LIBS in common.sh. We wrap the link in a loop that
+    # re-sources common.sh each iteration to pick up changes.
+    _discover_max=50
+    _discover_round=0
+    while [ "$_discover_round" -lt "$_discover_max" ]; do
+      _discover_round=$((_discover_round + 1))
+      _errfile="$TMP/link_errors.txt"
+
+      if link_x86 "$X86_DBG" \
+        "$LAUNCH_X86" \
+        $RB_OBJS \
+        $(get_libs "$O" "$STDLIB_TIER") \
+        $X86_EXTRA 2>"$_errfile"
+      then
+        break
+      fi
+
+      _undef="$(grep -oP "undefined reference to \`\K[^']*" "$_errfile" | head -1)"
+      if [ -z "$_undef" ]; then
+        cat "$_errfile" >&2
+        exit 1
+      fi
+
+      echo "discover: undefined reference to '$_undef'" >&2
+
+      _archive="$(find_archive_for_symbol "$_undef")"
+      if [ -z "$_archive" ]; then
+        echo "discover: no archive found providing '$_undef'" >&2
+        cat "$_errfile" >&2
+        exit 1
+      fi
+
+      echo "discover: '$_undef' found in $_archive" >&2
+
+      if ! insert_into_lib_var RUBY_LIBS "$_archive"; then
+        cat "$_errfile" >&2
+        exit 1
+      fi
+
+      # Re-source to pick up modified RUBY_LIBS
+      . "$SCRIPT_DIR/common.sh"
+    done
+
+    if [ "$_discover_round" -ge "$_discover_max" ]; then
+      echo "discover: gave up after $_discover_max rounds" >&2
+      exit 1
+    fi
+  else
+    link_x86 "$X86_DBG" \
+      "$LAUNCH_X86" \
+      $RB_OBJS \
+      $(get_libs "$O" "$STDLIB_TIER") \
+      $X86_EXTRA
+  fi
+
+  if [ "$ARM_OK" = "1" ]; then
+    # Link aarch64
+    ARM_ELF="$TMP/out.aarch64.elf"
+    link_arm "$ARM_ELF" \
+      "$LAUNCH_ARM" \
+      $RB_OBJS \
+      $(get_libs "$O/aarch64" "$STDLIB_TIER") \
+      $ARM_EXTRA
+
+    # Merge into fat binary
+    FAT="$TMP/out.fat"
+    merge_fat "$FAT" "$X86_DBG" "$ARM_ELF"
+    strip_and_package "$FAT" "$OUTPUT"
+  else
+    # x86_64-only: strip and copy
+    verbose_run "$OBJCOPY_X86" -S -O binary "$X86_DBG" "$OUTPUT"
+    verbose_run "$ZIPCOPY" "$X86_DBG" "$OUTPUT"
+  fi
+
+  echo "$OUTPUT"
+}
+
+main "$@"

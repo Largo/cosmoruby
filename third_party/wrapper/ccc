@@ -1,0 +1,114 @@
+#!/bin/sh
+# ccc - Cosmopolitan C Compiler wrapper
+#
+# Produces fat APE binaries (x86_64 + aarch64) from C source files.
+#
+# Usage:
+#   ccc [-o OUTPUT] [-v] [-l LIB] [--nostdlib] FILE...
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/common.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: ccc [-o OUTPUT] [-v] [-l LIB] [--nostdlib] FILE...
+
+Cosmopolitan C Compiler - builds fat APE binaries from C source.
+
+Options:
+  -o OUTPUT       output binary name (default: a.out)
+  -v              verbose - show commands being run
+  -l LIB          link additional library
+  -l kitchen_sink link everything (like examples/BUILD.mk)
+  --nostdlib      link nothing - you provide all -l flags
+  -h              show this help
+
+Common -l names:
+  -l c            C standard library (stdio, malloc, strings, threads)
+  -l m            maths (tinymath + gdtoa)
+  -l net          networking (sock + http + https + mbedtls)
+  -l crypto       TLS/crypto (mbedtls + haclstar)
+  -l z            compression (zlib)
+  -l dl           dynamic loading (dlopen)
+  -l regex        regular expressions
+  -l pthread      threads (same as what -l c includes)
+  -l kitchen_sink everything
+
+Any other name resolves by searching for <name>.a in the build tree.
+
+The default links only the bare runtime (enough for int main(){return 0}).
+Most programmes need at least -l c.
+
+Examples:
+  ccc -o empty empty.c                # bare minimum, no libc
+  ccc -o hello hello.c -l c           # normal C programme
+  ccc -o calc calc.c -l c -l m        # C + maths
+  ccc -o server server.c -l c -l net  # C + networking
+  ccc -o hello -l kitchen_sink hello.c
+EOF
+}
+
+main() {
+  parse_common_args "$@"
+  # Default tier for ccc: FAT_BASE + LIBC_LIBS, like gcc implying -lc
+  : "${STDLIB_TIER:=default}"
+  resolve_toolchain
+  setup_tmp
+
+  # Compile each .c file for x86_64
+  X86_OBJS=""
+  for src in $FILES; do
+    base="$(basename "$src" .c)"
+    obj="$TMP/${base}.x86.o"
+    compile_x86 "$src" "$obj"
+    X86_OBJS="$X86_OBJS $obj"
+  done
+
+  # Compile each .c file for aarch64
+  ARM_OBJS=""
+  ARM_OK=1
+  for src in $FILES; do
+    base="$(basename "$src" .c)"
+    obj="$TMP/${base}.arm.o"
+    if ! compile_arm "$src" "$obj"; then
+      ARM_OK=0
+      break
+    fi
+    ARM_OBJS="$ARM_OBJS $obj"
+  done
+
+  # Resolve extra -l libraries
+  X86_EXTRA=""
+  ARM_EXTRA=""
+  for lib in $EXTRA_LIBS; do
+    X86_EXTRA="$X86_EXTRA $(resolve_extra_lib "$lib" x86)"
+    if [ "$ARM_OK" = "1" ]; then
+      ARM_EXTRA="$ARM_EXTRA $(resolve_extra_lib "$lib" arm)"
+    fi
+  done
+
+  # Link x86_64
+  X86_DBG="$TMP/out.com.dbg"
+  link_x86 "$X86_DBG" $X86_OBJS $(get_libs "$O" "$STDLIB_TIER") $X86_EXTRA
+
+  if [ "$ARM_OK" = "1" ]; then
+    # Link aarch64
+    ARM_ELF="$TMP/out.aarch64.elf"
+    link_arm "$ARM_ELF" $ARM_OBJS $(get_libs "$O/aarch64" "$STDLIB_TIER") $ARM_EXTRA
+
+    # Merge into fat binary
+    FAT="$TMP/out.fat"
+    merge_fat "$FAT" "$X86_DBG" "$ARM_ELF"
+    strip_and_package "$FAT" "$OUTPUT"
+  else
+    # x86_64-only: strip and copy
+    verbose_run "$OBJCOPY_X86" -S -O binary "$X86_DBG" "$OUTPUT"
+    verbose_run "$ZIPCOPY" "$X86_DBG" "$OUTPUT"
+  fi
+
+  echo "$OUTPUT"
+}
+
+main "$@"

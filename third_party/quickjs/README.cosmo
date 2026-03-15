@@ -1,0 +1,49 @@
+QUICKJS
+
+  QuickJS is a small and embeddable Javascript engine by Fabrice Bellard.
+  It supports the ES2023 specification including modules, asynchronous
+  generators, proxies, BigInt, and BigFloat.
+
+ORIGIN
+
+  https://bellard.org/quickjs/
+  https://github.com/bellard/quickjs
+
+  Version: 2024-01-13 release
+
+LICENSE
+
+  MIT License - See LICENSE file for details
+  Copyright (c) 2017-2021 Fabrice Bellard
+  Copyright (c) 2017-2021 Charlie Gordon
+
+LOCAL CHANGES
+
+  - Imported for Cosmopolitan Libc build system
+  - Uses Cosmopolitan's libc instead of system libc
+  - Configured with CONFIG_BIGNUM for BigFloat/BigDecimal support
+
+BUILDING
+
+  make -j1 o//third_party/quickjs/qjs
+
+USAGE
+
+  o//third_party/quickjs/qjs script.js
+
+  Or interactively:
+  
+  o//third_party/quickjs/qjs
+  
+  qjs > console.log("Hello from QuickJS!");
+  Hello from QuickJS!
+
+FILES
+
+  quickjs.c, quickjs.h       - Core JavaScript engine
+  quickjs-libc.c             - System bindings (stdio, sockets, etc.)
+  libregexp.c                - Regular expression engine
+  libunicode.c               - Unicode support
+  libbf.c                    - BigFloat/BigDecimal arithmetic
+  cutils.c                   - Utility functions
+  qjs.c                      - Standalone interpreter

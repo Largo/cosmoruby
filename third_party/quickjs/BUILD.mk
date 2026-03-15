@@ -1,0 +1,321 @@
+#-*-mode:makefile-gmake;indent-tabs-mode:t;tab-width:8;coding:utf-8-*-┐
+#── vi: set noet ft=make ts=8 sw=8 fenc=utf-8 :vi ────────────────────┘
+
+PKGS += THIRD_PARTY_QUICKJS
+
+THIRD_PARTY_QUICKJS_COMS =					\
+	o/$(MODE)/third_party/quickjs/qjs			\
+	o/$(MODE)/third_party/quickjs/qjsc
+
+THIRD_PARTY_QUICKJS_BINS =					\
+	$(THIRD_PARTY_QUICKJS_COMS)				\
+	$(THIRD_PARTY_QUICKJS_COMS:%=%.dbg)
+
+THIRD_PARTY_QUICKJS_CHECKS =					\
+	$(THIRD_PARTY_QUICKJS_A).pkg				\
+	$(THIRD_PARTY_QUICKJS_HDRS:%=o/$(MODE)/%.ok)		\
+	o/$(MODE)/third_party/quickjs/qjsc.pkg			\
+	o/$(MODE)/third_party/quickjs/qjs.pkg
+
+################################################################################
+# quickjs.a
+
+THIRD_PARTY_QUICKJS =						\
+	$(THIRD_PARTY_QUICKJS_A_DEPS)				\
+	$(THIRD_PARTY_QUICKJS_A)
+
+THIRD_PARTY_QUICKJS_ARTIFACTS +=				\
+	THIRD_PARTY_QUICKJS_A
+
+THIRD_PARTY_QUICKJS_A =						\
+	o/$(MODE)/third_party/quickjs/quickjs.a
+
+THIRD_PARTY_QUICKJS_A_HDRS =					\
+	third_party/quickjs/quickjs.h				\
+	third_party/quickjs/quickjs-libc.h
+
+THIRD_PARTY_QUICKJS_A_SRCS =					\
+	third_party/quickjs/cutils.c				\
+	third_party/quickjs/libbf.c				\
+	third_party/quickjs/libregexp.c				\
+	third_party/quickjs/libunicode.c			\
+	third_party/quickjs/quickjs.c				\
+	third_party/quickjs/quickjs-libc.c
+
+THIRD_PARTY_QUICKJS_A_OBJS =					\
+	$(THIRD_PARTY_QUICKJS_A_SRCS:%.c=o/$(MODE)/%.o)
+
+THIRD_PARTY_QUICKJS_A_DIRECTDEPS =				\
+	LIBC_CALLS						\
+	LIBC_DLOPEN						\
+	LIBC_FMT						\
+	LIBC_INTRIN						\
+	LIBC_LOG						\
+	LIBC_MEM						\
+	LIBC_NEXGEN32E						\
+	LIBC_PROC						\
+	LIBC_RUNTIME						\
+	LIBC_STDIO						\
+	LIBC_STR						\
+	LIBC_SYSV						\
+	LIBC_SYSTEM						\
+	LIBC_THREAD						\
+	LIBC_TINYMATH						\
+	LIBC_X							\
+	THIRD_PARTY_GDTOA					\
+	THIRD_PARTY_MUSL					\
+	THIRD_PARTY_TZ
+
+THIRD_PARTY_QUICKJS_A_DEPS :=					\
+	$(call uniq,$(foreach x,$(THIRD_PARTY_QUICKJS_A_DIRECTDEPS),$($(x))))
+
+$(THIRD_PARTY_QUICKJS_A):					\
+		third_party/quickjs/				\
+		$(THIRD_PARTY_QUICKJS_A).pkg			\
+		$(THIRD_PARTY_QUICKJS_A_OBJS)
+
+$(THIRD_PARTY_QUICKJS_A).pkg:					\
+		$(THIRD_PARTY_QUICKJS_A_OBJS)			\
+		$(foreach x,$(THIRD_PARTY_QUICKJS_A_DIRECTDEPS),$($(x)_A).pkg)
+
+$(THIRD_PARTY_QUICKJS_A_OBJS): private				\
+		CFLAGS +=					\
+			-ffunction-sections			\
+			-fdata-sections				\
+			-DCONFIG_VERSION=\"2024-01-13\" 		\
+			-DCONFIG_BIGNUM
+
+################################################################################
+# qjs
+
+THIRD_PARTY_QUICKJS_QJS_DIRECTDEPS =				\
+	LIBC_CALLS						\
+	LIBC_FMT						\
+	LIBC_INTRIN						\
+	LIBC_NEXGEN32E						\
+	LIBC_PROC						\
+	LIBC_RUNTIME						\
+	LIBC_STDIO						\
+	LIBC_LOG						\
+	LIBC_MEM						\
+	LIBC_STR						\
+	LIBC_SYSV						\
+	LIBC_THREAD						\
+	LIBC_TINYMATH						\
+	THIRD_PARTY_GDTOA					\
+	THIRD_PARTY_GETOPT					\
+	THIRD_PARTY_MUSL					\
+	THIRD_PARTY_QUICKJS					\
+	THIRD_PARTY_TZ						\
+	TOOL_ARGS
+
+THIRD_PARTY_QUICKJS_QJS_DEPS :=					\
+	$(call uniq,$(foreach x,$(THIRD_PARTY_QUICKJS_QJS_DIRECTDEPS),$($(x))))
+
+o/$(MODE)/third_party/quickjs/qjs.pkg:				\
+		o/$(MODE)/third_party/quickjs/qjs.o		\
+		o/$(MODE)/third_party/quickjs/repl.o		\
+		o/$(MODE)/third_party/quickjs/qjscalc.o	\
+		$(foreach x,$(THIRD_PARTY_QUICKJS_QJS_DIRECTDEPS),$($(x)_A).pkg)
+
+o/$(MODE)/third_party/quickjs/qjs.dbg:				\
+		$(THIRD_PARTY_QUICKJS_QJS_DEPS)			\
+		o/$(MODE)/third_party/quickjs/qjs.pkg		\
+		o/$(MODE)/third_party/quickjs/qjs.o		\
+		o/$(MODE)/third_party/quickjs/repl.o		\
+		o/$(MODE)/third_party/quickjs/qjscalc.o	\
+		$(CRT)						\
+		$(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/quickjs/qjs.o				\
+o/$(MODE)/third_party/quickjs/repl.o				\
+o/$(MODE)/third_party/quickjs/qjscalc.o: private		\
+		CFLAGS +=					\
+			-DCONFIG_VERSION=\"2024-01-13\" 		\
+			-DCONFIG_BIGNUM
+
+################################################################################
+# qjsc (bytecode compiler, needed to generate repl.c)
+
+THIRD_PARTY_QUICKJS_QJSC_DIRECTDEPS =				\
+	LIBC_CALLS						\
+	LIBC_FMT						\
+	LIBC_INTRIN						\
+	LIBC_NEXGEN32E						\
+	LIBC_PROC						\
+	LIBC_RUNTIME						\
+	LIBC_STDIO						\
+	LIBC_LOG						\
+	LIBC_MEM						\
+	LIBC_STR						\
+	LIBC_SYSV						\
+	LIBC_THREAD						\
+	LIBC_TINYMATH						\
+	THIRD_PARTY_GDTOA					\
+	THIRD_PARTY_GETOPT					\
+	THIRD_PARTY_MUSL					\
+	THIRD_PARTY_QUICKJS					\
+	THIRD_PARTY_TZ						\
+	TOOL_ARGS
+
+THIRD_PARTY_QUICKJS_QJSC_DEPS :=				\
+	$(call uniq,$(foreach x,$(THIRD_PARTY_QUICKJS_QJSC_DIRECTDEPS),$($(x))))
+
+o/$(MODE)/third_party/quickjs/qjsc.pkg:			\
+		o/$(MODE)/third_party/quickjs/qjsc.o		\
+		$(foreach x,$(THIRD_PARTY_QUICKJS_QJSC_DIRECTDEPS),$($(x)_A).pkg)
+
+o/$(MODE)/third_party/quickjs/qjsc.dbg:			\
+		$(THIRD_PARTY_QUICKJS_QJSC_DEPS)		\
+		o/$(MODE)/third_party/quickjs/qjsc.pkg		\
+		o/$(MODE)/third_party/quickjs/qjsc.o		\
+		$(CRT)						\
+		$(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/quickjs/qjsc.o: private			\
+		CFLAGS +=					\
+			-DCONFIG_VERSION=\"2024-01-13\" 	\
+			-DCONFIG_BIGNUM
+
+################################################################################
+# generated bytecode (repl.c from repl.js via qjsc)
+
+third_party/quickjs/repl.c:					\
+		o//third_party/quickjs/qjsc			\
+		third_party/quickjs/repl.js
+	o//third_party/quickjs/qjsc -c -o $@ -m third_party/quickjs/repl.js
+
+third_party/quickjs/qjscalc.c:					\
+		o//third_party/quickjs/qjsc			\
+		third_party/quickjs/qjscalc.js
+	o//third_party/quickjs/qjsc -fbignum -c -o $@ third_party/quickjs/qjscalc.js
+
+o/$(MODE)/third_party/quickjs/qjs.o:				\
+		third_party/quickjs/repl.c			\
+		third_party/quickjs/qjscalc.c
+
+################################################################################
+# tests
+
+THIRD_PARTY_QUICKJS_TEST_CHECKS =				\
+	o/$(MODE)/third_party/quickjs/test_language.runs	\
+	o/$(MODE)/third_party/quickjs/test_builtin.runs	\
+	o/$(MODE)/third_party/quickjs/test_closure.runs	\
+	o/$(MODE)/third_party/quickjs/test_loop.runs		\
+	o/$(MODE)/third_party/quickjs/test_bignum.runs		\
+	o/$(MODE)/third_party/quickjs/test_op_overloading.runs	\
+	o/$(MODE)/third_party/quickjs/test_qjscalc.runs	\
+	o/$(MODE)/third_party/quickjs/test_std.runs		\
+	o/$(MODE)/third_party/quickjs/test_worker.runs		\
+	o/$(MODE)/third_party/quickjs/test_bjson.runs
+
+# pure JS tests (no special flags)
+o/$(MODE)/third_party/quickjs/test_language.runs:		\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_language.js
+	@$(COMPILE) -ACHECK -wtT$@ $< third_party/quickjs/tests/test_language.js
+
+o/$(MODE)/third_party/quickjs/test_builtin.runs:		\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_builtin.js
+	@$(COMPILE) -ACHECK -wtT$@ $< third_party/quickjs/tests/test_builtin.js
+
+o/$(MODE)/third_party/quickjs/test_closure.runs:		\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_closure.js
+	@$(COMPILE) -ACHECK -wtT$@ $< third_party/quickjs/tests/test_closure.js
+
+o/$(MODE)/third_party/quickjs/test_loop.runs:			\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_loop.js
+	@$(COMPILE) -ACHECK -wtT$@ $< third_party/quickjs/tests/test_loop.js
+
+o/$(MODE)/third_party/quickjs/test_std.runs:			\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_std.js
+	@$(COMPILE) -ACHECK -wtT$@ $< third_party/quickjs/tests/test_std.js
+
+# bignum tests (need --bignum flag)
+o/$(MODE)/third_party/quickjs/test_bignum.runs:		\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_bignum.js
+	@$(COMPILE) -ACHECK -wtT$@ $< --bignum third_party/quickjs/tests/test_bignum.js
+
+o/$(MODE)/third_party/quickjs/test_op_overloading.runs:	\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_op_overloading.js
+	@$(COMPILE) -ACHECK -wtT$@ $< --bignum third_party/quickjs/tests/test_op_overloading.js
+
+# worker test (needs to run from tests directory)
+o/$(MODE)/third_party/quickjs/test_worker.runs:		\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_worker.js	\
+		third_party/quickjs/tests/test_worker_module.js
+	@$(COMPILE) -ACHECK -wtT$@ $< third_party/quickjs/tests/test_worker.js
+
+# qjscalc test (needs --qjscalc flag)
+o/$(MODE)/third_party/quickjs/test_qjscalc.runs:		\
+		o/$(MODE)/third_party/quickjs/qjs		\
+		third_party/quickjs/tests/test_qjscalc.js
+	@$(COMPILE) -ACHECK -wtT$@ $< --qjscalc third_party/quickjs/tests/test_qjscalc.js
+
+# bjson test (native C module, statically linked into test binary)
+third_party/quickjs/tests/test_bjson_bytecode.c:		\
+		o//third_party/quickjs/qjsc			\
+		third_party/quickjs/tests/test_bjson.js
+	o//third_party/quickjs/qjsc -c -o $@ -m third_party/quickjs/tests/test_bjson.js
+
+o/$(MODE)/third_party/quickjs/tests/test_bjson_bytecode.o	\
+o/$(MODE)/third_party/quickjs/tests/cosmo_bjson_runner.o	\
+o/$(MODE)/third_party/quickjs/tests/bjson.o: private		\
+		CFLAGS +=					\
+			-Ithird_party/quickjs			\
+			-DCONFIG_VERSION=\"2024-01-13\" 	\
+			-DCONFIG_BIGNUM
+
+o/$(MODE)/third_party/quickjs/test_bjson.dbg:			\
+		$(THIRD_PARTY_QUICKJS_QJS_DEPS)			\
+		o/$(MODE)/third_party/quickjs/qjs.pkg		\
+		o/$(MODE)/third_party/quickjs/tests/cosmo_bjson_runner.o \
+		o/$(MODE)/third_party/quickjs/tests/test_bjson_bytecode.o \
+		o/$(MODE)/third_party/quickjs/tests/bjson.o	\
+		$(CRT)						\
+		$(APE_NO_MODIFY_SELF)
+	@$(APELINK)
+
+o/$(MODE)/third_party/quickjs/test_bjson.runs:			\
+		o/$(MODE)/third_party/quickjs/test_bjson.dbg
+	@$(COMPILE) -ACHECK -wtT$@ $<
+
+.PHONY: o/$(MODE)/third_party/quickjs/test
+o/$(MODE)/third_party/quickjs/test:				\
+		$(THIRD_PARTY_QUICKJS_TEST_CHECKS)
+
+################################################################################
+
+THIRD_PARTY_QUICKJS_SRCS =					\
+	$(THIRD_PARTY_QUICKJS_A_SRCS)				\
+	third_party/quickjs/qjsc.c				\
+	third_party/quickjs/qjs.c
+
+THIRD_PARTY_QUICKJS_HDRS =					\
+	$(THIRD_PARTY_QUICKJS_A_HDRS)
+
+THIRD_PARTY_QUICKJS_OBJS =					\
+	$(THIRD_PARTY_QUICKJS_A_OBJS)				\
+	o/$(MODE)/third_party/quickjs/qjsc.o			\
+	o/$(MODE)/third_party/quickjs/qjs.o
+
+THIRD_PARTY_QUICKJS_LIBS =					\
+	$(THIRD_PARTY_QUICKJS_A)
+
+$(THIRD_PARTY_QUICKJS_OBJS): third_party/quickjs/BUILD.mk
+
+.PHONY: o/$(MODE)/third_party/quickjs
+o/$(MODE)/third_party/quickjs:					\
+		$(THIRD_PARTY_QUICKJS_LIBS)			\
+		$(THIRD_PARTY_QUICKJS_BINS)			\
+		$(THIRD_PARTY_QUICKJS_CHECKS)			\
+		$(THIRD_PARTY_QUICKJS_TEST_CHECKS)

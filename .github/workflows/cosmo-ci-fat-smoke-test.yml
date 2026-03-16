@@ -74,7 +74,7 @@ jobs:
         shell: ${{ matrix.shell }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: runner.os == 'Linux'
         with:
           sparse-checkout: |
@@ -130,4 +130,4 @@ jobs:
 
           See individual job logs for per-platform pass/fail.
           EOF
-# last-triggered: 2026-03-16T12:14:56Z
+# last-triggered: 2026-03-16T12:22:48Z

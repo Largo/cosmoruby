@@ -9,6 +9,28 @@ name: cosmo-ci-fat-smoke-test
 #      or:                ./bake o//examples/hello
 #   2. Use trigger script: ./fat_smoke_test.sh /tmp/hello
 
+# • These are deprecation warnings from GitHub Actions — Node.js 20 is being phased out in favor of Node.js 24.
+#   The actions/checkout@v4 action still uses Node 20 internally.
+#
+#   Quick Fix
+#
+#   Add this environment variable to your workflow file to opt into Node.js 24 now:
+#
+#   # In .github/workflows/your-workflow.yml
+#   env:
+#     FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+#
+#   Or set it at the job level:
+#
+#   jobs:
+#     test:
+#       runs-on: ubuntu-latest
+#       env:
+#         FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+#       steps:
+#         - uses: actions/checkout@v5
+#         ...
+
 on:
   push:
     branches:
@@ -27,6 +49,7 @@ permissions:
   contents: read
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   RELEASE_TAG: ${{ inputs.release_tag || 'fat-smoke-test' }}
   REPO: ${{ github.repository }}
 
@@ -107,4 +130,4 @@ jobs:
 
           See individual job logs for per-platform pass/fail.
           EOF
-# last-triggered: 2026-03-15T17:37:35Z
+# last-triggered: 2026-03-16T12:14:56Z

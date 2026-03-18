@@ -12,12 +12,27 @@ static int Toast(const char *prog) {
     verbose = true;
   }
 
+  // Save TERM before we clear the environment later
+  const char *host_term = getenv("TERM");
+  char saved_term[64] = "";
+  if (host_term)
+    snprintf(saved_term, sizeof(saved_term), "%s", host_term);
+
   // Save our real UID/GID before entering namespace
   host_uid = getuid();
   host_gid = getgid();
 
   if (CheckZip(true, false) != EX_OK) {
     return EX_NOINPUT;
+  }
+
+  // Read lifecycle state before chroot (state file is on host fs)
+  char sf_path[PATH_MAX];
+  struct ToasterStateFile sf;
+  const char *state_name = "cold";
+  if (DeriveStateFilePath(prog, sf_path, sizeof(sf_path)) == 0 &&
+      LoadStateFile(sf_path, prog, &sf) == 0) {
+    state_name = ToasterStateName(sf.state);
   }
 
   if (verbose) {
@@ -76,6 +91,37 @@ static int Toast(const char *prog) {
     return EX_OSERR;
   }
 
+  // Bind mount /dev for device access (urandom, null, zero, etc.)
+  char dev_path[PATH_MAX];
+  if (snprintf(dev_path, sizeof(dev_path), "%s/dev", piz_mount) < (int)sizeof(dev_path)) {
+    if (mkdir(dev_path, 0755) == -1 && errno != EEXIST) {
+      fprintf(stderr, "⚠️  Failed to create %s: %s\n", dev_path, strerror(errno));
+    } else {
+      if (mount("/dev", dev_path, NULL, MS_BIND | MS_REC, NULL) == -1) {
+        fprintf(stderr, "⚠️  Failed to bind mount /dev: %s\n", strerror(errno));
+      } else if (verbose) {
+        printf("  ✅ /dev available (urandom, null, zero, etc.)\n");
+      }
+    }
+  }
+
+  // Bind mount /sys for system info (optional but useful)
+  char sys_path[PATH_MAX];
+  if (snprintf(sys_path, sizeof(sys_path), "%s/sys", piz_mount) < (int)sizeof(sys_path)) {
+    if (mkdir(sys_path, 0755) == -1 && errno != EEXIST) {
+      fprintf(stderr, "⚠️  Failed to create %s: %s\n", sys_path, strerror(errno));
+    } else {
+      if (mount("/sys", sys_path, NULL, MS_BIND | MS_REC, NULL) == -1) {
+        // Non-fatal: many programs work fine without /sys
+        if (verbose) {
+          printf("  ⚠️  /sys not available (optional)\n");
+        }
+      } else if (verbose) {
+        printf("  ✅ /sys available\n");
+      }
+    }
+  }
+
   // Create binfmt_misc directory
   if (makedirs(binfmt_path, 0755) == -1 && errno != EEXIST) {
     fprintf(stderr, "❌ Failed to create %s: %s\n", binfmt_path, strerror(errno));
@@ -126,15 +172,92 @@ static int Toast(const char *prog) {
   }
   if (verbose) {
     printf("  ✅ chroot complete\n\n");
+
+    // Verify filesystem operations work INSIDE the chroot
+    struct stat vst;
+    DIR *vdir;
+    struct dirent *vent;
+    int vfd;
+
+    // F. stat("/") inside chroot
+    if (stat("/", &vst) == -1) {
+      printf("  🔍 POST-CHROOT: stat(/) FAILED: %s\n", strerror(errno));
+    } else {
+      printf("  🔍 POST-CHROOT: stat(/) OK, mode=%04o uid=%d gid=%d\n",
+             vst.st_mode & 07777, vst.st_uid, vst.st_gid);
+    }
+
+    // G. opendir("/") inside chroot
+    vdir = opendir("/");
+    if (!vdir) {
+      printf("  🔍 POST-CHROOT: opendir(/) FAILED: %s\n", strerror(errno));
+    } else {
+      printf("  🔍 POST-CHROOT: opendir(/) OK:");
+      while ((vent = readdir(vdir)) != NULL) {
+        printf(" %s", vent->d_name);
+      }
+      printf("\n");
+      closedir(vdir);
+    }
+
+    // H. create file at "/" inside chroot
+    vfd = open("/.piz_probe", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (vfd == -1) {
+      printf("  🔍 POST-CHROOT: create(/.piz_probe) FAILED: %s\n", strerror(errno));
+    } else {
+      close(vfd);
+      unlink("/.piz_probe");
+      printf("  🔍 POST-CHROOT: create(/.piz_probe) OK\n");
+    }
+
+    // I. stat("/bin") inside chroot
+    if (stat("/bin", &vst) == -1) {
+      printf("  🔍 POST-CHROOT: stat(/bin) FAILED: %s\n", strerror(errno));
+    } else {
+      printf("  🔍 POST-CHROOT: stat(/bin) OK, is_dir=%d\n", S_ISDIR(vst.st_mode));
+    }
+
+    // J. opendir("/bin") inside chroot
+    vdir = opendir("/bin");
+    if (!vdir) {
+      printf("  🔍 POST-CHROOT: opendir(/bin) FAILED: %s\n", strerror(errno));
+    } else {
+      printf("  🔍 POST-CHROOT: opendir(/bin) OK:");
+      while ((vent = readdir(vdir)) != NULL) {
+        if (strcmp(vent->d_name, ".") && strcmp(vent->d_name, ".."))
+          printf(" %s", vent->d_name);
+      }
+      printf("\n");
+      closedir(vdir);
+    }
+
+    // K. stat("/bin/lsdir") inside chroot
+    if (stat("/bin/lsdir", &vst) == -1) {
+      printf("  🔍 POST-CHROOT: stat(/bin/lsdir) FAILED: %s\n", strerror(errno));
+    } else {
+      printf("  🔍 POST-CHROOT: stat(/bin/lsdir) OK, size=%ld\n", (long)vst.st_size);
+    }
+
+    // L. CRITICAL: Check APE loader exists inside chroot
+    if (stat("/usr/bin/ape", &vst) == -1) {
+      printf("  ⚠️  POST-CHROOT: /usr/bin/ape MISSING - APE binaries will fail to execute!\n");
+      printf("      Error: %s\n", strerror(errno));
+      printf("      (You'll see 'No such file or directory' when running /bin/lsdir etc.)\n");
+    } else {
+      printf("  ✅ POST-CHROOT: /usr/bin/ape exists (APE binaries should work)\n");
+    }
   }
 
-  // Set environment variables
+  // Clean environment: start fresh, only set what's needed inside the chroot
+  clearenv();
   setenv("PATH", "/bin:/usr/bin", 1);
   setenv("PWD", "/", 1);
-  setenv("MTSH_MODE", "toast", 1);
-  setenv("TOASTER_MODE", "toast", 1);
   setenv("HOME", "/", 1);
   setenv("SHELL", "/bin/mtsh", 1);
+  setenv("MTSH_MODE", "toast", 1);
+  setenv("TOASTER_STATE", state_name, 1);
+  if (saved_term[0])
+    setenv("TERM", saved_term, 1);
 
   if (verbose) {
     printf("🎉 You're now toasted!\n");

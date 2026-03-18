@@ -21,11 +21,12 @@ static void FormatPermissions(mode_t mode, char *buf) {
   buf[9] = '\0';
 }
 
-static int ListZip(const char *prog) {
+static int ListZip(const char *prog, const char *subpath) {
   DIR *dir;
   struct dirent *entry;
   struct stat st;
-  char path[PATH_MAX];
+  char path[PATH_MAX + NAME_MAX + 2];
+  char dirpath[PATH_MAX];
   char perms[10];
   struct tm *tm;
   char timebuf[64];
@@ -37,16 +38,29 @@ static int ListZip(const char *prog) {
     return EX_NOINPUT;
   }
 
-  dir = opendir("/zip");
+  // Build the directory path: /zip + optional subpath
+  if (subpath && *subpath) {
+    // Strip leading / from subpath since we prepend /zip/
+    while (*subpath == '/') subpath++;
+    if (*subpath) {
+      snprintf(dirpath, sizeof(dirpath), "/zip/%s", subpath);
+    } else {
+      snprintf(dirpath, sizeof(dirpath), "/zip");
+    }
+  } else {
+    snprintf(dirpath, sizeof(dirpath), "/zip");
+  }
+
+  dir = opendir(dirpath);
   if (!dir) {
-    perror("opendir /zip");
+    perror(dirpath);
     return EX_IOERR;
   }
 
-  printf("Contents of /zip:\n");
+  printf("Contents of %s:\n", dirpath);
 
   while ((entry = readdir(dir)) != NULL) {
-    snprintf(path, sizeof(path), "/zip/%s", entry->d_name);
+    snprintf(path, sizeof(path), "%s/%s", dirpath, entry->d_name);
 
     if (stat(path, &st) == -1) {
       fprintf(stderr, "stat failed for %s: %s\n", path, strerror(errno));

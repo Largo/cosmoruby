@@ -27,6 +27,10 @@ int main(int argc, char **argv) {
     return Toast(argv[0]);
   }
 
+  if (!strcmp(argv[1], "warm")) {
+    return WarmCmd(argv[0]);
+  }
+
   if (!strcmp(argv[1], "thaw")) {
     // --thaw toast: thaw then enter shell
     if (argc >= 3 && !strcmp(argv[2], "toast")) {
@@ -58,7 +62,7 @@ int main(int argc, char **argv) {
   }
 
   if (!strcmp(argv[1], "ls")) {
-    return ListZip(argv[0]);
+    return ListZip(argv[0], argc >= 3 ? argv[2] : NULL);
   }
 
   if (!strcmp(argv[1], "cat")) {

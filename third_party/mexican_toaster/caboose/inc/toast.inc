@@ -125,7 +125,6 @@ static int Toast(const char *prog) {
   setenv("PATH", "/bin:/usr/bin", 1);
   setenv("PWD", "/", 1);
   setenv("MTSH_MODE", "toast", 1);
-  setenv("TOASTER_MODE", "toast", 1);
   setenv("HOME", "/", 1);
   setenv("SHELL", "/bin/mtsh", 1);
 

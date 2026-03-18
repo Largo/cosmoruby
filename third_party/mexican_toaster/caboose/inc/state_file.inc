@@ -72,6 +72,7 @@ static int DeriveStateFilePath(const char *binary_path, char *out,
 // Returns 0 on success, -1 if unrecognised.
 static int ParseStateName(const char *name, enum ToasterState *out) {
   if (!strcmp(name, "cold"))      { *out = kCold;      return 0; }
+  if (!strcmp(name, "warm"))      { *out = kWarm;      return 0; }
   if (!strcmp(name, "thawed"))    { *out = kThawed;    return 0; }
   if (!strcmp(name, "frozen"))    { *out = kFrozen;    return 0; }
   if (!strcmp(name, "persisted")) { *out = kPersisted; return 0; }

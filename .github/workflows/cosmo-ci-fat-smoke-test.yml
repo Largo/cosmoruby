@@ -67,31 +67,51 @@ jobs:
       - name: download assets (unix)
         if: runner.os != 'Windows'
         run: |
-          gh release download "$RELEASE_TAG" --repo "$REPO" --dir .
-          # Find the binary (everything that isn't test.sh)
-          BINARY=$(ls -1 | grep -v '^test\.sh$' | head -1)
+          # Download into a dedicated directory to avoid mixing with
+          # checkout artifacts (e.g. build/bootstrap on Linux).
+          mkdir -p _smoke
+          gh release download "$RELEASE_TAG" --repo "$REPO" --dir _smoke
+          # Find the binary: a regular file that isn't test.sh
+          BINARY=$(find _smoke -maxdepth 1 -type f ! -name 'test.sh' -printf '%f\n' | head -1)
+          if [ -z "$BINARY" ]; then
+            echo "Error: no binary found in release assets"
+            ls -la _smoke/
+            exit 1
+          fi
+          mv "_smoke/$BINARY" .
           chmod +x "$BINARY"
           echo "BINARY=$BINARY" >> "$GITHUB_ENV"
           echo "Downloaded: $BINARY"
-          if [ -f test.sh ]; then
+          if [ -f "_smoke/test.sh" ]; then
+            mv _smoke/test.sh .
             chmod +x test.sh
             echo "HAS_TEST_SCRIPT=true" >> "$GITHUB_ENV"
             echo "Downloaded: test.sh"
           fi
+          rm -rf _smoke
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: download assets (windows)
         if: runner.os == 'Windows'
         run: |
-          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --dir .
-          $binary = Get-ChildItem -File | Where-Object { $_.Name -ne 'test.sh' } | Select-Object -First 1
+          New-Item -ItemType Directory -Force -Path _smoke | Out-Null
+          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --dir _smoke
+          $binary = Get-ChildItem _smoke -File | Where-Object { $_.Name -ne 'test.sh' } | Select-Object -First 1
+          if (-not $binary) {
+            Write-Host "Error: no binary found in release assets"
+            Get-ChildItem _smoke
+            exit 1
+          }
+          Move-Item $binary.FullName .
           echo "BINARY=$($binary.Name)" >> $env:GITHUB_ENV
           Write-Host "Downloaded: $($binary.Name)"
-          if (Test-Path test.sh) {
+          if (Test-Path _smoke/test.sh) {
+            Move-Item _smoke/test.sh .
             echo "HAS_TEST_SCRIPT=true" >> $env:GITHUB_ENV
             Write-Host "Downloaded: test.sh"
           }
+          Remove-Item _smoke -Recurse -Force
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -141,4 +161,4 @@ jobs:
 
           See individual job logs for per-platform pass/fail.
           EOF
-# last-triggered: 2026-03-19T01:46:43Z
+# last-triggered: 2026-03-19T01:57:23Z

@@ -4,32 +4,15 @@ name: cosmo-ci-fat-smoke-test
 # Binary is built locally and uploaded to a GitHub release.
 # This workflow downloads it and runs it on every available runner.
 #
+# The binary keeps its original name (e.g. toybox.com, ruby.com).
+# If a test.sh is uploaded alongside the binary, it is run instead
+# of the default test. test.sh receives the binary path as $1 and
+# should exit 0 for pass, non-zero for fail.
+#
 # Usage:
-#   1. Build fat binary:  third_party/wrapper/ccc -o /tmp/hello examples/hello.c
-#      or:                ./bake o//examples/hello
-#   2. Use trigger script: ./fat_smoke_test.sh /tmp/hello
-
-# • These are deprecation warnings from GitHub Actions — Node.js 20 is being phased out in favor of Node.js 24.
-#   The actions/checkout@v4 action still uses Node 20 internally.
-#
-#   Quick Fix
-#
-#   Add this environment variable to your workflow file to opt into Node.js 24 now:
-#
-#   # In .github/workflows/your-workflow.yml
-#   env:
-#     FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-#
-#   Or set it at the job level:
-#
-#   jobs:
-#     test:
-#       runs-on: ubuntu-latest
-#       env:
-#         FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-#       steps:
-#         - uses: actions/checkout@v5
-#         ...
+#   1. Build fat binary:  ./bake o//third_party/toybox/toybox
+#   2. Use trigger script: ./fat_smoke_test.sh releases/toybox.com
+#   3. With custom test:   ./fat_smoke_test.sh releases/toybox.com bin/test_toybox_ci.sh
 
 on:
   push:
@@ -81,18 +64,34 @@ jobs:
             build/bootstrap
           sparse-checkout-cone-mode: false
 
-      - name: download binary (unix)
+      - name: download assets (unix)
         if: runner.os != 'Windows'
         run: |
-          gh release download "$RELEASE_TAG" --repo "$REPO" --pattern 'a.out' --dir .
-          chmod +x a.out
+          gh release download "$RELEASE_TAG" --repo "$REPO" --dir .
+          # Find the binary (everything that isn't test.sh)
+          BINARY=$(ls -1 | grep -v '^test\.sh$' | head -1)
+          chmod +x "$BINARY"
+          echo "BINARY=$BINARY" >> "$GITHUB_ENV"
+          echo "Downloaded: $BINARY"
+          if [ -f test.sh ]; then
+            chmod +x test.sh
+            echo "HAS_TEST_SCRIPT=true" >> "$GITHUB_ENV"
+            echo "Downloaded: test.sh"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: download binary (windows)
+      - name: download assets (windows)
         if: runner.os == 'Windows'
         run: |
-          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --pattern 'a.out' --dir .
+          gh release download "$env:RELEASE_TAG" --repo "$env:REPO" --dir .
+          $binary = Get-ChildItem -File | Where-Object { $_.Name -ne 'test.sh' } | Select-Object -First 1
+          echo "BINARY=$($binary.Name)" >> $env:GITHUB_ENV
+          Write-Host "Downloaded: $($binary.Name)"
+          if (Test-Path test.sh) {
+            echo "HAS_TEST_SCRIPT=true" >> $env:GITHUB_ENV
+            Write-Host "Downloaded: test.sh"
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -106,17 +105,29 @@ jobs:
           fi
           sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
 
-      - name: run binary (unix)
+      - name: run test (unix)
         if: runner.os != 'Windows'
         run: |
-          ./a.out
-          echo "PASS: a.out exited 0 on ${{ matrix.name }}"
+          if [ "$HAS_TEST_SCRIPT" = "true" ]; then
+            echo "Running custom test: bash test.sh ./$BINARY"
+            bash test.sh "./$BINARY"
+          else
+            echo "Running default test: ./$BINARY"
+            ./"$BINARY"
+          fi
+          echo "PASS: $BINARY exited 0 on ${{ matrix.name }}"
 
-      - name: run binary (windows)
+      - name: run test (windows)
         if: runner.os == 'Windows'
         run: |
-          & .\a.out
-          Write-Host "PASS: a.out exited 0 on ${{ matrix.name }}"
+          if ($env:HAS_TEST_SCRIPT -eq "true") {
+            Write-Host "Running custom test: bash test.sh .\$env:BINARY"
+            bash test.sh ".\$env:BINARY"
+          } else {
+            Write-Host "Running default test: .\$env:BINARY"
+            & ".\$env:BINARY"
+          }
+          Write-Host "PASS: $env:BINARY exited 0 on ${{ matrix.name }}"
 
   summary:
     needs: test
@@ -130,4 +141,4 @@ jobs:
 
           See individual job logs for per-platform pass/fail.
           EOF
-# last-triggered: 2026-03-19T01:14:20Z
+# last-triggered: 2026-03-19T01:38:01Z

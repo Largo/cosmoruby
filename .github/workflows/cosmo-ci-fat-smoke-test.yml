@@ -72,7 +72,7 @@ jobs:
           mkdir -p _smoke
           gh release download "$RELEASE_TAG" --repo "$REPO" --dir _smoke
           # Find the binary: a regular file that isn't test.sh
-          BINARY=$(find _smoke -maxdepth 1 -type f ! -name 'test.sh' -printf '%f\n' | head -1)
+          BINARY=$(find _smoke -maxdepth 1 -type f ! -name 'test.sh' | head -1 | xargs basename)
           if [ -z "$BINARY" ]; then
             echo "Error: no binary found in release assets"
             ls -la _smoke/
@@ -161,4 +161,4 @@ jobs:
 
           See individual job logs for per-platform pass/fail.
           EOF
-# last-triggered: 2026-03-19T01:57:23Z
+# last-triggered: 2026-03-19T02:01:28Z

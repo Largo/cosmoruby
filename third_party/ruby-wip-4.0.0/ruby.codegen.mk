@@ -103,8 +103,8 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_RBCONFIG_GEN)
 RUBY_RBCONFIG_PATCH := $(RUBY_PATCHDIR)/rbconfig.rb.diff
 
 $(RUBY_RBCONFIG_PATCH): $(RUBY_RBCONFIG_GEN) $(RUBY_RBCONFIG_SOURCE) | $(RUBY_PATCHDIR)
-	@# TODO: Fix this recipe - cocmd doesn't handle complex && || chains with redirects properly
-	@# Original: cmp -s $(word 2,$^) $(word 1,$^) && rm -f $@ || diff -u $(word 2,$^) $(word 1,$^) > $@ || true
+# TODO: Fix this recipe - cocmd doesn't handle complex && || chains with redirects properly
+# Original: cmp -s $(word 2,$^) $(word 1,$^) && rm -f $@ || diff -u $(word 2,$^) $(word 1,$^) > $@ || true
 	@touch $@
 
 THIRD_PARTY_RUBY_PATCHES += $(RUBY_RBCONFIG_PATCH)
@@ -274,7 +274,7 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_PROBES_GEN)
 RUBY_PROBES_PATCH := $(RUBY_PATCHDIR)/probes.h.diff
 
 $(RUBY_PROBES_PATCH): $(RUBY_PROBES_GEN) | $(RUBY_PATCHDIR)
-	@# probes.h is generated at build time in MRI; keep empty patch as sentinel
+# probes.h is generated at build time in MRI; keep empty patch as sentinel
 	@touch $@
 
 THIRD_PARTY_RUBY_PATCHES += $(RUBY_PROBES_PATCH)
@@ -299,7 +299,7 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_ENCMK_GEN)
 RUBY_ENCMK_PATCH := $(RUBY_PATCHDIR)/enc.mk.diff
 
 $(RUBY_ENCMK_PATCH): $(RUBY_ENCMK_GEN) | $(RUBY_PATCHDIR)
-	@# enc.mk is generated at build time in MRI; keep empty patch as sentinel
+# enc.mk is generated at build time in MRI; keep empty patch as sentinel
 	@touch $@
 
 THIRD_PARTY_RUBY_PATCHES += $(RUBY_ENCMK_PATCH)
@@ -324,7 +324,7 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_EXT_CONFIGURE_GEN)
 RUBY_EXT_CONFIGURE_PATCH := $(RUBY_PATCHDIR)/ext-configure-ext.mk.diff
 
 $(RUBY_EXT_CONFIGURE_PATCH): $(RUBY_EXT_CONFIGURE_GEN) | $(RUBY_PATCHDIR)
-	@# ext/configure-ext.mk is generated at build time in MRI; keep empty patch as sentinel
+# ext/configure-ext.mk is generated at build time in MRI; keep empty patch as sentinel
 	@touch $@
 
 THIRD_PARTY_RUBY_PATCHES += $(RUBY_EXT_CONFIGURE_PATCH)
@@ -347,7 +347,7 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_EXTSMK_GEN)
 RUBY_EXTSMK_PATCH := $(RUBY_PATCHDIR)/exts.mk.diff
 
 $(RUBY_EXTSMK_PATCH): $(RUBY_EXTSMK_GEN) | $(RUBY_PATCHDIR)
-	@# exts.mk is generated at build time in MRI; keep empty patch as sentinel
+# exts.mk is generated at build time in MRI; keep empty patch as sentinel
 	@touch $@
 
 THIRD_PARTY_RUBY_PATCHES += $(RUBY_EXTSMK_PATCH)

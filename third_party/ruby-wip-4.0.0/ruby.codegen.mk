@@ -123,7 +123,13 @@ THIRD_PARTY_RUBY_GENERATED += $(RUBY_MANIFEST)
 ################################################################################
 # config.h - copy reference config.h to generated directory
 
-$(RUBY_GENDIR)/config.h: docs/reference/_ext_config_ruby_orig_3_4_7.h $(RUBY_MANIFEST) | $(RUBY_GENDIR)
+# The original recipe copied docs/reference/_ext_config_ruby_orig_3_4_7.h
+# (the pristine config.h from the author's ruby-under-cosmocc configure run),
+# but that file was never committed to the repository. Fall back to the
+# committed cosmo config.h: the generated/config.h chain only feeds
+# comparison/manifest artifacts (generated rbconfig.rb, enc.mk, exts.mk are
+# "comparison only"), so the practical effect is empty reference diffs.
+$(RUBY_GENDIR)/config.h: third_party/ruby/include/ruby/config.h $(RUBY_MANIFEST) | $(RUBY_GENDIR)
 	@cp $< $@
 	@$(RUBY_ENV) $(HOST_RUBY) --disable=gems $(RUBY_ADD_TO_MANIFEST) $(RUBY_MANIFEST) config.h third_party/ruby/include/ruby/config.h
 

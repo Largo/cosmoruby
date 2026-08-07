@@ -236,7 +236,11 @@ THIRD_PARTY_RUBY_PATCHES += $(RUBY_ENCDB_PATCH)
 RUBY_TRANSDB_GEN := $(RUBY_GENDIR)/transdb.h
 
 
-$(RUBY_TRANSDB_GEN): $(RUBY_TOOLDIR)/generic_erb.rb $(RUBY_SRCDIR)/template/transdb.h.tmpl | $(RUBY_GENDIR)
+# Order-only dependency on encdb.h: both recipes call ruby_prepare_encdir,
+# which rm -rf's and recreates the shared $(RUBY_ENC_TMPDIR). Running them
+# concurrently under make -jN makes one recipe delete enc sources while the
+# other is still scanning them (ENC_REPLICATE "not defined yet" failures).
+$(RUBY_TRANSDB_GEN): $(RUBY_TOOLDIR)/generic_erb.rb $(RUBY_SRCDIR)/template/transdb.h.tmpl | $(RUBY_GENDIR) $(RUBY_ENCDB_GEN)
 	$(call ruby_prepare_encdir)
 	@cd $(RUBY_GENDIR) && $(HOST_RUBY) --disable=gems $(abspath $(RUBY_TOOLDIR))/generic_erb.rb -c -o $(abspath $@) $(abspath $(RUBY_SRCDIR)/template/transdb.h.tmpl) $(abspath $(RUBY_TRANS_TMPDIR))
 	@$(RUBY_ENV) $(HOST_RUBY) --disable=gems $(RUBY_ADD_TO_MANIFEST) $(RUBY_MANIFEST) transdb.h third_party/ruby/enc/transdb.h

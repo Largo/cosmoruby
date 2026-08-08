@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/box.h"
 #include "internal/eval.h"
 #include "iseq.h"
 #include "vm_core.h"
@@ -104,14 +105,39 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
 }
 
 VALUE
-rb_define_gem_modules(VALUE _a, VALUE _b)
+rb_define_gem_modules(VALUE flags_value, VALUE _)
 {
-    // do nothing - moniruby doesn't load gem_prelude.rb.
+#ifdef __COSMOPOLITAN__
+    /* CosmoRuby builds the full interpreter through the mini_builtin
+       path (builtin_binary.rbbin is a stub), so the Gem modules must be
+       defined here too. Mirrors rb_define_gem_modules in builtin.c. */
+    rb_box_gem_flags_t *flags = (rb_box_gem_flags_t *)flags_value;
+
+    if (flags->gem) {
+        rb_define_module("Gem");
+        if (flags->error_highlight) {
+            rb_define_module("ErrorHighlight");
+        }
+        if (flags->did_you_mean) {
+            rb_define_module("DidYouMean");
+        }
+        if (flags->syntax_suggest) {
+            rb_define_module("SyntaxSuggest");
+        }
+    }
+#endif
+    // upstream: do nothing - miniruby doesn't load gem_prelude.rb.
     return Qnil;
 }
 
 void
-rb_load_gem_prelude(VALUE _)
+rb_load_gem_prelude(VALUE box)
 {
-    // do nothing - miniruby doesn't support loading RubyGems.
+#ifdef __COSMOPOLITAN__
+    /* CosmoRuby: load gem_prelude from miniprelude.c into the given box
+       (mirrors rb_load_gem_prelude in builtin.c). */
+    const rb_iseq_t *iseq = builtin_iseq_load("gem_prelude", NULL);
+    rb_iseq_eval(iseq, (const rb_box_t *)box);
+#endif
+    // upstream: do nothing - miniruby doesn't support loading RubyGems.
 }

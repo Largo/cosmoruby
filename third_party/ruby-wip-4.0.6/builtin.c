@@ -135,7 +135,11 @@ Init_builtin_features(void)
     rb_load_gem_prelude((VALUE)rb_main_box());
 
 #else
-    /* When using mini_builtin.c, load gem_prelude from miniprelude.c */
-    rb_load_with_builtin_functions("gem_prelude", NULL);
+    /* CosmoRuby (mini_builtin path): load gem_prelude from miniprelude.c
+       into both boxes, mirroring the BUILTIN_BINARY path above.
+       rb_load_gem_prelude is implemented in mini_builtin.c under
+       __COSMOPOLITAN__. */
+    rb_load_gem_prelude((VALUE)rb_root_box());
+    rb_load_gem_prelude((VALUE)rb_main_box());
 #endif
 }

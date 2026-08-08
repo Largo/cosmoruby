@@ -56,6 +56,7 @@ cp    "$RUBY_SRC"/ext/monitor/lib/monitor.rb     cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/objspace/lib/objspace*     cosmo-ruby/lib/ruby/4.0.0/
 # Note: pathname is a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
 cp    "$RUBY_SRC"/ext/socket/lib/socket.rb       cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/sqlite3/lib/sqlite3*       cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/ripper/lib/ripper*         cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/strscan/lib/strscan*       cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/io/console/lib/console*    cosmo-ruby/lib/ruby/4.0.0/
@@ -124,6 +125,7 @@ ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
+sqlite3/sqlite3_native sqlite3
 stringio stringio
 strscan strscan
 zlib zlib
@@ -231,6 +233,7 @@ ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
+sqlite3/sqlite3_native sqlite3
 stringio stringio
 strscan strscan
 zlib zlib

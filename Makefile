@@ -310,6 +310,14 @@ include third_party/pcre/BUILD.mk		# │
 include third_party/less/BUILD.mk		# │
 include net/https/BUILD.mk			#─┘
 include tool/args/BUILD.mk			#─┐
+# Moved up from further down the list: the Ruby port's sqlite3 extension
+# links against Cosmopolitan's SQLite, and ruby.deps.mk expands
+# THIRD_PARTY_RUBY_A_DEPS with := (immediate expansion), so
+# THIRD_PARTY_SQLITE3{,_A} must already be defined by the time
+# local-includes.mk is read. linenoise comes along because it is one of
+# THIRD_PARTY_SQLITE3_A_DIRECTDEPS. Both only need packages included above.
+include third_party/linenoise/BUILD.mk		# │
+include third_party/sqlite3/BUILD.mk		# │
 # Local project customizations (e.g. Ruby, libyaml, cosmo_plugin).
 # The - prefix means Make silently skips this if the file is missing,
 # which is expected on a clean checkout (it's not committed to the repo).
@@ -329,7 +337,6 @@ include test/posix/BUILD.mk
 include test/ctl/BUILD.mk
 include test/libcxx/BUILD.mk
 include test/tool/args/BUILD.mk
-include third_party/linenoise/BUILD.mk
 include third_party/maxmind/BUILD.mk
 include net/finger/BUILD.mk
 include third_party/double-conversion/test/BUILD.mk
@@ -345,7 +352,6 @@ include third_party/ctags/BUILD.mk
 include third_party/finger/BUILD.mk
 include third_party/argon2/BUILD.mk
 include third_party/smallz4/BUILD.mk
-include third_party/sqlite3/BUILD.mk
 include third_party/mbedtls/test/BUILD.mk
 include third_party/lz4cli/BUILD.mk
 include third_party/zip/BUILD.mk

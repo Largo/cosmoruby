@@ -33,6 +33,7 @@ void Init_ext(void)
     init(Init_sizeof, "rbconfig/sizeof");
     init(Init_ripper, "ripper");
     init(Init_socket, "socket");
+    init(Init_sqlite3_native, "sqlite3/sqlite3_native");
     init(Init_stringio, "stringio");
     init(Init_strscan, "strscan");
     init(Init_zlib, "zlib");

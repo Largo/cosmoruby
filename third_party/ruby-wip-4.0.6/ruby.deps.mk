@@ -38,6 +38,7 @@ include third_party/ruby/ext/objspace/BUILD.mk
 include third_party/ruby/ext/psych/BUILD.mk
 include third_party/ruby/ext/rbconfig/sizeof/BUILD.mk
 include third_party/ruby/ext/socket/BUILD.mk
+include third_party/ruby/ext/sqlite3/BUILD.mk
 include third_party/ruby/ext/stringio/BUILD.mk
 include third_party/ruby/ext/strscan/BUILD.mk
 include third_party/ruby/ext/zlib/BUILD.mk
@@ -77,6 +78,7 @@ RUBY_ALL_EXTENSIONS =			\
 	THIRD_PARTY_RUBY_EXT_PSYCH			\
 	THIRD_PARTY_RUBY_EXT_RBCONFIG_SIZEOF		\
 	THIRD_PARTY_RUBY_EXT_SOCKET			\
+	THIRD_PARTY_RUBY_EXT_SQLITE3			\
 	THIRD_PARTY_RUBY_EXT_STRINGIO			\
 	THIRD_PARTY_RUBY_EXT_STRSCAN			\
 	THIRD_PARTY_RUBY_EXT_ZLIB
@@ -1184,6 +1186,7 @@ THIRD_PARTY_RUBY_A_DIRECTDEPS =					\
     THIRD_PARTY_TZ						\
     THIRD_PARTY_ZLIB					\
     THIRD_PARTY_LIBYAML					\
+    THIRD_PARTY_SQLITE3					\
     THIRD_PARTY_COSMO_PLUGIN
 
 # NOTE: Removed LIBC_NT - it's not a package itself but a directory.

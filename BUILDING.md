@@ -305,7 +305,8 @@ ape error: o/third_party/ruby/ruby.com: couldn't find ELF header with AARCH64 ma
 This proves the *code* is correct. It does not prove the *platform*: for that,
 `.github/workflows/cosmoruby-test.yml` runs the same acceptance script on
 GitHub's `ubuntu-24.04-arm` and `macos-latest` (Apple Silicon) runners, which
-are blocking jobs precisely because the artifact is fat.
+are blocking jobs precisely because the artifact is fat. Both pass; the
+`ubuntu-24.04-arm` job reports `aarch64-cosmo` and 30/30 on `ci_smoke.rb`.
 
 ### Gotcha: weak YJIT stubs are the real implementation on aarch64
 

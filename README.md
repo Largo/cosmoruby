@@ -165,13 +165,17 @@ half the Rust staticlib is not even linked in (`yjit/BUILD.mk` disables it for
   `""`). Launching *another APE* from an APE does work
   (`Process.spawn("C:/ruby.com","-e","exit 5")` → 5). Subprocesses work
   normally on Linux.
-- **TCP sockets do not work on Windows.** `require "socket"` loads, socket
+- **TCP sockets do not work on Windows *or macOS*.** `require "socket"` loads, socket
   creation and DNS work, but `bind()` and `connect()` fail:
   `TCPServer.new("127.0.0.1", 0)` raises `Errno::EAFNOSUPPORT` and
   `TCPSocket`/`Net::HTTP` raise `Errno::EINVAL`. Sockets work correctly on
   Linux. This is pre-existing — igravious's Ruby 4.0.0 release binary fails the
   same way — and is a cosmopolitan/port-level bug, not something introduced
-  here. No network client or server code will run on Windows.
+  here. macOS fails the same way with a slightly different errno pair
+  (`Errno::EPFNOSUPPORT` from `bind`, `Errno::EINVAL` from `connect`),
+  identically on Intel and Apple Silicon; that only came to light once CI grew
+  macOS runners. UDP works on both. No TCP network client or server code will
+  run on Windows or macOS.
 - **32-bit anything, BIOS/metal.** Not tested, not claimed.
 
 ### `sqlite3` limitations
@@ -204,11 +208,11 @@ UTF-8 round-trips, read-only handles, custom SQL functions and aggregates,
 | --- | --- |
 | Linux x86-64 | **Verified.** 14/14 smoke checks, sqlite3 5/5, `env -i` from an empty dir, YJIT on. |
 | Windows 11 x86-64 | **Verified.** Smoke script, sqlite3 5/5, `irb.com`, `miniruby.com`. Caveats above (sockets, subprocesses, exit-code shift). |
-| macOS x86-64 | **Untested locally**; covered by the `macos-15-intel` CI job. Cosmopolitan APEs are designed to run on macOS 23.1.0+ and nothing in this build is Linux-specific outside YJIT. |
+| macOS x86-64 | **Verified** on GitHub `macos-15-intel`: everything passes except TCP sockets (see below). |
 | FreeBSD / OpenBSD 7.3+ / NetBSD, x86-64 | **Untested**, same reasoning as macOS. |
-| Linux aarch64 (fat builds) | **Verified against the fat binary** under `qemu-user`: 14/14 smoke checks, 30/30 `ci_smoke.rb`, sqlite3 5/5, `env -i`, `irb`/`miniruby`. `RUBY_PLATFORM` is `aarch64-cosmo`. No YJIT (see above). CI additionally runs the same acceptance script on GitHub's real `ubuntu-24.04-arm` runner, as a blocking job. |
-| macOS aarch64 / Apple Silicon (fat builds) | Covered by the `macos-latest` CI job; the fat APE carries the `ape-m1` loader. |
-| Windows-on-ARM | **Untested / not claimed.** There is a non-blocking `windows-11-arm` CI job and nothing more. |
+| Linux aarch64 (fat builds) | **Verified on real hardware** (GitHub `ubuntu-24.04-arm`, blocking CI job): 30/30 `ci_smoke.rb` including TCP sockets, sqlite3 5/5, exit-status propagation. `RUBY_PLATFORM` is `aarch64-cosmo`. No YJIT (see above). |
+| macOS aarch64 / Apple Silicon (fat builds) | **Verified** on GitHub `macos-latest`: boots the aarch64 half, `aarch64-cosmo`, sqlite3 5/5. TCP sockets fail (see below) — that is a macOS-wide issue, not an ARM one. |
+| Windows-on-ARM | **Runs, via the OS's x64 emulation.** `windows-11-arm` CI passes, but `RUBY_PLATFORM` there is `x86_64-cosmo`: cosmopolitan's Windows PE half is x86-64 only, so the aarch64 half is not what executes. Non-blocking. |
 | Anything aarch64, using the **x86-64-only** `v4.0.6-cosmo1` assets | **Not supported** — build fat, or wait for the next release. |
 
 If you run it somewhere untested, please open an issue either way.

@@ -961,15 +961,60 @@ the loader finds no aarch64 program headers. A fat binary passing while its
 single-arch sibling fails, under an emulator that cannot run x86, is the actual
 proof that the aarch64 half exists and is what ran.
 
-**(b) GitHub Actions `ubuntu-24.04-arm` / `macos-latest`.** Real hardware.
+**(b) GitHub Actions `ubuntu-24.04-arm` / `macos-latest`.** Real hardware, and
+this is the evidence that actually counts.
 `.github/workflows/cosmoruby-test.yml` runs the *same*
 `.github/scripts/test-cosmoruby.sh` on every platform. Those two jobs were
 `experimental: true` (non-blocking) precisely because an x86-64-only artifact
 could only ever fail them; with a fat artifact they are now blocking, and the
 job asserts the artifact contains both ELF headers *before* claiming an arm64
 pass, so a silently-x86-only build cannot masquerade as an arm64 success.
-`windows-11-arm` is added but stays experimental — nothing in this port has
-ever been proven there.
+
+Result on `ubuntu-24.04-arm`
+(<https://github.com/Largo/cosmoruby/actions/runs/31282196109>; the fully green
+run including macOS is
+<https://github.com/Largo/cosmoruby/actions/runs/31282837413>), kernel
+`6.17.0-1020-azure … aarch64 aarch64 aarch64 GNU/Linux`:
+
+```
+fat APE OK (x86_64 + aarch64)
+ruby 4.0.6 (2026-07-14) +PRISM +MIMALLOC [aarch64-cosmo]
+  RUBY_PLATFORM    = aarch64-cosmo
+  ... 30 checks ...
+  [PASS] tcp loopback echo (localhost)
+  [PASS] tcp loopback echo (127.0.0.1)
+SMOKE-RESULT: pass=30 fail=0 warn=0
+[PASS] exit status 7          test_sqlite3.rb RESULT: failures=0
+```
+
+`macos-latest` (Apple Silicon, `RELEASE_ARM64_VMAPPLE … arm64`) boots the same
+half and reports `aarch64-cosmo`, passing everything except the macOS TCP
+checks discussed below — so the `ape-m1` loader path works too.
+
+`windows-11-arm` was added as well and **passes**, but note what it proves:
+`RUBY_PLATFORM` there is `x86_64-cosmo`. Cosmopolitan's Windows PE half is
+x86-64 only, so Windows-on-ARM runs it through the OS's x64 emulation rather
+than executing the aarch64 half. It stays `experimental: true` for that
+reason.
+
+### Bonus finding: TCP sockets are broken on macOS too
+
+The first run with macOS runners failed both macOS jobs, on nothing but the
+two TCP loopback checks:
+
+```
+TCPServer.new("127.0.0.1", 0)  -> Errno::EPFNOSUPPORT (bind)
+TCPSocket.new("localhost", p)  -> Errno::EINVAL       (connect)
+```
+
+Byte-identical on `macos-15-intel` and `macos-latest`, so this is
+cosmopolitan's macOS socket layer, **not** an architecture or fat-binary
+issue: the same x86-64 half passes every TCP check on Linux, and the same
+aarch64 half passes them on `ubuntu-24.04-arm`. UDP works on macOS, exactly as
+on Windows. It is the same shape as the documented Windows breakage (a
+`sockaddr`/address-family mismatch) and had simply never been observed,
+because this port had no macOS runner until now. `ci_smoke.rb` now treats it
+as a warning on macOS as it already did on Windows.
 
 ### Numbers (Debian 13 amd64, 8 cores, 2026-08-09)
 
@@ -1002,8 +1047,17 @@ Build time on 8 cores with libc already built and a full Ruby recompile forced
 So the fat build costs almost exactly **one extra `make`** — roughly double the
 wall time, no other overhead. The aarch64 half is not much cheaper despite
 skipping the YJIT cargo build, because it has to compile cosmopolitan libc for
-the second architecture too (that part is cached across runs; a genuinely cold
-`o/` tree pays it once).
+the second architecture too.
+
+Cold tree in CI (`ubuntu-latest`, 4 cores, cosmocc restored from cache):
+x86-64 `make` 82 s, aarch64 `make` 158 s, whole build job **5 min 23 s**
+(<https://github.com/Largo/cosmoruby/actions/runs/31282837413>). Each of the
+six test jobs then takes 8–27 s.
+
+Note the CI binaries are **not** byte-identical to the local ones
+(`o/third_party/ruby/ruby` is 12,622,445 B there vs 12,720,749 B here): the
+YJIT Rust staticlib differs with the host's `rustc`. The build is reproducible
+in behaviour, not in bytes.
 
 
 ### Verification results for the fat build (2026-08-09)
@@ -1017,6 +1071,7 @@ Mach-O header (x86_64) @ 0xc98, gzip-compressed `ape-m1.c` present.
 | --- | --- | --- | --- |
 | `cosmo_tests/smoke_test.sh` | **14/14** | **14/14** | — |
 | `cosmo_tests/ci_smoke.rb` | **30/30** | **30/30** | 28 pass / 0 fail / 2 warn (the pre-existing Windows TCP breakage) |
+| — same, on **real** hardware in CI | 30/30 (`ubuntu-latest`) | **30/30 (`ubuntu-24.04-arm`)** | 28/0/2 (`windows-latest` *and* `windows-11-arm`) |
 | `cosmo_tests/test_sqlite3.rb` under `env -i` | **5/5** | **5/5** | **5/5** (from `C:\Users\vagrant`) |
 | `env -i` from an empty dir | OK | OK | n/a |
 | `ci_exit7.rb` exit status | 7 | 7 | 1792 (= 7 << 8, pre-existing) |

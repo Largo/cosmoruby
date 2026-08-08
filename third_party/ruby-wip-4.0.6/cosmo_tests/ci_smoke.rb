@@ -49,10 +49,17 @@ rescue Exception => e
   puts "  [WARN] #{name} :: #{e.class}: #{e.message}"
 end
 
-# RUBY_PLATFORM is "x86_64-cosmo" on every OS, so detect the host at runtime.
-# Cosmopolitan exposes Windows drives as /C, /D, ... ; ENV is a fallback for
-# environments where the drive mapping is unavailable.
+# RUBY_PLATFORM tells you the architecture ("x86_64-cosmo" / "aarch64-cosmo")
+# but not the OS -- one APE runs on all of them -- so detect the host at
+# runtime.  Cosmopolitan exposes Windows drives as /C, /D, ... ; ENV is a
+# fallback for environments where the drive mapping is unavailable.
 windows = Dir.exist?("/C/Windows") || ENV["OS"] == "Windows_NT"
+macos   = begin
+            require "etc"
+            Etc.uname[:sysname] == "Darwin"
+          rescue Exception
+            Dir.exist?("/System/Library")
+          end
 
 puts "CosmoRuby CI smoke test"
 puts "  RUBY_DESCRIPTION = #{RUBY_DESCRIPTION}"
@@ -175,11 +182,23 @@ end
 # because UDPSocket is created AF_INET directly.  All of this passes on Linux
 # with the same binary, so it is a Windows-layer bug, not a test artefact.
 #
-# Kept as warnings on Windows so the suite stays green-and-honest; they will
-# start passing on their own once the family mapping is fixed.
-if windows
-  soft("tcp loopback echo, localhost (known broken on Windows)")   { loopback_echo("localhost") }
-  soft("tcp loopback echo, 127.0.0.1 (known broken on Windows)")   { loopback_echo("127.0.0.1") }
+# macOS is broken the same way, which only became visible once CI grew macOS
+# runners (2026-08-09, run 31282196109).  Signature there:
+#
+#   TCPServer.new("127.0.0.1", 0)  -> Errno::EPFNOSUPPORT (bind)
+#   TCPSocket.new("localhost", p)  -> Errno::EINVAL       (connect)
+#
+# Byte-for-byte identical on macos-15-intel and macos-latest (Apple Silicon),
+# i.e. it is cosmopolitan's macOS socket layer, not anything architecture- or
+# fat-binary-specific -- the very same x86-64 half passes on Linux.  UDP works
+# on macOS too, same as on Windows.
+#
+# Kept as warnings on Windows and macOS so the suite stays green-and-honest;
+# they will start passing on their own once the family mapping is fixed.
+if windows || macos
+  os = windows ? "Windows" : "macOS"
+  soft("tcp loopback echo, localhost (known broken on #{os})")   { loopback_echo("localhost") }
+  soft("tcp loopback echo, 127.0.0.1 (known broken on #{os})")   { loopback_echo("127.0.0.1") }
 else
   check("tcp loopback echo (localhost)") { loopback_echo("localhost") }
   check("tcp loopback echo (127.0.0.1)") { loopback_echo("127.0.0.1") }

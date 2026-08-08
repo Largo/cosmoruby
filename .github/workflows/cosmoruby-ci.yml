@@ -1,0 +1,34 @@
+name: CosmoRuby CI
+
+# Build ruby.com from a clean checkout, then run the SAME test scripts against
+# the produced APE on Linux, Windows and macOS.
+#
+# Cross-platform testing of the built artifact is the entire point of this
+# workflow.  Three real bugs in this port were invisible on Linux: /tmp
+# resolving differently across cosmo versions, exit codes reported as
+# code << 8, and Ruby 4.0.6 calling Linux-only YJIT Rust during VM init,
+# which segfaulted every single Windows run while all 14 Linux checks passed.
+# A Linux-only CI would have caught none of them.
+
+on:
+  push:
+    branches: [main, ci]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/cosmoruby-build.yml
+
+  test:
+    needs: build
+    uses: ./.github/workflows/cosmoruby-test.yml
+    with:
+      artifact_name: ${{ needs.build.outputs.artifact_name }}

@@ -1,0 +1,111 @@
+name: cosmoruby-build
+
+# Reusable job: build the CosmoRuby APEs from a clean checkout and upload
+# them as an artifact.  Called by cosmoruby-ci.yml (every push/PR) and by
+# cosmoruby-release.yml (tags), so the released binary is produced by the
+# exact same path that CI tests.
+#
+# Build inputs that are NOT in the checkout:
+#   * cosmocc 3.9.2  -- auto-downloaded by the Makefile (sha256-pinned), cached
+#   * a bootstrap CosmoRuby -- ruby.env.mk demands host ruby == the vendored
+#     version (4.0.6) or a prebuilt cosmo ruby via COSMO_RUBY.  No distro
+#     ships Ruby 4.0.6, so we use the igravious v1.3.0 release asset; the
+#     version check is skipped when COSMO_RUBY is set and the codegen scripts
+#     are version-agnostic.
+#   * cargo/rustc -- YJIT is hard-enabled (USE_YJIT 1 in the committed
+#     config.h) and cannot be switched off.
+
+on:
+  workflow_call:
+    inputs:
+      bootstrap_url:
+        description: 'Prebuilt CosmoRuby used as COSMO_RUBY for codegen'
+        type: string
+        default: 'https://github.com/igravious/cosmoruby/releases/download/v1.3.0/ruby.com'
+      artifact_name:
+        type: string
+        default: 'cosmoruby-x86_64'
+      artifact_retention_days:
+        type: number
+        default: 14
+    outputs:
+      artifact_name:
+        value: ${{ jobs.build.outputs.artifact_name }}
+      ruby_version:
+        value: ${{ jobs.build.outputs.ruby_version }}
+      ruby_description:
+        value: ${{ jobs.build.outputs.ruby_description }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build ruby.com (x86_64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    outputs:
+      artifact_name: ${{ steps.describe.outputs.artifact_name }}
+      ruby_version: ${{ steps.describe.outputs.version }}
+      ruby_description: ${{ steps.describe.outputs.description }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zip unzip
+          echo "--- toolchain ---"
+          cargo --version
+          rustc --version
+          echo "nproc: $(nproc)"
+          df -h / | tail -1
+
+      # 1.2 GB extracted; the Makefile skips the download when the directory
+      # already exists, so a restored cache is all it takes.
+      - name: cache cosmocc 3.9.2
+        uses: actions/cache@v4
+        with:
+          path: .cosmocc
+          key: cosmocc-3.9.2-${{ runner.os }}-x86_64
+
+      - name: fetch bootstrap CosmoRuby
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/bootstrap-ruby.com" '${{ inputs.bootstrap_url }}'
+          chmod +x "$RUNNER_TEMP/bootstrap-ruby.com"
+          "$RUNNER_TEMP/bootstrap-ruby.com" --version
+
+      - name: build (configure, bootstrap mkdeps, make, package)
+        run: |
+          export COSMO_RUBY="$RUNNER_TEMP/bootstrap-ruby.com"
+          export JOBS="$(nproc)"
+          time bash .github/scripts/build-cosmoruby.sh
+
+      - name: collect artifacts
+        id: describe
+        run: |
+          mkdir -p dist
+          cp o/third_party/ruby/ruby.com o/third_party/ruby/irb.com o/third_party/ruby/miniruby.com dist/
+          chmod +x dist/*.com
+          (cd dist && sha256sum *.com > SHA256SUMS && cat SHA256SUMS)
+          version=$(dist/ruby.com -e 'print RUBY_VERSION')
+          description=$(dist/ruby.com -e 'print RUBY_DESCRIPTION')
+          echo "artifact_name=${{ inputs.artifact_name }}" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "description=$description" >> "$GITHUB_OUTPUT"
+          {
+            echo "### CosmoRuby build"
+            echo ""
+            echo '```'
+            echo "$description"
+            ls -l dist
+            cat dist/SHA256SUMS
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: dist/*
+          retention-days: ${{ inputs.artifact_retention_days }}
+          if-no-files-found: error

@@ -60,23 +60,13 @@ jobs:
 
       # Proves the artifact really is fat before the arm64 jobs claim to have
       # tested anything: without both ELF headers an "arm64 pass" would just
-      # be qemu/Rosetta or a silently skipped job.
+      # be a job that never ran ARM code.  The binary inspects itself, so this
+      # also proves it boots on the runner.
       - name: verify artifact is a fat APE
         shell: bash
         run: |
-          python3 - dist/ruby.com <<'PY'
-          import sys
-          d = open(sys.argv[1], 'rb').read()
-          assert d[:6] == b'MZqFpD', 'not an APE'
-          seen, i = set(), 0
-          while (pos := d.find(b'\x7fELF', i)) >= 0:
-              m = int.from_bytes(d[pos+18:pos+20], 'little')
-              seen.add({0x3e: 'x86_64', 0xb7: 'aarch64'}.get(m, m))
-              i = pos + 1
-          print('ELF machines in APE:', sorted(str(x) for x in seen))
-          for want in ('x86_64', 'aarch64'):
-              assert want in seen, f'{want} ELF missing from dist/ruby.com'
-          PY
+          chmod +x dist/*.com 2>/dev/null || true
+          ./dist/ruby.com -e 'd=File.binread(ARGV[0]); raise "not an APE" unless d[0,6]=="MZqFpD"; m=[]; i=0; while (q=d.index("\x7fELF".b,i)); m << d[q+18,2].unpack1("v"); i=q+1; end; u=m.uniq; puts "ELF machine types: #{u.map{|x| format("0x%x",x)}.join(",")}"; raise "x86_64 ELF missing" unless u.include?(0x3e); raise "aarch64 ELF missing" unless u.include?(0xb7); puts "fat APE OK (x86_64 + aarch64)"' dist/ruby.com
 
       - name: run acceptance tests (unix)
         if: runner.os != 'Windows'

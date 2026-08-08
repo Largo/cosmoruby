@@ -78,9 +78,9 @@ fi
 # ── make, verified ────────────────────────────────────────────────────
 #
 # `make` in this tree can exit 0 without having linked anything, and it
-# fails transiently.  So never believe $?: retry until the product exists
-# and is newer than the moment we started.  MAX_ATTEMPTS=1 restores the
-# old behaviour.
+# fails transiently.  So never believe $?: re-run make until the product
+# exists and has converged (its size:mtime stops changing).  MAX_ATTEMPTS=1
+# restores the old believe-$?-once behaviour.
 
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-4}"
 

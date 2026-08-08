@@ -1,5 +1,12 @@
 # check_ape.sh — shared APE binary verification functions
-# Source this file: . ./check_ape.sh
+#
+# Source it:   . ./check_ape.sh
+# Or run it:   bash check_ape.sh --verify <binary>
+#              (magic + fat components; exits non-zero if either fails)
+#
+# check_ape_components needs *a* Ruby to inspect the file.  Point
+# RUBY_FOR_CHECKS at one (e.g. the x86_64 ruby.com you just built) so the
+# check cannot silently skip itself on a host with no system ruby.
 
 check_ape_magic() {
     local binary="$1"
@@ -52,12 +59,14 @@ check_ape_components() {
     local ruby_bin=""
 
     # Find a ruby interpreter
-    if command -v ruby.com >/dev/null 2>&1; then
+    if [ -n "${RUBY_FOR_CHECKS:-}" ] && [ -x "${RUBY_FOR_CHECKS}" ]; then
+        ruby_bin="$RUBY_FOR_CHECKS"
+    elif command -v ruby.com >/dev/null 2>&1; then
         ruby_bin="ruby.com"
     elif command -v ruby >/dev/null 2>&1; then
         ruby_bin="ruby"
     else
-        echo "Components:     skipped (ruby not available)"
+        echo "Components:     skipped (ruby not available; set RUBY_FOR_CHECKS)"
         return 0
     fi
 
@@ -141,3 +150,12 @@ end
 exit(ok ? 0 : 1)
 RUBYEOF
 }
+
+# Runnable entry point: bash check_ape.sh --verify <binary>
+if [ "${1:-}" = "--verify" ]; then
+    [ -n "${2:-}" ] || { echo "usage: check_ape.sh --verify <binary>" >&2; exit 2; }
+    check_ape_magic "$2" || exit 1
+    check_fat_binary "$2"
+    check_ape_components "$2" || exit 1
+    exit 0
+fi

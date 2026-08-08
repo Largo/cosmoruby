@@ -75,6 +75,42 @@ fi
 
 . ./check_ape.sh
 
+# ── make, verified ────────────────────────────────────────────────────
+#
+# `make` in this tree can exit 0 without having linked anything, and it
+# fails transiently.  So never believe $?: retry until the product exists
+# and is newer than the moment we started.  MAX_ATTEMPTS=1 restores the
+# old behaviour.
+
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-4}"
+
+# verified_make <product> <make args...>
+# Runs make until <product> exists and its size:mtime signature is unchanged
+# by a further make run -- i.e. the build has converged.  Two attempts is the
+# normal case: one builds, one confirms.
+verified_make() {
+    _product="$1"; shift
+    _prev=""
+    _attempt=1
+    while [ "$_attempt" -le "$MAX_ATTEMPTS" ]; do
+        # shellcheck disable=SC2086
+        make "$@"
+        _sig=$(stat -c '%s:%Y' "$_product" 2>/dev/null || echo "")
+        if [ -n "$_sig" ] && [ "$_sig" = "$_prev" ]; then
+            return 0
+        fi
+        [ -n "$_sig" ] || echo "bake: $_product not produced (attempt $_attempt/$MAX_ATTEMPTS)"
+        _prev="$_sig"
+        _attempt=$((_attempt + 1))
+    done
+    if [ -n "$_prev" ]; then
+        echo "Warning: $_product still changing after $MAX_ATTEMPTS make attempts; using it anyway."
+        return 0
+    fi
+    echo "Error: $_product was never produced after $MAX_ATTEMPTS make attempts."
+    return 1
+}
+
 # ── Build and link each target ────────────────────────────────────────
 
 STEP=0
@@ -102,24 +138,14 @@ for TARGET in $TARGETS; do
     STEP=$((STEP + 1))
     echo "--- Step $STEP/$TOTAL_STEPS: Building $BASENAME x86_64 ---"
     # shellcheck disable=SC2086
-    make $MAKE_FLAGS "$TARGET"
-
-    if [ ! -f "$X86_DBG" ]; then
-        echo "Error: x86_64 build succeeded but $X86_DBG not found."
-        exit 1
-    fi
+    verified_make "$X86_DBG" $MAKE_FLAGS "$TARGET" || exit 1
     echo ""
 
     # Step 2: Build aarch64
     STEP=$((STEP + 1))
     echo "--- Step $STEP/$TOTAL_STEPS: Building $BASENAME aarch64 ---"
     # shellcheck disable=SC2086
-    make $MAKE_FLAGS m=aarch64 "$ARM_TARGET"
-
-    if [ ! -f "$ARM_DBG" ]; then
-        echo "Error: aarch64 build succeeded but $ARM_DBG not found."
-        exit 1
-    fi
+    verified_make "$ARM_DBG" $MAKE_FLAGS m=aarch64 "$ARM_TARGET" || exit 1
     echo ""
 
     # Step 3: Link fat binary

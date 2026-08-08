@@ -28,7 +28,7 @@ jobs:
   build:
     uses: ./.github/workflows/cosmoruby-build.yml
     with:
-      artifact_name: cosmoruby-release-x86_64
+      artifact_name: cosmoruby-release-fat
       artifact_retention_days: 30
 
   verify:
@@ -36,12 +36,14 @@ jobs:
     uses: ./.github/workflows/cosmoruby-test.yml
     with:
       artifact_name: ${{ needs.build.outputs.artifact_name }}
-      # Release gating uses the three platforms this build actually targets.
+      # Release gating uses every platform the fat build actually targets.
       runners: >-
         [
-          {"name": "linux-x86_64",   "os": "ubuntu-latest",  "experimental": false},
-          {"name": "windows-x86_64", "os": "windows-latest", "experimental": false},
-          {"name": "macos-x86_64",   "os": "macos-15-intel", "experimental": false}
+          {"name": "linux-x86_64",   "os": "ubuntu-latest",    "experimental": false},
+          {"name": "windows-x86_64", "os": "windows-latest",   "experimental": false},
+          {"name": "macos-x86_64",   "os": "macos-15-intel",   "experimental": false},
+          {"name": "linux-arm64",    "os": "ubuntu-24.04-arm", "experimental": false},
+          {"name": "macos-arm64",    "os": "macos-latest",     "experimental": false}
         ]
 
   publish:
@@ -73,9 +75,11 @@ jobs:
             printf 'macOS, Windows and the BSDs.\n\n'
             printf '```\n%s\n```\n\n' "$DESCRIPTION"
             printf 'Built from `%s` by `.github/workflows/cosmoruby-release.yml` and\n' "$GITHUB_SHA"
-            printf 'verified on ubuntu-latest, windows-latest and macos-15-intel (boot,\n'
-            printf 'stdlib, filesystem, threads, sockets, sqlite3, exit-status propagation).\n\n'
-            printf 'Binaries are x86_64 APEs. On unix: `chmod +x ruby.com && ./ruby.com`.\n\n'
+            printf 'verified on ubuntu-latest, windows-latest, macos-15-intel,\n'
+            printf 'ubuntu-24.04-arm and macos-latest (boot, stdlib, filesystem, threads,\n'
+            printf 'sockets, sqlite3, exit-status propagation).\n\n'
+            printf 'Binaries are FAT APEs: one file with both x86_64 and aarch64 machine\n'
+            printf 'code. On unix: `chmod +x ruby.com && ./ruby.com`.\n\n'
             printf '```\n'
             cat dist/SHA256SUMS
             printf '```\n'

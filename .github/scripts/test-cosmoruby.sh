@@ -86,19 +86,30 @@ case "$out" in
   *)         bad "env -i :: $(printf '%s' "$out" | head -5)" ;;
 esac
 
-head_ "yjit flag (Linux only by design)"
-case "$(uname -s)" in
-  Linux)
-    out=$("$RUBY" --yjit -e 'puts RUBY_DESCRIPTION' 2>&1)
-    case "$out" in
-      *+YJIT*) ok "--yjit :: $out" ;;
-      *)       bad "--yjit did not report +YJIT :: $out" ;;
-    esac
-    ;;
-  *)
-    echo "[SKIP] YJIT is gated on IsLinux() in this port (see PORTING-NOTES.md)"
-    ;;
-esac
+# YJIT is a Rust staticlib built for x86_64-unknown-linux-gnu.  It is linked
+# only into the x86_64 half of the APE and initialised only under IsLinux(),
+# so it genuinely runs on exactly one platform.  Everywhere else `--yjit` must
+# still be *accepted* -- it used to raise "invalid YJIT option ''" on the
+# aarch64 half of a fat build -- and RubyVM::YJIT.enabled? must be false.
+# RUBY_DESCRIPTION's +YJIT is set by option parsing and is not evidence.
+# The expectation is computed inside the interpreter (RUBY_PLATFORM + uname),
+# not from the shell, so it is also correct when the aarch64 half is driven
+# through qemu-user on an x86-64 host.
+head_ "yjit flag (accepted everywhere; actually live on Linux/x86_64 only)"
+out=$("$RUBY" --yjit -e '
+  require "etc"
+  want = RUBY_PLATFORM.start_with?("x86_64") && (Etc.uname[:sysname] rescue "") == "Linux"
+  got  = RubyVM::YJIT.enabled?
+  puts(want == got ? "yjit-ok want=#{want} got=#{got}" : "yjit-MISMATCH want=#{want} got=#{got}")' 2>&1)
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  bad "--yjit rejected (exit $rc) :: $out"
+else
+  case "$out" in
+    yjit-ok*) ok "--yjit :: $out" ;;
+    *)        bad "--yjit :: $out" ;;
+  esac
+fi
 
 cd "$REPO_ROOT" || exit 1
 rm -rf "$WORK"

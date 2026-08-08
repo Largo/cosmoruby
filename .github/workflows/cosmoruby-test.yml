@@ -11,17 +11,23 @@ on:
     inputs:
       artifact_name:
         type: string
-        default: 'cosmoruby-x86_64'
+        default: 'cosmoruby-fat'
       runners:
         description: 'JSON array of {name, os, experimental} test targets'
         type: string
+        # linux-arm64 and macos-arm64 are only meaningful against a *fat*
+        # artifact (see cosmoruby-build.yml `fat`).  With one they are
+        # blocking, because the aarch64 half is a shipped platform, not a
+        # nice-to-have.  windows-arm64 stays experimental: nothing in this
+        # port has ever been proven there.
         default: >-
           [
             {"name": "linux-x86_64",   "os": "ubuntu-latest",    "experimental": false},
             {"name": "windows-x86_64", "os": "windows-latest",   "experimental": false},
             {"name": "macos-x86_64",   "os": "macos-15-intel",   "experimental": false},
-            {"name": "macos-arm64",    "os": "macos-latest",     "experimental": true},
-            {"name": "linux-arm64",    "os": "ubuntu-24.04-arm", "experimental": true}
+            {"name": "linux-arm64",    "os": "ubuntu-24.04-arm", "experimental": false},
+            {"name": "macos-arm64",    "os": "macos-latest",     "experimental": false},
+            {"name": "windows-arm64",  "os": "windows-11-arm",   "experimental": true}
           ]
 
 permissions:
@@ -51,6 +57,26 @@ jobs:
         with:
           name: ${{ inputs.artifact_name }}
           path: dist
+
+      # Proves the artifact really is fat before the arm64 jobs claim to have
+      # tested anything: without both ELF headers an "arm64 pass" would just
+      # be qemu/Rosetta or a silently skipped job.
+      - name: verify artifact is a fat APE
+        shell: bash
+        run: |
+          python3 - dist/ruby.com <<'PY'
+          import sys
+          d = open(sys.argv[1], 'rb').read()
+          assert d[:6] == b'MZqFpD', 'not an APE'
+          seen, i = set(), 0
+          while (pos := d.find(b'\x7fELF', i)) >= 0:
+              m = int.from_bytes(d[pos+18:pos+20], 'little')
+              seen.add({0x3e: 'x86_64', 0xb7: 'aarch64'}.get(m, m))
+              i = pos + 1
+          print('ELF machines in APE:', sorted(str(x) for x in seen))
+          for want in ('x86_64', 'aarch64'):
+              assert want in seen, f'{want} ELF missing from dist/ruby.com'
+          PY
 
       - name: run acceptance tests (unix)
         if: runner.os != 'Windows'

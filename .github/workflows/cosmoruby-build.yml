@@ -13,7 +13,12 @@ name: cosmoruby-build
 #     version check is skipped when COSMO_RUBY is set and the codegen scripts
 #     are version-agnostic.
 #   * cargo/rustc -- YJIT is hard-enabled (USE_YJIT 1 in the committed
-#     config.h) and cannot be switched off.
+#     config.h) and cannot be switched off.  It is Linux/x86_64-only Rust, so
+#     the aarch64 half of a fat build has it disabled (yjit/BUILD.mk).
+#
+# `fat: true` (the default) builds the tree twice -- once per architecture --
+# and apelinks the two halves into one APE that runs on x86_64 *and* aarch64.
+# That is what makes the linux-arm64 / macos-arm64 test jobs meaningful.
 
 on:
   workflow_call:
@@ -22,9 +27,13 @@ on:
         description: 'Prebuilt CosmoRuby used as COSMO_RUBY for codegen'
         type: string
         default: 'https://github.com/igravious/cosmoruby/releases/download/v1.3.0/ruby.com'
+      fat:
+        description: 'Build fat x86_64 + aarch64 APEs (apelink)'
+        type: boolean
+        default: true
       artifact_name:
         type: string
-        default: 'cosmoruby-x86_64'
+        default: 'cosmoruby-fat'
       artifact_retention_days:
         type: number
         default: 14
@@ -41,7 +50,7 @@ permissions:
 
 jobs:
   build:
-    name: build ruby.com (x86_64)
+    name: build ruby.com (${{ inputs.fat && 'fat x86_64+aarch64' || 'x86_64' }})
     runs-on: ubuntu-latest
     timeout-minutes: 180
     outputs:
@@ -68,6 +77,8 @@ jobs:
         with:
           path: .cosmocc
           key: cosmocc-3.9.2-${{ runner.os }}-x86_64
+          # The same cosmocc tarball carries both the x86_64 and the aarch64
+          # cross toolchains, so one cache entry serves the fat build too.
 
       - name: fetch bootstrap CosmoRuby
         run: |
@@ -79,15 +90,16 @@ jobs:
         run: |
           export COSMO_RUBY="$RUNNER_TEMP/bootstrap-ruby.com"
           export JOBS="$(nproc)"
+          export FAT="${{ inputs.fat && '1' || '0' }}"
           time bash .github/scripts/build-cosmoruby.sh
 
       - name: collect artifacts
         id: describe
         run: |
-          mkdir -p dist
-          cp o/third_party/ruby/ruby.com o/third_party/ruby/irb.com o/third_party/ruby/miniruby.com dist/
-          chmod +x dist/*.com
-          (cd dist && sha256sum *.com > SHA256SUMS && cat SHA256SUMS)
+          # build-cosmoruby.sh already staged dist/ (fat APEs from releases/,
+          # or the x86_64-only ones from o//) together with SHA256SUMS.
+          ls -l dist
+          cat dist/SHA256SUMS
           version=$(dist/ruby.com -e 'print RUBY_VERSION')
           description=$(dist/ruby.com -e 'print RUBY_DESCRIPTION')
           echo "artifact_name=${{ inputs.artifact_name }}" >> "$GITHUB_OUTPUT"

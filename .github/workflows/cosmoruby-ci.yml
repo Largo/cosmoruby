@@ -9,10 +9,14 @@ name: CosmoRuby CI
 # code << 8, and Ruby 4.0.6 calling Linux-only YJIT Rust during VM init,
 # which segfaulted every single Windows run while all 14 Linux checks passed.
 # A Linux-only CI would have caught none of them.
+#
+# The build job produces *fat* APEs (x86_64 + aarch64 in one file), which is
+# what makes the linux-arm64 / macos-arm64 jobs a real test rather than a
+# formality -- with an x86_64-only binary they could only ever fail.
 
 on:
   push:
-    branches: [main, ci]
+    branches: [main, ci, fat-ape]
   pull_request:
   workflow_dispatch:
 

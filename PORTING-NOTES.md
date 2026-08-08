@@ -887,17 +887,13 @@ Neither is caused by anything on this branch; both were confirmed against the
 v1.3.0 (4.0.0) release binary as well. They are now documented in the README
 rather than left as a surprise.
 
-1. **TCP sockets do not work on Windows.** `require "socket"` loads,
-   `Socket.new(AF_INET, SOCK_STREAM)` succeeds, `Socket.getaddrinfo` and
-   `Socket.gethostname` work, `UDPSocket.new` succeeds — but
-   `TCPServer.new("127.0.0.1", 0)` raises `Errno::EAFNOSUPPORT` from `bind(2)`
-   (same for `0.0.0.0`), and `TCPSocket` / `Net::HTTP` raise `Errno::EINVAL`
-   from `connect(2)`. A raw `Socket#connect` with a packed sockaddr raises
-   `Socket::ResolutionError: getnameinfo: Unrecognized address family or
-   invalid length`, which points at a sockaddr layout mismatch between Ruby's
-   socket ext and cosmopolitan's Windows layer. All of this works on Linux.
-   The VM had working internet (PowerShell fetched https://rubygems.org → 200),
-   so it is not an environment problem.
+1. ~~**TCP sockets do not work on Windows.**~~ **FIXED on branch
+   `fix-windows-sockets`** — see "Socket ABI: the constants must be the
+   host's" below. The symptoms recorded here (`Errno::EAFNOSUPPORT` from
+   `bind(2)`, `Errno::EINVAL` from `connect(2)`,
+   `Socket::ResolutionError: getnameinfo: Unrecognized address family`)
+   were caused by two CosmoRuby headers hard-coding Linux socket constants,
+   not by cosmopolitan's Windows layer. The same bug broke TCP on macOS.
 2. **Native Windows subprocesses cannot be launched.** With the full path,
    `Process.spawn("C:/Windows/System32/cmd.exe","/c","exit 3")` gives
    `$?.exitstatus == nil`, `system(...)` → `false`, backticks → `""`,
@@ -927,14 +923,15 @@ rubygems.org). Anything doing real OpenSSL-API cryptography needs checking.
 | Check | Linux x86-64 (Debian 13) | Windows 11 x86-64 |
 |---|---|---|
 | APE magic `MZqFpD` | yes (all three) | n/a |
-| `smoke_test.sh` (14 checks) | 14/14 | — |
+| `smoke_test.sh` (15 checks) | 15/15 | — |
 | `win_smoke.rb` | — | pass, `RC=1792` (= exit 7) |
+| `test_sockets.rb` | 19/19 | 22/22 |
 | `test_sqlite3.rb` (5 checks) | 5/5 under `env -i` from an empty dir | 5/5 from `C:\Users\vagrant` |
 | `irb.com` pipe mode | `puts 1+1` → 2 | `puts 1+1` → 2 |
 | `miniruby.com` | 4.0.6 banner, `Gem` defined | 4.0.6 banner |
 | `--yjit` | `RubyVM::YJIT.enabled?` → true | → false, no crash |
 | exit status | 7 | 1792 (7 << 8) |
-| sockets | loopback echo OK | `EAFNOSUPPORT` / `EINVAL` |
+| sockets | loopback echo OK | loopback echo OK (fixed, see below) |
 | native subprocess | backticks OK | fails |
 | APE→APE spawn | OK | OK |
 | broad feature probe (24 items) | all pass except native-subprocess items | same, plus sockets |
@@ -942,3 +939,240 @@ rubygems.org). Anything doing real OpenSSL-API cryptography needs checking.
 macOS and the BSDs: **untested**, no runner available. Nothing in the build is
 Linux-specific outside YJIT, so they are expected to work, but that is an
 expectation and the README says so.
+
+## Socket ABI: the constants must be the host's, not Linux's (branch `fix-windows-sockets`, 2026-08-09)
+
+This section supersedes "TCP sockets do not work on Windows" above. TCP was
+broken on **Windows and macOS** and worked only on Linux. The cause was in
+CosmoRuby, not in cosmopolitan; the leading hypothesis at the time ("cosmo's
+Windows `getaddrinfo` leaks raw Winsock address families instead of
+translating them to Linux numbering") is **wrong**, and it is worth writing
+down why, because it is an easy trap.
+
+### Cosmopolitan's actual contract
+
+Cosmopolitan does *not* present Linux numbering for socket constants. Most of
+them are `syscon` symbols (`libc/sysv/consts.sh` → `.syscon` in
+`libc/sysv/consts/syscon.internal.h`): an `extern const int` living in
+`.piro.bss`, filled in at startup by `_init_systemfive` with the value the
+**host** OS uses. `libc/sock/*-nt.c` and `libc/sock/*-sysv.c` then pass that
+value straight through to Winsock / the BSD kernel. So on Windows
+`AF_INET6 == 23` is *correct*, and a program that assumes 10 is wrong.
+
+(Contrast with errno, signals and `open()` flags, which cosmopolitan really
+does normalise to Linux numbering — `libc/errno.h`, `libc/sysv/consts/sig.h`
+and `libc/sysv/consts/o.h` are plain `#define`s. That inconsistency is what
+makes this easy to get wrong.)
+
+Proof, before touching anything, with a standalone C program built by
+`cosmocc` and run unmodified on both hosts
+(`/root/workspace/cosmo-upstream/repro/sockprobe.c`):
+
+```
+linux  : AF_INET6=10  SOL_SOCKET=1      getaddrinfo("localhost") -> family 2
+         echo_test: server received "ping"   RESULT: OK
+windows: AF_INET6=23  SOL_SOCKET=65535  getaddrinfo("localhost") -> family 23, family 2
+         echo_test: server received "ping"   RESULT: OK
+```
+
+Cosmopolitan's TCP stack is fine on Windows. Only Ruby was broken.
+
+### The ABI mismatch table
+
+Two CosmoRuby headers `#undef`'d cosmopolitan's runtime constants and
+`#define`'d the Linux numbers, with the comment *"Since we're building for
+Cosmopolitan (which handles OS detection at runtime), we use Linux values as
+the canonical constants"*:
+
+- `third_party/ruby/ext/socket/socket_constants.h` (included from
+  `ext/socket/rubysocket.h:518`, i.e. by every socket ext TU)
+- `third_party/ruby/include/errno_wrapper.h` (included from
+  `include/ruby/config.h:9`, i.e. by all of Ruby)
+
+Every value below was therefore wrong off Linux (columns from
+`libc/sysv/consts.sh`; "hard-coded" is what CosmoRuby compiled in):
+
+| Constant | hard-coded | Linux | XNU/macOS | Windows | Where it was set |
+|---|---:|---:|---:|---:|---|
+| `AF_INET` | (not touched) | 2 | 2 | 2 | consensus, fine |
+| `AF_INET6` | **10** | 10 | 30 | **23** | socket_constants.h |
+| `SOL_SOCKET` | **1** | 1 | 0xffff | **0xffff** | both headers |
+| `SO_DEBUG` | 1 | 1 | 1 | 1 | consensus, fine |
+| `SO_REUSEADDR` | **2** | 2 | 4 | **-5** (cosmo-emulated) | socket_constants.h |
+| `SO_TYPE` | **3** | 3 | 0x1008 | **0x1008** | socket_constants.h |
+| `SO_ERROR` | **4** | 4 | 0x1007 | **0x1007** | socket_constants.h |
+| `SO_DONTROUTE` | **5** | 5 | 16 | **16** | socket_constants.h |
+| `SO_BROADCAST` | **6** | 6 | 32 | **32** | socket_constants.h |
+| `SO_SNDBUF` | **7** | 7 | 0x1001 | **0x1001** | socket_constants.h |
+| `SO_RCVBUF` | **8** | 8 | 0x1002 | **0x1002** | socket_constants.h |
+| `SO_KEEPALIVE` | **9** | 9 | 8 | **8** | socket_constants.h |
+| `SO_OOBINLINE` | **10** | 10 | 256 | **256** | socket_constants.h |
+| `SO_LINGER` | **13** | 13 | 4224 | **128** | socket_constants.h |
+| `SO_RCVLOWAT` | **18** | 18 | 0x1004 | **0x1004** | socket_constants.h |
+| `SO_SNDLOWAT` | **19** | 19 | 0x1003 | **0x1003** | socket_constants.h |
+| `SO_RCVTIMEO` | **20** | 20 | 0x1006 | **0x1006** | socket_constants.h |
+| `SO_SNDTIMEO` | **21** | 21 | 0x1005 | **0x1005** | socket_constants.h |
+| `SO_ACCEPTCONN` | **30** | 30 | 2 | **2** | socket_constants.h |
+| `IP_MULTICAST_TTL` | **33** | 33 | 10 | **10** | socket_constants.h |
+| `IP_MULTICAST_LOOP` | **34** | 34 | 11 | **11** | socket_constants.h |
+| `IP_ADD_MEMBERSHIP` | **35** | 35 | 12 | **12** | socket_constants.h |
+| `IP_DROP_MEMBERSHIP` | **36** | 36 | 13 | **13** | socket_constants.h |
+| `IPV6_UNICAST_HOPS` | **16** | 16 | 4 | **4** | socket_constants.h |
+| `IPV6_MULTICAST_IF` | **17** | 17 | 9 | **9** | socket_constants.h |
+| `IPV6_MULTICAST_HOPS` | **18** | 18 | 10 | **10** | socket_constants.h |
+| `IPV6_MULTICAST_LOOP` | **19** | 19 | 11 | **11** | socket_constants.h |
+| `IPV6_JOIN_GROUP` | **20** | 20 | 12 | **12** | socket_constants.h |
+| `IPV6_LEAVE_GROUP` | **21** | 21 | 13 | **13** | socket_constants.h |
+| `IPV6_V6ONLY` | **26** | 26 | 27 | **27** | socket_constants.h |
+| `SCM_TIMESTAMP` | **29** | 29 | 2 | **0** | both headers |
+| `SCM_TIMESTAMPNS` | **35** | 35 | 0 | **0** | both headers |
+| `SCM_RIGHTS` | 1 | 1 | 1 | 1 | consensus, fine |
+| `IPPROTO_IP/TCP/UDP/IPV6` | 0/6/17/41 | same | same | same | plain `#define` in cosmo, fine |
+| `EMFILE`, `EMSGSIZE` | 24, 90 | same | same | same | cosmo normalises errno, fine |
+
+`SOL_IP/SOL_TCP/SOL_UDP/SOL_IPV6` (0/6/17/41) are also plain `#define`s in
+cosmopolitan and were harmless; only `SOL_SOCKET` in that group is a syscon.
+
+### Root cause: how a wrong `AF_INET6` corrupts an IPv4 address
+
+The headline failure — `Errno::EAFNOSUPPORT` from `bind(2)` for the address
+**`127.0.0.1`**, which is `AF_INET` and therefore "can't" be affected — comes
+from an unchecked return value in Ruby, amplified by the wrong constant:
+
+`third_party/ruby/ext/socket/raddrinfo.c:193` `numeric_getaddrinfo()`:
+
+```c
+char ipv6addr[16];
+if ((hint_family == PF_UNSPEC || hint_family == PF_INET6) &&
+    strspn(node, "0123456789abcdefABCDEF.:") == strlen(node) &&
+    inet_pton(AF_INET6, node, ipv6addr)) {           /* <-- here */
+        ... build a sockaddr_in6 from ipv6addr ...
+```
+
+- `"127.0.0.1"` passes the `strspn` filter (digits and `.` are in the set),
+  so the IPv6 branch is tried first for *every* IPv4 literal;
+- `inet_pton()` is called with Ruby's `AF_INET6` == **10**;
+- `libc/sock/inet_pton.c:78` is `if (af == AF_INET6) …; if (af != AF_INET)
+  return eafnosupport();` — with the host's `AF_INET6` being 23 on Windows /
+  30 on macOS, `10` matches neither arm and the call returns **-1**;
+- Ruby's guard only tests for non-zero, and `-1` is non-zero, so it takes the
+  IPv6 branch with `ipv6addr` **never written** — a `sockaddr_in6` built from
+  uninitialised stack.
+
+Observed on Win11 with the old binary, `Socket.sockaddr_in(0, "127.0.0.1")`:
+
+```
+sockaddr bytes=[10, 0, 0, 0, 0, 0, 0, 0, 144, 230, 125, 0, 0, 112, 0, 0, 77, 1, 45, 4, 0, 0, 0, 0, 0, 0, 0, 0]
+                ^^ family 10        ^^^^^^^^ uninitialised heap as the "IPv6 address"
+```
+
+28 bytes, family 10. `bind()`/`connect()` with family 10 then fail with
+`WSAEAFNOSUPPORT` → `Errno::EAFNOSUPPORT` on Windows, and with
+`epfnosupport()` from `libc/sock/sockaddr2bsd.c` (which rejects any family
+that is not the host's `AF_INET`/`AF_INET6`/`AF_UNIX`) → `Errno::EPFNOSUPPORT`
+on macOS. That is exactly the pair of errors CI reported.
+
+The other symptoms follow from the same table:
+
+| Symptom | Mechanism |
+|---|---|
+| `getaddrinfo("localhost")` → `["unknown:23", …]` | cosmo correctly returns family 23; `rsock_intern_family` was populated with 10 |
+| `getnameinfo: Unrecognized address family` | `getnameinfo()` on the corrupt family-10 sockaddr |
+| `SocketError: unknown protocol level: IPV6` | `IS_IP_FAMILY(af)` is `af==AF_INET \|\| af==AF_INET6` with `AF_INET6`=10, so a real family-23 socket is "not IP" and `rsock_level_arg` falls into the non-IP table (`constants.c:60`) |
+| `Errno::EINVAL - setsockopt(2)` | `SOL_SOCKET` sent as 1 instead of 0xffff |
+| UDP kept working | `UDPSocket.new` builds `AF_INET` (2, identical everywhere) directly and never goes through `getaddrinfo`/`inet_pton` |
+
+### The fix
+
+**Layer 1 — CosmoRuby (the actual bug).** Stop redefining runtime constants:
+
+- `ext/socket/socket_constants.h` reduced from 185 lines of `#undef`/`#define`
+  to feature suppression only (`#undef AF_PACKET` because cosmo has no
+  `struct sockaddr_ll`, `#undef SO_PEERCRED` because cosmo has neither, plus
+  the `struct ucred` that `ancdata.c` needs because cosmo declares
+  `SCM_CREDENTIALS` without the struct).
+- `include/errno_wrapper.h`: dropped the `SOL_*`/`SCM_*` defines and stopped
+  blocking `libc/sysv/consts/{sol,scm}.h`. errno/signal/fcntl/open/wait stay
+  as they are — cosmopolitan genuinely does normalise those, and the values
+  were verified identical.
+
+The header existed because Ruby uses these constants as `switch` **case
+labels**, which C requires to be integer constant expressions and an
+`extern const int` is not. So the fix's real content is converting those
+dispatch tables to `if`/`else` chains, in five files (search for
+`cosmopolitan:` comments):
+
+| File | What changed |
+|---|---|
+| `ext/socket/constants.c` | `rsock_optname_arg`, `rsock_cmsg_type_arg` (4 switches on `level`) |
+| `ext/socket/option.c` | `optname_to_sym`; the whole `sockopt_inspect` family/level/optname table |
+| `ext/socket/ancdata.c` | `ip_cmsg_type_to_sym`; the `ancillary_inspect` table |
+| `ext/socket/init.c` | `rsock_getfamily`'s `switch (ss.addr.sa_family)` |
+| `ext/socket/raddrinfo.c` | `Addrinfo.new` family dispatch; `rsock_inspect_sockaddr` (the `AF_INET6` arm hoisted out of the switch); `Addrinfo#ip_port` |
+| `ext/socket/socket.c` | `sock_sockaddr`, `sockaddr_len` |
+
+Compiling with `-Werror` finds every one of these mechanically: the message
+is `error: case label does not reduce to an integer constant`.
+
+**Layer 2 — cosmopolitan (`libc/sock/getsockopt-nt.c`), two genuine
+Windows-only bugs found while verifying, both upstreamable and both with
+standalone C repros:**
+
+1. `getsockopt(SOL_SOCKET, SO_ERROR)` **fell through** to the generic
+   `__imp_getsockopt()` call below it, which overwrote the
+   `__errno_windows2linux()`-translated value with the raw Winsock code (and
+   re-read SO_ERROR, which clears it). After a refused non-blocking connect
+   the caller saw `10061` where cosmopolitan's own `ECONNREFUSED` is `111`.
+   Fix: `return 0;` at the end of that branch.
+2. The one-byte→int widening at the bottom of the same function was gated on
+   `in_optlen == 4`. Winsock answers boolean options such as `TCP_NODELAY`
+   with a *single byte*; POSIX callers routinely pass a bigger scratch buffer
+   (Ruby's `bsock_getsockopt` passes 256) and so kept seeing `optlen == 1`,
+   which makes `Socket::Option#int` raise
+   `TypeError: size differ. expected as sizeof(int)=4 but 1`.
+   Fix: `in_optlen >= 4`.
+
+Nothing else in cosmopolitan needed to change.
+
+### Verification
+
+Linux x86-64 (Debian 13), `o/third_party/ruby/ruby.com` 21,225,071 bytes:
+
+- `cosmo_tests/smoke_test.sh` — **15/15** (was 14; `test_sockets.rb` added)
+- `cosmo_tests/ci_smoke.rb` — **30/30**, 0 warn
+- `cosmo_tests/test_sqlite3.rb` — **5/5** under `env -i` from an empty dir
+- `cosmo_tests/test_sockets.rb` — **19/19** (incl. `::1` loopback,
+  `Net::HTTP` over HTTPS, outbound `1.1.1.1:80`)
+
+Windows 11 (Vagrant VM), same binary:
+
+- `cosmo_tests/test_sockets.rb` — **22/22** (three extra Windows-only ABI
+  assertions: `AF_INET6==23`, `SOL_SOCKET==0xffff`, `IPV6_V6ONLY==27`)
+- `cosmo_tests/ci_smoke.rb` — **30/30**, TCP checks now pass instead of warn
+- `cosmo_tests/win_smoke.rb` — pass, `RC=1792` (= exit 7)
+- `cosmo_tests/test_sqlite3.rb` — **5/5** from `C:\Users\vagrant`
+- `irb.com` (`puts 1+1` → 2) and `miniruby.com` — still boot
+- ad-hoc TCP matrix, all OK: loopback echo both directions on `127.0.0.1` and
+  on `localhost`; `Socket.tcp`; IPv6 `::1` loopback; `TCP_NODELAY`
+  set+get; outbound `TCPSocket` to `1.1.1.1:80`; `Net::HTTP`
+  `http://example.com/` → 200 and **`https://rubygems.org/` → 200** (so the
+  MbedTLS `openssl` shim works over real sockets on Windows too)
+
+macOS: not re-tested here (no runner on this box); the fix is
+platform-generic and the XNU column of the table above is what it repairs.
+Run `cosmo_tests/test_sockets.rb` on the `macos-15-intel` CI job to confirm.
+
+### Standing rule
+
+**Never `#undef` a cosmopolitan `syscon` constant and replace it with a
+literal.** If a constant is `extern const int` in `libc/sysv/consts/*.h`, its
+value is host-specific by design and hard-coding any one host's number breaks
+the other five. When Ruby (or any port) needs it in a `switch`, convert the
+`switch` to an `if`/`else` chain. `grep -n 'extern const int' libc/sysv/consts/*.h`
+is the list of constants this applies to.
+
+### Upstream
+
+The two `getsockopt-nt.c` fixes are cosmopolitan bugs, isolated from anything
+Ruby-specific, with standalone `cosmocc` repros. Packaged for jart/cosmopolitan
+under `/root/workspace/cosmo-upstream/` (patch + README + `repro/*.c`).

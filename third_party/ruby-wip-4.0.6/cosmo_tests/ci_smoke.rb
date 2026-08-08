@@ -156,34 +156,84 @@ check("udp loopback datagram") do
   got == "ping"
 end
 
-# KNOWN WINDOWS ISSUE -- found by this CI on 2026-08-08, previously
-# undocumented.  TCP sockets do not work in this port on Windows at all:
+# TCP.  These were WARNINGS on Windows between 2026-08-08 and 2026-08-09
+# because TCP was broken there (and, as the macOS runner then showed, on
+# macOS too).  They are HARD CHECKS on every platform again: the cause was
+# found and fixed -- two CosmoRuby headers `#undef`'d cosmopolitan's runtime
+# socket constants and hard-coded the *Linux* values, so AF_INET6 was 10
+# where the host wanted 23 (Windows) or 30 (XNU) and SOL_SOCKET was 1 where
+# the host wanted 0xffff.  See PORTING-NOTES.md, "Socket ABI: the constants
+# must be the host's, not Linux's".
 #
-#   Socket.getaddrinfo("localhost", ...)  -> [["unknown:23", ..., "::1", 23, ...],
-#                                             ["AF_INET", ..., "127.0.0.1", 2, ...]]
-#   Socket.getaddrinfo("127.0.0.1", ...)  -> Socket::ResolutionError:
-#                                            getnameinfo: Unrecognized address family
-#   TCPServer.new("127.0.0.1", 0)         -> Errno::EAFNOSUPPORT (bind)
-#   TCPSocket.new("127.0.0.1", port)      -> Errno::EAFNOSUPPORT (connect)
-#   TCPSocket.new("localhost", port)      -> Errno::EINVAL       (connect)
-#   Socket.tcp("127.0.0.1", port)         -> SocketError: unknown protocol level: IPV6
-#
-# "unknown:23" is the tell: 23 is Winsock's AF_INET6, while this Ruby was
-# compiled with cosmopolitan's Linux-numbered AF_INET6 (10).  Cosmo's Windows
-# getaddrinfo hands back the raw Winsock family, so every address-family-aware
-# path (bind/connect/getnameinfo/IPV6 sockopts) rejects it.  UDP survives
-# because UDPSocket is created AF_INET directly.  All of this passes on Linux
-# with the same binary, so it is a Windows-layer bug, not a test artefact.
-#
-# Kept as warnings on Windows so the suite stays green-and-honest; they will
-# start passing on their own once the family mapping is fixed.
-if windows
-  soft("tcp loopback echo, localhost (known broken on Windows)")   { loopback_echo("localhost") }
-  soft("tcp loopback echo, 127.0.0.1 (known broken on Windows)")   { loopback_echo("127.0.0.1") }
-else
-  check("tcp loopback echo (localhost)") { loopback_echo("localhost") }
-  check("tcp loopback echo (127.0.0.1)") { loopback_echo("127.0.0.1") }
+# If any of these ever goes red on one OS only, that is the first thing to
+# suspect.  cosmo_tests/test_sockets.rb is the detailed suite; what follows
+# is the subset worth having in the fast CI smoke path.
+check("tcp loopback echo (localhost)") { loopback_echo("localhost") }
+check("tcp loopback echo (127.0.0.1)") { loopback_echo("127.0.0.1") }
+
+check("Socket.tcp") do
+  require "socket"
+  server = TCPServer.new("127.0.0.1", 0)
+  port = server.addr[1]
+  acceptor = Thread.new { c = server.accept; c.write("tcp-ok"); c.close }
+  got = nil
+  Socket.tcp("127.0.0.1", port) { |s| got = s.readpartial(64) }
+  acceptor.join(10)
+  server.close
+  got == "tcp-ok"
 end
+
+# REGRESSION: the specific getaddrinfo family values.  The original failure
+# printed "unknown:23" here, because Ruby's family tables said AF_INET6 was
+# 10 while cosmopolitan's getaddrinfo (correctly) reported the host's 23.
+check("getaddrinfo(127.0.0.1) is AF_INET") do
+  require "socket"
+  ai = Socket.getaddrinfo("127.0.0.1", 80, nil, :STREAM)
+  !ai.empty? && ai.all? { |a| a[0] == "AF_INET" && a[4] == Socket::AF_INET && a[3] == "127.0.0.1" }
+end
+
+check("getaddrinfo family name matches family number") do
+  require "socket"
+  ai = Socket.getaddrinfo("localhost", 80, nil, :STREAM)
+  !ai.empty? && ai.all? do |a|
+    case a[4]
+    when Socket::AF_INET  then a[0] == "AF_INET"
+    when Socket::AF_INET6 then a[0] == "AF_INET6"
+    else false # "unknown:NN" -- the regression
+    end
+  end
+end
+
+# REGRESSION: with the bug present, packing an IPv4 literal went down
+# raddrinfo.c's IPv6 branch (inet_pton returned -1, which Ruby read as
+# success) and produced a 28-byte sockaddr_in6 full of uninitialised heap.
+check("sockaddr_in(ipv4) is a 16-byte AF_INET sockaddr") do
+  require "socket"
+  sa = Socket.sockaddr_in(0, "127.0.0.1")
+  sa.bytesize == 16 && sa.unpack1("S") == Socket::AF_INET &&
+    sa.unpack("C*")[4, 4] == [127, 0, 0, 1]
+end
+
+# The socket constants must be the HOST's, not Linux's.
+if windows
+  check("AF_INET6 is Winsock's 23")        { require "socket"; Socket::AF_INET6 == 23 }
+  check("SOL_SOCKET is Winsock's 0xffff")  { require "socket"; Socket::SOL_SOCKET == 0xffff }
+end
+
+# SOL_SOCKET was sent as 1 instead of 0xffff off Linux, so every socket
+# option raised Errno::EINVAL there.
+check("setsockopt/getsockopt SOL_SOCKET SO_REUSEADDR") do
+  require "socket"
+  s = TCPServer.new("127.0.0.1", 0)
+  s.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+  v = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR)
+  s.close
+  v.bool == true
+end
+
+# IPv6 loopback needs ::1 to actually be configured; not every CI runner or
+# container has it, so this one stays soft.
+soft("tcp loopback echo (::1)") { loopback_echo("::1") }
 
 # --- sqlite3 (statically linked extension) --------------------------------
 check("require sqlite3") { require "sqlite3"; !SQLite3::SQLITE_VERSION.empty? }

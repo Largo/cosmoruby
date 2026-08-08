@@ -2,7 +2,7 @@
 Run the CosmoRuby acceptance tests against packaged APEs on Windows.
 
 Runs the same .rb test files as the unix script (cosmo_tests/ci_smoke.rb,
-ci_exit7.rb, test_sqlite3.rb) plus a hard assertion that no run produced a
+ci_exit7.rb, test_sockets.rb, test_sqlite3.rb) plus a hard assertion that no run produced a
 [BUG]/Segmentation fault block -- Ruby 4.0.6 segfaulted during VM init on
 100% of Windows runs while every Linux check was green (Linux-only YJIT Rust
 called from ruby_opt_init(); see PORTING-NOTES.md).  That is the regression
@@ -83,6 +83,12 @@ $r = Invoke-Ape "`"$ruby`" `"$tests\ci_exit7.rb`""
 $allText += $r.Text
 if (Status-Is $r.Code 7) { Ok "exit status: raw=$($r.Code) (7 or 7<<8=1792)" }
 else { Bad "exit status: raw=$($r.Code), want 7 or 1792" }
+
+Section "socket/TCP acceptance (cosmo_tests/test_sockets.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_sockets.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "SOCKET-OK")) { Ok "test_sockets.rb" }
+else { Bad "test_sockets.rb (status $($r.Code))" }
 
 Section "sqlite3 acceptance (cosmo_tests/test_sqlite3.rb)"
 $r = Invoke-Ape "`"$ruby`" `"$tests\test_sqlite3.rb`""

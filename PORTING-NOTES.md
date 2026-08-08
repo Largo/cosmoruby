@@ -1176,3 +1176,27 @@ is the list of constants this applies to.
 The two `getsockopt-nt.c` fixes are cosmopolitan bugs, isolated from anything
 Ruby-specific, with standalone `cosmocc` repros. Packaged for jart/cosmopolitan
 under `/root/workspace/cosmo-upstream/` (patch + README + `repro/*.c`).
+
+### Left unfixed (flagged, not a TCP blocker): POLL* is still hard-coded
+
+`include/errno_wrapper.h` still does `#define POLLIN 0x0001` and friends, and
+still blocks `libc/sysv/consts/poll.h`. Those *are* syscon constants, and
+cosmopolitan's Windows poll (`libc/calls/poll-nt.c:57-66`) works in Winsock's
+numbering — `POLLIN_ 0x0300`, `POLLOUT_ 0x0010`, `POLLERR_ 0x0001` — so a
+caller passing the Linux `POLLIN` (1) is passing Winsock's `POLLERR`, which
+`poll-nt.c:118` masks away entirely.
+
+It was deliberately left alone for two reasons:
+
+1. `io.c:12534` is `STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN)`,
+   so making `POLLIN` runtime is a Ruby-wide change (io.c, thread.c,
+   thread_pthread_mn.c), not a socket-layer one.
+2. It is **not observable**: verified on Win11 and Linux with the same
+   binary that `IO.select` returns `nil` at the timeout when no data is
+   pending and returns ready promptly when data arrives, and that
+   `IO#wait_readable` times out correctly. So Ruby's readiness paths on
+   Windows are evidently not reaching cosmopolitan's `poll()` with these
+   flags.
+
+Worth revisiting if Windows IO ever starts hanging or busy-waiting; the
+constant table is the first place to look.

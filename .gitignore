@@ -39,6 +39,9 @@ __pycache__
 # Build outputs (fat binaries)
 /releases/
 
+# Staged release artifacts (.github/scripts/build-cosmoruby.sh)
+/dist/
+
 # Ruby pristine sources and tarballs
 third_party/ruby-*.tar.gz
 third_party/ruby-4.0.0/

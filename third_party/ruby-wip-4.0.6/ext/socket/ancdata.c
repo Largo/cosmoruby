@@ -21,22 +21,21 @@ constant_to_sym(int constant, ID (*intern_const)(int))
 static VALUE
 ip_cmsg_type_to_sym(int level, int cmsg_type)
 {
-    switch (level) {
-      case SOL_SOCKET:
+    /* cosmopolitan: SOL_SOCKET is a runtime constant (1 on Linux, 0xffff on
+     * Windows/XNU/BSD), so this cannot be a switch. */
+    if (level == SOL_SOCKET)
         return constant_to_sym(cmsg_type, rsock_intern_scm_optname);
-      case IPPROTO_IP:
+    if (level == IPPROTO_IP)
         return constant_to_sym(cmsg_type, rsock_intern_ip_optname);
 #ifdef IPPROTO_IPV6
-      case IPPROTO_IPV6:
+    if (level == IPPROTO_IPV6)
         return constant_to_sym(cmsg_type, rsock_intern_ipv6_optname);
 #endif
-      case IPPROTO_TCP:
+    if (level == IPPROTO_TCP)
         return constant_to_sym(cmsg_type, rsock_intern_tcp_optname);
-      case IPPROTO_UDP:
+    if (level == IPPROTO_UDP)
         return constant_to_sym(cmsg_type, rsock_intern_udp_optname);
-      default:
-        return INT2NUM(cmsg_type);
-    }
+    return INT2NUM(cmsg_type);
 }
 
 /*
@@ -1011,65 +1010,58 @@ ancillary_inspect(VALUE self)
     if (level == SOL_SOCKET)
         family = AF_UNSPEC;
 
-    switch (family) {
-      case AF_UNSPEC:
-        switch (level) {
-#        if defined(SOL_SOCKET)
-          case SOL_SOCKET:
-            switch (type) {
-#            if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
-              case SCM_TIMESTAMP: inspected = inspect_timeval_as_abstime(level, type, data, ret); break;
-#            endif
-#            if defined(SCM_TIMESTAMPNS) /* GNU/Linux */
-              case SCM_TIMESTAMPNS: inspected = inspect_timespec_as_abstime(level, type, data, ret); break;
-#            endif
-#            if defined(SCM_BINTIME) /* FreeBSD */
-              case SCM_BINTIME: inspected = inspect_bintime_as_abstime(level, type, data, ret); break;
-#            endif
-#            if defined(SCM_RIGHTS) /* 4.4BSD */
-              case SCM_RIGHTS: inspected = anc_inspect_socket_rights(level, type, data, ret); break;
-#            endif
-#            if defined(SCM_CREDENTIALS) /* GNU/Linux */
-              case SCM_CREDENTIALS: inspected = anc_inspect_passcred_credentials(level, type, data, ret); break;
-#            endif
-#            if defined(INSPECT_SCM_CREDS) /* NetBSD */
-              case SCM_CREDS: inspected = anc_inspect_socket_creds(level, type, data, ret); break;
-#            endif
-            }
-            break;
-#        endif
+    /* cosmopolitan: AF_INET6, SOL_SOCKET, SCM_* and IP*_* are runtime
+     * constants whose values depend on the host OS, so this dispatch table
+     * is written as if/else instead of the upstream nest of switches. */
+    if (family == AF_UNSPEC) {
+#      if defined(SOL_SOCKET)
+        if (level == SOL_SOCKET) {
+#          if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
+            if (type == SCM_TIMESTAMP) inspected = inspect_timeval_as_abstime(level, type, data, ret); else
+#          endif
+#          if defined(SCM_TIMESTAMPNS) /* GNU/Linux */
+            if (type == SCM_TIMESTAMPNS) inspected = inspect_timespec_as_abstime(level, type, data, ret); else
+#          endif
+#          if defined(SCM_BINTIME) /* FreeBSD */
+            if (type == SCM_BINTIME) inspected = inspect_bintime_as_abstime(level, type, data, ret); else
+#          endif
+#          if defined(SCM_RIGHTS) /* 4.4BSD */
+            if (type == SCM_RIGHTS) inspected = anc_inspect_socket_rights(level, type, data, ret); else
+#          endif
+#          if defined(SCM_CREDENTIALS) /* GNU/Linux */
+            if (type == SCM_CREDENTIALS) inspected = anc_inspect_passcred_credentials(level, type, data, ret); else
+#          endif
+#          if defined(INSPECT_SCM_CREDS) /* NetBSD */
+            if (type == SCM_CREDS) inspected = anc_inspect_socket_creds(level, type, data, ret); else
+#          endif
+            { /* unknown cmsg type */ }
         }
-        break;
-
-      case AF_INET:
+#      endif
+    }
+    else if (family == AF_INET
 #ifdef INET6
-      case AF_INET6:
+             || family == AF_INET6
 #endif
-        switch (level) {
-#        if defined(IPPROTO_IP)
-          case IPPROTO_IP:
-            switch (type) {
-#            if defined(IP_RECVDSTADDR) /* 4.4BSD */
-              case IP_RECVDSTADDR: inspected = anc_inspect_ip_recvdstaddr(level, type, data, ret); break;
-#            endif
-#            if defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST) /* GNU/Linux */
-              case IP_PKTINFO: inspected = anc_inspect_ip_pktinfo(level, type, data, ret); break;
-#            endif
-            }
-            break;
-#        endif
-
-#        if defined(IPPROTO_IPV6)
-          case IPPROTO_IPV6:
-            switch (type) {
-#            if defined(IPV6_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN6_PKTINFO) /* RFC 3542 */
-              case IPV6_PKTINFO: inspected = anc_inspect_ipv6_pktinfo(level, type, data, ret); break;
-#            endif
-            }
-            break;
-#        endif
+            ) {
+#      if defined(IPPROTO_IP)
+        if (level == IPPROTO_IP) {
+#          if defined(IP_RECVDSTADDR) /* 4.4BSD */
+            if (type == IP_RECVDSTADDR) inspected = anc_inspect_ip_recvdstaddr(level, type, data, ret); else
+#          endif
+#          if defined(IP_PKTINFO) && defined(HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST) /* GNU/Linux */
+            if (type == IP_PKTINFO) inspected = anc_inspect_ip_pktinfo(level, type, data, ret); else
+#          endif
+            { /* unknown cmsg type */ }
         }
-        break;
+#      endif
+#      if defined(IPPROTO_IPV6)
+        if (level == IPPROTO_IPV6) {
+#          if defined(IPV6_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN6_PKTINFO) /* RFC 3542 */
+            if (type == IPV6_PKTINFO) inspected = anc_inspect_ipv6_pktinfo(level, type, data, ret); else
+#          endif
+            { /* unknown cmsg type */ }
+        }
+#      endif
     }
 
     if (!inspected) {

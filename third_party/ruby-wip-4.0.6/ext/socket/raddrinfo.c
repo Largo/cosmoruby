@@ -1616,11 +1616,12 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
         StringValue(afamily);
         if (rsock_family_to_int(RSTRING_PTR(afamily), RSTRING_LEN(afamily), &af) == -1)
             rb_raise(rb_eSocket, "unknown address family: %s", StringValueCStr(afamily));
-        switch (af) {
-          case AF_INET: /* ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"] */
+        /* cosmopolitan: AF_INET6 is a runtime constant, so use if/else. */
+        if (af == AF_INET /* ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"] */
 #ifdef INET6
-          case AF_INET6: /* ["AF_INET6", 42304, "ip6-localhost", "::1"] */
+            || af == AF_INET6 /* ["AF_INET6", 42304, "ip6-localhost", "::1"] */
 #endif
+           )
           {
             VALUE service = rb_ary_entry(sockaddr_ary, 1);
             VALUE nodename = rb_ary_entry(sockaddr_ary, 2);
@@ -1640,20 +1641,16 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
                     INT2NUM(i_pfamily ? i_pfamily : af), INT2NUM(i_socktype), INT2NUM(i_protocol),
                     INT2NUM(flags),
                     nodename, service);
-            break;
           }
-
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
-          case AF_UNIX: /* ["AF_UNIX", "/tmp/sock"] */
+        else if (af == AF_UNIX) /* ["AF_UNIX", "/tmp/sock"] */
           {
             VALUE path = rb_ary_entry(sockaddr_ary, 1);
             StringValue(path);
             init_unix_addrinfo(self, rai, path, SOCK_STREAM);
-            break;
           }
 #endif
-
-          default:
+        else {
             rb_raise(rb_eSocket, "unexpected address family");
         }
     }
@@ -1702,6 +1699,41 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
     }
     else if ((long)socklen < ((char*)&sockaddr->addr.sa_family + sizeof(sockaddr->addr.sa_family)) - (char*)sockaddr)
         rb_str_cat2(ret, "too-short-sockaddr");
+#ifdef AF_INET6
+    /* cosmopolitan: AF_INET6 is a runtime constant (10 on Linux, 23 on
+     * Windows, 30 on XNU) so it cannot be a case label; handled here. */
+    else if (sockaddr->addr.sa_family == AF_INET6) {
+        struct sockaddr_in6 *addr;
+        char hbuf[1024];
+        int port;
+        int error;
+        if (socklen < (socklen_t)sizeof(struct sockaddr_in6)) {
+            rb_str_catf(ret, "too-short-AF_INET6-sockaddr %d bytes", (int)socklen);
+        }
+        else {
+            addr = &sockaddr->in6;
+            /* use getnameinfo for scope_id.
+             * RFC 4007: IPv6 Scoped Address Architecture
+             * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
+             */
+            error = rb_getnameinfo(&sockaddr->addr, socklen,
+                                   hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
+                                   NI_NUMERICHOST|NI_NUMERICSERV);
+            if (error) {
+                rsock_raise_resolution_error("getnameinfo", error);
+            }
+            if (addr->sin6_port == 0) {
+                rb_str_cat2(ret, hbuf);
+            }
+            else {
+                port = ntohs(addr->sin6_port);
+                rb_str_catf(ret, "[%s]:%d", hbuf, port);
+            }
+            if ((socklen_t)sizeof(struct sockaddr_in6) < socklen)
+                rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(socklen - sizeof(struct sockaddr_in6)));
+        }
+    }
+#endif
     else {
         switch (sockaddr->addr.sa_family) {
           case AF_UNSPEC:
@@ -1746,42 +1778,6 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                   (int)sizeof(struct sockaddr_in));
             break;
           }
-
-#ifdef AF_INET6
-          case AF_INET6:
-          {
-            struct sockaddr_in6 *addr;
-            char hbuf[1024];
-            int port;
-            int error;
-            if (socklen < (socklen_t)sizeof(struct sockaddr_in6)) {
-                rb_str_catf(ret, "too-short-AF_INET6-sockaddr %d bytes", (int)socklen);
-            }
-            else {
-                addr = &sockaddr->in6;
-                /* use getnameinfo for scope_id.
-                 * RFC 4007: IPv6 Scoped Address Architecture
-                 * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
-                 */
-                error = rb_getnameinfo(&sockaddr->addr, socklen,
-                                       hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
-                                       NI_NUMERICHOST|NI_NUMERICSERV);
-                if (error) {
-                    rsock_raise_resolution_error("getnameinfo", error);
-                }
-                if (addr->sin6_port == 0) {
-                    rb_str_cat2(ret, hbuf);
-                }
-                else {
-                    port = ntohs(addr->sin6_port);
-                    rb_str_catf(ret, "[%s]:%d", hbuf, port);
-                }
-                if ((socklen_t)sizeof(struct sockaddr_in6) < socklen)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(socklen - sizeof(struct sockaddr_in6)));
-            }
-            break;
-          }
-#endif
 
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
           case AF_UNIX:
@@ -2564,22 +2560,20 @@ addrinfo_ip_port(VALUE self)
 #endif
     }
 
-    switch (family) {
-      case AF_INET:
+    /* cosmopolitan: AF_INET6 is a runtime constant, so use if/else. */
+    if (family == AF_INET) {
         if (rai->sockaddr_len != sizeof(struct sockaddr_in))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv4");
         port = ntohs(rai->addr.in.sin_port);
-        break;
-
+    }
 #ifdef AF_INET6
-      case AF_INET6:
+    else if (family == AF_INET6) {
         if (rai->sockaddr_len != sizeof(struct sockaddr_in6))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv6");
         port = ntohs(rai->addr.in6.sin6_port);
-        break;
+    }
 #endif
-
-      default:
+    else {
         goto bad_family;
     }
 

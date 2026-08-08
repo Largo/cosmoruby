@@ -58,7 +58,10 @@ module RbConfig
   CONFIG["rubylibdir"] = "$(rubylibprefix)/$(ruby_version)"
   CONFIG["ruby_version"] = "4.0.0"
   CONFIG["sitearch"] = "$(arch)"
-  CONFIG["arch"] = "x86_64-cosmo"
+  # One rbconfig.rb is shared by both halves of a fat APE, so the arch has to
+  # be read off the running interpreter instead of being baked in at codegen
+  # time (ruby.codegen.mk always calls tool/mkconfig.rb with -arch=x86_64-linux).
+  CONFIG["arch"] = RUBY_PLATFORM
   CONFIG["sitearchincludedir"] = "$(includedir)/$(sitearch)"
   CONFIG["archincludedir"] = "$(includedir)/$(arch)"
   CONFIG["sitearchlibdir"] = "$(libdir)/$(sitearch)"
@@ -206,7 +209,7 @@ module RbConfig
   CONFIG["config_target"] = "x86_64-pc-cosmo"
   CONFIG["target_os"] = "cosmo"
   CONFIG["target_vendor"] = "pc"
-  CONFIG["target_cpu"] = "x86_64"
+  CONFIG["target_cpu"] = RUBY_PLATFORM.split("-").first
   CONFIG["target"] = "$(target_cpu)-$(target_vendor)-$(target_os)"
   CONFIG["host_os"] = "$(target_os)"
   CONFIG["host_vendor"] = "$(target_vendor)"

@@ -496,7 +496,18 @@
 #define USE_YJIT 1
 #define USE_ZJIT 0
 /* LOAD_RELATIVE 1 ? */
+/* A fat APE compiles this header once per architecture, so RUBY_PLATFORM
+ * has to follow the compiler.  It used to be hard-coded to "x86_64-cosmo",
+ * which meant the aarch64 half of every fat release (igravious's v1.3.0
+ * included) reported RUBY_PLATFORM == "x86_64-cosmo" while running on ARM.
+ * loadpath.c derives RUBY_ARCH from this; lib/rbconfig.rb derives
+ * CONFIG["arch"] / CONFIG["target_cpu"] from RUBY_PLATFORM so the two agree
+ * (there is only one rbconfig.rb in the shared /zip stdlib). */
+#if defined(__aarch64__) || defined(_M_ARM64)
+#define RUBY_PLATFORM "aarch64-cosmo"
+#else
 #define RUBY_PLATFORM "x86_64-cosmo"
+#endif
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
 #define mremap cosmo_mremap
 #include "config.mode.h"

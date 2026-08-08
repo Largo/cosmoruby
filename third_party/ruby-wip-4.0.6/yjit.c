@@ -553,6 +553,17 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 //
 // Without these, the build fails because class.o, vm.o, etc. call YJIT
 // functions that are declared in yjit.h but only implemented in Rust.
+//
+// On the **aarch64 half of a fat APE** libyjit.a is not built at all
+// (yjit/BUILD.mk forces RUBY_YJIT_ENABLED=0, because the Rust staticlib
+// targets x86_64-unknown-linux-gnu), so these are not placeholders there --
+// they ARE the implementation for the whole run.  Every one of them must
+// therefore degrade to "YJIT is compiled in but inert", never to an error:
+// rb_yjit_parse_option() returning false makes ruby.c raise
+// `invalid YJIT option ''`, which broke `ruby.com --yjit` outright on the
+// aarch64 half of the first fat build.  Same class of bug as the unguarded
+// rb_yjit_init_builtin_cmes() call that segfaulted every Windows run; see
+// PORTING-NOTES.md.
 // ============================================================================
 
 #define YJIT_WEAK __attribute__((weak))
@@ -565,7 +576,16 @@ YJIT_WEAK uint64_t rb_yjit_iseq_alloc_count = 0;
 YJIT_WEAK bool rb_yjit_enabled_p = false;
 
 // From yjit/src/yjit.rs
-YJIT_WEAK bool rb_yjit_parse_option(const char *str_ptr) { return false; }
+//
+// rb_yjit_parse_option MUST return true: ruby.c's setup_yjit_options()
+// rb_raise()s "invalid YJIT option" on false, so returning false turns
+// `--yjit` / `--yjit-*` into a hard startup error wherever the Rust half is
+// absent (the aarch64 build).  Accepting and ignoring the option matches
+// what already happens on Windows, where the Rust code is linked but never
+// initialised: the option is honoured syntactically, RUBY_DESCRIPTION still
+// advertises +YJIT, and RubyVM::YJIT.enabled? is false because
+// rb_yjit_enabled_p (below) stays false.
+YJIT_WEAK bool rb_yjit_parse_option(const char *str_ptr) { return true; }
 YJIT_WEAK bool rb_yjit_option_disable(void) { return false; }
 YJIT_WEAK void rb_yjit_init(bool yjit_enabled) { }
 YJIT_WEAK void rb_yjit_init_builtin_cmes(void) { }

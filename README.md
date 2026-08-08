@@ -1,7 +1,267 @@
+# CosmoRuby
+
+**One file. It's Ruby. It runs on Linux, Windows, macOS and the BSDs without
+being installed.**
+
+`ruby.com` is a complete Ruby 4.0.6 interpreter — VM, standard library, default
+gems, RubyGems, IRB and a set of statically linked C extensions — built as a
+[Cosmopolitan](https://justine.lol/cosmopolitan/index.html) *actually portable
+executable*. There is no installer, no `PATH` surgery, no runtime, no DLLs, no
+`.so` files and no stdlib directory to ship alongside it. You download roughly
+20 MB, mark it executable, and run it.
+
+This repository is a fork of [igravious/cosmoruby](https://github.com/igravious/cosmoruby),
+which is itself a fork of [jart/cosmopolitan](https://github.com/jart/cosmopolitan)
+with Ruby vendored into `third_party/` and built by cosmopolitan's own build
+system. All of the heavy lifting is theirs.
+
+## Download
+
+Latest release assets — <https://github.com/Largo/cosmoruby/releases/latest>
+(tag `v4.0.6-cosmo1`):
+
+| File | What it is | Size |
+| --- | --- | ---: |
+| [`ruby.com`](https://github.com/Largo/cosmoruby/releases/latest/download/ruby.com) | the Ruby interpreter | 21,225,070 B (20.2 MiB) |
+| [`irb.com`](https://github.com/Largo/cosmoruby/releases/latest/download/irb.com) | the same binary, starting IRB | 21,225,070 B (20.2 MiB) |
+| [`miniruby.com`](https://github.com/Largo/cosmoruby/releases/latest/download/miniruby.com) | minimal interpreter, no C extensions | 18,738,813 B (17.9 MiB) |
+| [`SHA256SUMS`](https://github.com/Largo/cosmoruby/releases/latest/download/SHA256SUMS) | checksums for the three binaries | — |
+
+Most people only want `ruby.com`.
+
+**Architecture: x86-64 only.** These binaries do not contain an aarch64 half, so
+they will not run natively on Apple Silicon, an ARM Chromebook, a Raspberry Pi
+or Windows-on-ARM. (igravious's older `v1.3.0` release did ship fat
+x86-64 + aarch64 binaries; rebuilding this one fat is future work — see
+`PORTING-NOTES.md`.)
+
+## 30-second quickstart
+
+### Linux, macOS, FreeBSD/OpenBSD/NetBSD
+
+```sh
+curl -L -o ruby.com https://github.com/Largo/cosmoruby/releases/latest/download/ruby.com
+chmod +x ruby.com
+./ruby.com -e 'puts "hello from #{RUBY_DESCRIPTION}"'
+./ruby.com script.rb
+```
+
+```
+hello from ruby 4.0.6 (2026-07-14) +PRISM +MIMALLOC [x86_64-cosmo]
+```
+
+If your shell refuses to run it (`zsh` before 5.9, old `fish`, Python's
+`subprocess`), use `sh ./ruby.com ...`, or register the APE format with
+`binfmt_misc` — see [Platform Notes](#platform-notes) below. On WSL run
+`sudo sh -c "echo -1 > /proc/sys/fs/binfmt_misc/WSLInterop"` first, otherwise
+WSL hands the file to the Windows loader.
+
+### Windows
+
+Download it and run it. **No renaming is required** — `.COM` is already an
+executable extension on Windows, and the file is a real PE binary.
+
+```powershell
+# PowerShell
+curl.exe -L -o ruby.com https://github.com/Largo/cosmoruby/releases/latest/download/ruby.com
+.\ruby.com -e "puts RUBY_DESCRIPTION"
+.\ruby.com script.rb
+```
+
+```bat
+REM cmd.exe
+ruby.com -e "puts RUBY_DESCRIPTION"
+```
+
+Verified on Windows 11 Pro (build 26200) with PowerShell 5.1 and `cmd.exe`:
+runs from `C:\`, from `%USERPROFILE%\Downloads`, from a path containing spaces
+(`C:\Program Files\CosmoRuby\ruby.com`), and with the "downloaded from the
+internet" mark (`Zone.Identifier`) attached. Renaming it to `ruby.exe` also
+works and behaves identically — do that only if some tool of yours insists on
+`.exe`. Dropping it on your `PATH` lets you type plain `ruby`, because `.COM`
+is in the default `PATHEXT`.
+
+The binary is unsigned, so launching it by double-clicking in Explorer may
+raise a SmartScreen prompt. Running it from a terminal, which is what you want
+anyway, does not.
+
+#### Exit codes on Windows are shifted left by 8
+
+```powershell
+PS C:\> .\ruby.com -e "exit 7"
+PS C:\> $LASTEXITCODE
+1792                      # 7 * 256
+```
+
+`%ERRORLEVEL%` under `cmd.exe` reports the same 1792. `exit 0` correctly gives
+0. This is a pre-existing quirk of how cosmopolitan APEs report status to
+Windows — igravious's Ruby 4.0.0 release binary behaves identically — so if you
+script around a bare `ruby.com` on Windows, compare `$LASTEXITCODE / 256`.
+Applications packaged with [ocran](#packaging-your-app-into-one-file) report
+their status correctly and are not affected.
+
+## What's inside
+
+```
+$ ./ruby.com --version
+ruby 4.0.6 (2026-07-14) +PRISM +MIMALLOC [x86_64-cosmo]
+```
+
+- **Ruby 4.0.6**, Prism parser, mimalloc allocator.
+- **The full standard library and 80 default gems**, embedded in the binary as
+  a ZIP archive and loaded from `/zip/lib/ruby/4.0.0`. Nothing is unpacked to
+  disk. `env -i ./ruby.com script.rb` from an empty directory works.
+- **RubyGems 4.0.16** (`./ruby.com -S gem --version`) and **IRB 1.16.0**.
+- **Statically linked C extensions** (there is no `dlopen` here, so everything
+  is linked in at build time and pre-registered in `$LOADED_FEATURES`):
+  `json`, `psych`/`yaml`, `zlib`, `digest` (+`md5`, `sha1`, `sha2`),
+  `stringio`, `strscan`, `socket`, `sqlite3`, `date`, `etc`, `fcntl`,
+  `io/console`, `io/nonblock`, `io/wait`, `ripper`, `objspace`, `monitor`,
+  `continuation`, `coverage`, `rbconfig/sizeof`, and cosmopolitan's `mbedtls`.
+- **`sqlite3` (gem 2.9.5)** is built in — `require "sqlite3"` just works, on
+  Linux *and* on Windows, with no `.so` anywhere. See the limitations below.
+- **YJIT** — pass `--yjit`. **Linux x86-64 only**; see below.
+
+### `openssl` is an MbedTLS-backed shim, not Ruby's OpenSSL extension
+
+`require "openssl"` succeeds, and `net/http` talks HTTPS over it — a plain
+`Net::HTTP.get_response(URI("https://…"))` returns 200 on Linux. But the
+implementation is a ~400-line compatibility shim (`/zip/lib/ruby/4.0.0/openssl.rb`)
+over cosmopolitan's MbedTLS, not the real `openssl` C extension. It provides
+only `OpenSSL::Digest`, `OpenSSL::PKey`, `OpenSSL::X509`, `OpenSSL::SSL` and
+`OpenSSL::OpenSSLError`. `OpenSSL::VERSION`, `OpenSSL::Cipher` and
+`OpenSSL::HMAC` do not exist. Anything doing real cryptography with the OpenSSL
+API will need checking.
+
+### YJIT is Linux-only, and the banner does not admit it
+
+The YJIT compiler is Rust code built for `x86_64-unknown-linux-gnu` and is only
+initialised when the APE is running on Linux.
+
+| | `--yjit` on Linux | `--yjit` on Windows |
+| --- | --- | --- |
+| `RubyVM::YJIT.enabled?` | `true` | `false` |
+| `RUBY_DESCRIPTION` | `+YJIT` | `+YJIT` (misleading) |
+
+Passing `--yjit` on Windows is harmless — it does not crash, it just does
+nothing. Do not trust `RUBY_DESCRIPTION` on Windows; trust
+`RubyVM::YJIT.enabled?`.
+
+## What is *not* supported
+
+- **No native gems.** There is no `dlopen` in an APE, so any gem with a C
+  extension you have not compiled *into* this binary cannot be used. Pure-Ruby
+  gems are fine. Adding a native gem means adding it to this repo's build —
+  `PORTING-NOTES.md` has a step-by-step recipe (that's how `sqlite3` got here).
+- **`Kernel#system`, backticks, `Process.spawn` and `IO.popen` cannot launch
+  native Windows programs.** On Windows, `Process.spawn("C:/Windows/System32/cmd.exe", "/c", "exit 3")`
+  fails (`$?.exitstatus` is `nil`, `system` returns `false`, backticks return
+  `""`). Launching *another APE* from an APE does work
+  (`Process.spawn("C:/ruby.com","-e","exit 5")` → 5). Subprocesses work
+  normally on Linux.
+- **TCP sockets do not work on Windows.** `require "socket"` loads, socket
+  creation and DNS work, but `bind()` and `connect()` fail:
+  `TCPServer.new("127.0.0.1", 0)` raises `Errno::EAFNOSUPPORT` and
+  `TCPSocket`/`Net::HTTP` raise `Errno::EINVAL`. Sockets work correctly on
+  Linux. This is pre-existing — igravious's Ruby 4.0.0 release binary fails the
+  same way — and is a cosmopolitan/port-level bug, not something introduced
+  here. No network client or server code will run on Windows.
+- **x86-64 only** (see above).
+- **32-bit anything, BIOS/metal.** Not tested, not claimed.
+
+### `sqlite3` limitations
+
+The extension links cosmopolitan's `libsqlite3.a`, which is compiled with a
+particular set of `OMIT` flags, so:
+
+- **SQLite is 3.40.0**, not the 3.53.x the gem normally bundles.
+- `SQLite3::Database#load_extension` / `#enable_load_extension` are **not
+  defined** (`SQLITE_OMIT_LOAD_EXTENSION`) — loadable SQLite extensions are
+  `.so` files and could not be used from an APE regardless.
+- `SQLite3::Statement#database_name` is **not defined** (no
+  `SQLITE_ENABLE_COLUMN_METADATA`).
+- **No FTS3/4/5, RTREE or GEOPOLY.** JSON1, math functions, session/preupdate
+  hooks and `sqlite3_deserialize` *are* available.
+- UTF-16 input is transcoded to UTF-8 rather than passed through
+  (`SQLITE_OMIT_UTF16`); no observable behaviour difference.
+- `SQLITE_OMIT_GET_TABLE` (unused by the gem).
+
+Everything else works: in-memory and file-backed databases, positional and
+named binds, prepared-statement reuse, transactions and rollback, BLOB and
+UTF-8 round-trips, read-only handles, custom SQL functions and aggregates,
+`SQLException` mapping, `busy_timeout=` and pragmas. Exercised by
+`third_party/ruby/cosmo_tests/test_sqlite3.rb`, which passes 5/5 on Linux and
+5/5 on Windows 11.
+
+## Platform support, honestly
+
+| Platform | Status |
+| --- | --- |
+| Linux x86-64 | **Verified.** 14/14 smoke checks, sqlite3 5/5, `env -i` from an empty dir, YJIT on. |
+| Windows 11 x86-64 | **Verified.** Smoke script, sqlite3 5/5, `irb.com`, `miniruby.com`. Caveats above (sockets, subprocesses, exit-code shift). |
+| macOS x86-64 | **Untested.** No runner was available. Cosmopolitan APEs are designed to run on macOS 23.1.0+ and nothing in this build is Linux-specific outside YJIT, so it is *expected* to work — but nobody has run it. |
+| FreeBSD / OpenBSD 7.3+ / NetBSD, x86-64 | **Untested**, same reasoning as macOS. |
+| Anything aarch64 (Apple Silicon, Windows-on-ARM, Pi) | **Not supported** — these binaries are x86-64 only. |
+
+If you run it somewhere untested, please open an issue either way.
+
+## Packaging your app into one file
+
+[Largo/ocran](https://github.com/Largo/ocran) can bundle *your* Ruby
+application together with this interpreter into a single portable `.com`:
+
+```sh
+ruby exe/ocran myapp.rb --cosmo /path/to/cosmocc --cosmo-ruby ./ruby.com \
+     --output myapp.com
+```
+
+The `--cosmo-ruby` flag arrived in [ocran PR #50](https://github.com/Largo/ocran/pull/50)
+(open at time of writing). The resulting binary carries your app, its
+pure-Ruby gems and this whole interpreter; it runs under `env -i` from an empty
+directory on Linux and on Windows, and it reports your script's exit status
+correctly on both. Gems that the payload already provides (`json`, `sqlite3`, …)
+are detected and skipped instead of being packed twice.
+
+## Building it yourself
+
+See [`BUILDING.md`](BUILDING.md) for a start-to-finish recipe from a clean
+checkout, and [`PORTING-NOTES.md`](PORTING-NOTES.md) for the full engineering
+log: every breakage found in the fork, how it was diagnosed, the Windows
+verification procedure, and a recipe for adding another native-extension gem.
+
+Quick verification of a build you made:
+
+```sh
+sh third_party/ruby/cosmo_tests/smoke_test.sh o/third_party/ruby/ruby.com
+env -i o/third_party/ruby/ruby.com third_party/ruby/cosmo_tests/test_sqlite3.rb
+sh third_party/ruby/cosmo_tests/win_smoke.sh o/third_party/ruby/ruby.com   # needs a Windows box
+```
+
+## Credits and licence
+
+- [Justine Tunney](https://github.com/jart) and the Cosmopolitan Libc project —
+  the APE format, the libc, the toolchain and the build system this is all
+  built on.
+- [igravious](https://github.com/igravious) — the CosmoRuby port itself:
+  vendoring Ruby into the cosmopolitan monorepo, the static-extension build
+  mode, the `/zip` stdlib packaging, YJIT, and releases up to v1.3.0.
+- This fork adds an upstream sync, Ruby 4.0.6, the built-in `sqlite3`
+  extension, a Windows crash fix, and the fixes needed to build from a clean
+  checkout.
+
+Cosmopolitan is ISC-licensed (see [`LICENSE`](LICENSE)); Ruby is under the Ruby
+licence / BSD-2-Clause; bundled gems carry their own licences.
+
+---
+
 ![Cosmopolitan Honeybadger](usr/share/img/honeybadger.png)
 
 [![build](https://github.com/jart/cosmopolitan/actions/workflows/build.yml/badge.svg)](https://github.com/jart/cosmopolitan/actions/workflows/build.yml)
 # Cosmopolitan
+
+*(Everything below this line is the upstream jart/cosmopolitan README, kept
+verbatim. CosmoRuby is built by this repository's own build system, so the
+instructions below apply to the C toolchain, not to `ruby.com`.)*
 
 [Cosmopolitan Libc](https://justine.lol/cosmopolitan/index.html) makes C/C++
 a build-once run-anywhere language, like Java, except it doesn't need an

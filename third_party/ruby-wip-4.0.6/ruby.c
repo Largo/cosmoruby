@@ -1849,7 +1849,17 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     // Register JIT-optimized builtin CMEs before the prelude, which may
     // redefine core methods (e.g. Kernel.prepend via bundler/setup).
 #if USE_YJIT
+#ifdef __COSMOPOLITAN__
+    // YJIT Rust code is built targeting x86_64-unknown-linux-gnu, so it
+    // only works on Linux within Cosmopolitan's multi-platform binary
+    // (same guard as rb_yjit_init below). Calling into the Rust staticlib
+    // on Windows segfaults during VM init.
+    if (IsLinux()) {
+        rb_yjit_init_builtin_cmes();
+    }
+#else
     rb_yjit_init_builtin_cmes();
+#endif
 #endif
 #if USE_ZJIT
     extern void rb_zjit_init_builtin_cmes(void);

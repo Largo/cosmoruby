@@ -83,12 +83,12 @@ package_ruby() {
 
 # Run Ruby with RUBYLIB set correctly
 run_ruby() {
-    RUBYLIB="$PWD/third_party/ruby-wip-4.0.0/lib" o//third_party/ruby/ruby "$@"
+    RUBYLIB="$PWD/third_party/ruby-wip-4.0.6/lib" o//third_party/ruby/ruby "$@"
 }
 
 # Run IRB with RUBYLIB set correctly
 run_irb() {
-    RUBYLIB="$PWD/third_party/ruby-wip-4.0.0/lib" o//third_party/ruby/irb "$@"
+    RUBYLIB="$PWD/third_party/ruby-wip-4.0.6/lib" o//third_party/ruby/irb "$@"
 }
 
 # Full Ruby build workflow

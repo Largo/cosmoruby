@@ -143,7 +143,13 @@ module SQLite3
       mode = Constants::Open::READWRITE | Constants::Open::CREATE
 
       file = file.to_path if file.respond_to? :to_path
-      if file.encoding == ::Encoding::UTF_16LE || file.encoding == ::Encoding::UTF_16BE || options[:utf16]
+      # cosmo: sqlite3_open16() is compiled out of Cosmopolitan's libsqlite3
+      # (SQLITE_OMIT_UTF16), so the private #open16 method may not exist. When
+      # it doesn't, fall through to the UTF-8 entry point, which transcodes the
+      # path; sqlite3_open16() implies READWRITE|CREATE, which is `mode`'s
+      # default, so behaviour is preserved.
+      if (file.encoding == ::Encoding::UTF_16LE || file.encoding == ::Encoding::UTF_16BE || options[:utf16]) &&
+          respond_to?(:open16, true)
         open16 file
       else
         # The three primary flag values for sqlite3_open_v2 are:

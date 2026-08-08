@@ -260,6 +260,7 @@ bind_param(VALUE self, VALUE key, VALUE value)
             } else {
 
 
+#ifndef SQLITE_OMIT_UTF16
                 if (UTF16_LE_P(value) || UTF16_BE_P(value)) {
                     status = sqlite3_bind_text16(
                                  ctx->st,
@@ -268,7 +269,9 @@ bind_param(VALUE self, VALUE key, VALUE value)
                                  (int)RSTRING_LEN(value),
                                  SQLITE_TRANSIENT
                              );
-                } else {
+                } else
+#endif
+                {
                     if (!UTF8_P(value) || !USASCII_P(value)) {
                         value = rb_str_encode(value, rb_enc_from_encoding(rb_utf8_encoding()), 0, Qnil);
                     }

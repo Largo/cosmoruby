@@ -111,6 +111,7 @@ allocate(VALUE klass)
     return object;
 }
 
+#ifndef SQLITE_OMIT_UTF16
 static char *
 utf16_string_value_ptr(VALUE str)
 {
@@ -118,6 +119,7 @@ utf16_string_value_ptr(VALUE str)
     rb_str_buf_cat(str, "\x00\x00", 2L);
     return RSTRING_PTR(str);
 }
+#endif
 
 sqlite3RubyPtr
 sqlite3_database_unwrap(VALUE database)
@@ -919,6 +921,7 @@ db_filename(VALUE self, VALUE db_name)
     return Qnil;
 }
 
+#ifndef SQLITE_OMIT_UTF16
 static VALUE
 rb_sqlite3_open16(VALUE self, VALUE file)
 {
@@ -945,6 +948,7 @@ rb_sqlite3_open16(VALUE self, VALUE file)
 
     return INT2NUM(status);
 }
+#endif /* !SQLITE_OMIT_UTF16 */
 
 void
 init_sqlite3_database(void)
@@ -956,7 +960,9 @@ init_sqlite3_database(void)
 
     rb_define_alloc_func(cSqlite3Database, allocate);
     rb_define_private_method(cSqlite3Database, "open_v2", rb_sqlite3_open_v2, 3);
+#ifndef SQLITE_OMIT_UTF16
     rb_define_private_method(cSqlite3Database, "open16", rb_sqlite3_open16, 1);
+#endif
     rb_define_method(cSqlite3Database, "collation", collation, 2);
     rb_define_method(cSqlite3Database, "close", sqlite3_rb_close, 0);
     rb_define_private_method(cSqlite3Database, "discard", sqlite3_rb_discard, 0);

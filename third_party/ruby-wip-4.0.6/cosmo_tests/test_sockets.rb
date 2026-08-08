@@ -204,6 +204,11 @@ end
 # Socket::Option#int requires getsockopt to report a 4-byte value.  Winsock
 # answers boolean options with a single byte; cosmopolitan widens that back
 # to an int in libc/sock/getsockopt-nt.c.
+#
+# NOTE: do not assert the value is exactly 1.  POSIX only promises "non-zero
+# means enabled", and the 4.4BSD lineage returns the internal flag bit:
+# MacOS/XNU and the BSDs answer TCP_NODELAY with TF_NODELAY == 4, Linux and
+# Windows answer 1.  Asserting == 1 is a test bug, not a platform bug.
 check("getsockopt IPPROTO_TCP TCP_NODELAY reports an int") do
   server = TCPServer.new("127.0.0.1", 0)
   port = server.addr[1]
@@ -214,7 +219,10 @@ check("getsockopt IPPROTO_TCP TCP_NODELAY reports an int") do
   s.close
   acceptor.join(10)
   server.close
-  v.data.bytesize == 4 && v.int == 1
+  bytes = v.data.bytesize
+  raise "getsockopt reported #{bytes} bytes, want 4 (raw #{v.data.unpack('C*').inspect})" unless bytes == 4
+  raise "TCP_NODELAY read back as 0 after being enabled" if v.int.zero?
+  true
 end
 
 # SO_ERROR must be translated out of Winsock's numbering; this is how every
@@ -235,7 +243,13 @@ check("SO_ERROR after refused connect is ECONNREFUSED") do
   IO.select(nil, [s], [s], 10)
   err = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int
   s.close
-  err == Errno::ECONNREFUSED::Errno
+  want = Errno::ECONNREFUSED::Errno
+  unless err == want
+    raise "SO_ERROR reported #{err}, want ECONNREFUSED=#{want}" \
+          " -- the host kernel's own errno number leaked out untranslated" \
+          " (winsock says 10061, xnu/bsd say 61)"
+  end
+  true
 end
 
 check("ipv6only! does not raise 'unknown protocol level'") do

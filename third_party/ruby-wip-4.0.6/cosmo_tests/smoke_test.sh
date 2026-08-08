@@ -3,10 +3,11 @@
 #
 #   sh third_party/ruby/cosmo_tests/smoke_test.sh o/third_party/ruby/ruby.com
 #
-# 14 checks: APE magic, interpreter identity, the statically linked C
+# 15 checks: APE magic, interpreter identity, the statically linked C
 # extensions users actually reach for, a real loopback socket round-trip,
-# threads, YJIT, RubyGems, and a run under `env -i` from an empty directory
-# (which is what proves the stdlib really is embedded in the binary).
+# the full socket/TCP suite (test_sockets.rb), threads, YJIT, RubyGems, and
+# a run under `env -i` from an empty directory (which is what proves the
+# stdlib really is embedded in the binary).
 # Exits non-zero if any check fails.
 #
 # This is NOT sufficient on its own -- see win_smoke.sh.  A build that passed
@@ -32,6 +33,7 @@ t "zlib" "$RUBY" -e 'require "zlib"; puts Zlib::Deflate.deflate("hello").bytesiz
 t "yaml" "$RUBY" -e 'require "yaml"; puts YAML.load("a: 1")["a"]'
 t "stringio" "$RUBY" -e 'require "stringio"; s=StringIO.new; s<<"hi"; puts s.string'
 t "socket-echo" "$RUBY" -e 'require "socket"; s=TCPServer.new("127.0.0.1",0); p=s.addr[1]; th=Thread.new{c=s.accept; c.write(c.gets); c.close}; c=TCPSocket.new("127.0.0.1",p); c.puts("ping"); puts c.gets; th.join'
+t "sockets-suite" "$RUBY" "$(dirname "$0")/test_sockets.rb"
 t "threads" "$RUBY" -e 'puts 4.times.map{|i| Thread.new{i*i}}.map(&:value).sum'
 t "yjit" "$RUBY" --yjit -e 'puts RUBY_DESCRIPTION'
 t "gem" "$RUBY" -S gem --version

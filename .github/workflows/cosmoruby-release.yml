@@ -1,0 +1,90 @@
+name: CosmoRuby Release
+
+# Tag-driven release: v* -> build, verify on Linux/Windows/macOS, then publish
+# ruby.com / irb.com / miniruby.com + SHA256SUMS to a GitHub Release.
+#
+# Deliberately a separate file from cosmoruby-ci.yml so a broken release path
+# can never block PR CI, and so the release binary is produced by exactly the
+# same reusable build job that CI exercises on every push.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create/publish (e.g. v1.4.0)'
+        required: true
+      draft:
+        description: 'Publish as a draft release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/cosmoruby-build.yml
+    with:
+      artifact_name: cosmoruby-release-x86_64
+      artifact_retention_days: 30
+
+  verify:
+    needs: build
+    uses: ./.github/workflows/cosmoruby-test.yml
+    with:
+      artifact_name: ${{ needs.build.outputs.artifact_name }}
+      # Release gating uses the three platforms this build actually targets.
+      runners: >-
+        [
+          {"name": "linux-x86_64",   "os": "ubuntu-latest",  "experimental": false},
+          {"name": "windows-x86_64", "os": "windows-latest", "experimental": false},
+          {"name": "macos-x86_64",   "os": "macos-15-intel", "experimental": false}
+        ]
+
+  publish:
+    name: publish release
+    needs: [build, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: dist
+
+      - name: verify checksums
+        run: |
+          cd dist
+          ls -l
+          sha256sum -c SHA256SUMS
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          DESCRIPTION: ${{ needs.build.outputs.ruby_description }}
+        run: |
+          {
+            printf 'CosmoRuby — one Actually Portable Executable that runs on Linux,\n'
+            printf 'macOS, Windows and the BSDs.\n\n'
+            printf '```\n%s\n```\n\n' "$DESCRIPTION"
+            printf 'Built from `%s` by `.github/workflows/cosmoruby-release.yml` and\n' "$GITHUB_SHA"
+            printf 'verified on ubuntu-latest, windows-latest and macos-15-intel (boot,\n'
+            printf 'stdlib, filesystem, threads, sockets, sqlite3, exit-status propagation).\n\n'
+            printf 'Binaries are x86_64 APEs. On unix: `chmod +x ruby.com && ./ruby.com`.\n\n'
+            printf '```\n'
+            cat dist/SHA256SUMS
+            printf '```\n'
+          } > notes.md
+          cat notes.md
+          if [ "${{ inputs.draft || 'false' }}" = "true" ]; then draft="--draft"; else draft=""; fi
+          gh release create "$TAG" dist/ruby.com dist/irb.com dist/miniruby.com dist/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "CosmoRuby $TAG" \
+            --notes-file notes.md \
+            $draft

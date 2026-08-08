@@ -1,6 +1,7 @@
 ![Cosmopolitan Honeybadger](usr/share/img/honeybadger.png)
 
 [![build](https://github.com/jart/cosmopolitan/actions/workflows/build.yml/badge.svg)](https://github.com/jart/cosmopolitan/actions/workflows/build.yml)
+[![CosmoRuby CI](https://github.com/Largo/cosmoruby/actions/workflows/cosmoruby-ci.yml/badge.svg?branch=main)](https://github.com/Largo/cosmoruby/actions/workflows/cosmoruby-ci.yml)
 # Cosmopolitan
 
 [Cosmopolitan Libc](https://justine.lol/cosmopolitan/index.html) makes C/C++

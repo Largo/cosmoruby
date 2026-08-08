@@ -568,6 +568,7 @@ YJIT_WEAK bool rb_yjit_enabled_p = false;
 YJIT_WEAK bool rb_yjit_parse_option(const char *str_ptr) { return false; }
 YJIT_WEAK bool rb_yjit_option_disable(void) { return false; }
 YJIT_WEAK void rb_yjit_init(bool yjit_enabled) { }
+YJIT_WEAK void rb_yjit_init_builtin_cmes(void) { }
 YJIT_WEAK void rb_yjit_free_at_exit(void) { }
 YJIT_WEAK uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception) { return NULL; }
 

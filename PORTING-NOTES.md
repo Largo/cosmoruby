@@ -1136,7 +1136,17 @@ Nothing else in cosmopolitan needed to change.
 
 ### Verification
 
-Linux x86-64 (Debian 13), `o/third_party/ruby/ruby.com` 21,225,071 bytes:
+Rebuilt from scratch (`rm -rf o/`, documented recipe) and converged on the
+first make pass; `ruby` is 12,720,749 bytes, `ruby.com`/`irb.com`
+21,225,071, `miniruby.com` 18,738,814.
+
+| File | SHA256 |
+|---|---|
+| `ruby.com` | `eacb43abc512f4edd4ee379b3051a2870138125c72824f1f4c5f38bf74f05a86` |
+| `irb.com` | `ac5e8487c6d717f01bdcc0c1e9ffb6cf55a2af3545814b7a7042b64aeb111635` |
+| `miniruby.com` | `56e0e0b3c91af028063de0f92701f927dd075feb3c59c7aafef208eaaaef9b4a` |
+
+Linux x86-64 (Debian 13):
 
 - `cosmo_tests/smoke_test.sh` — **15/15** (was 14; `test_sockets.rb` added)
 - `cosmo_tests/ci_smoke.rb` — **30/30**, 0 warn

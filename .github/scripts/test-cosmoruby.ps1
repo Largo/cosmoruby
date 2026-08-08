@@ -84,6 +84,10 @@ $allText += $r.Text
 if (Status-Is $r.Code 7) { Ok "exit status: raw=$($r.Code) (7 or 7<<8=1792)" }
 else { Bad "exit status: raw=$($r.Code), want 7 or 1792" }
 
+Section "socket diagnostic (cosmo_tests\ci_diag_sockets.rb, informational, never fails)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\ci_diag_sockets.rb`""
+$allText += $r.Text
+
 Section "socket/TCP acceptance (cosmo_tests/test_sockets.rb)"
 $r = Invoke-Ape "`"$ruby`" `"$tests\test_sockets.rb`""
 $allText += $r.Text

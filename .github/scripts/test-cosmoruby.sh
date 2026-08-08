@@ -61,6 +61,9 @@ head_ "exit-status propagation (ci_exit7.rb must exit 7)"
 rc=$?
 if [ "$rc" -eq 7 ]; then ok "exit status 7"; else bad "exit status: got $rc, want 7"; fi
 
+head_ "socket diagnostic (cosmo_tests/ci_diag_sockets.rb, informational, never fails)"
+"$RUBY" "$TESTS/ci_diag_sockets.rb" || true
+
 head_ "socket/TCP acceptance (cosmo_tests/test_sockets.rb)"
 if "$RUBY" "$TESTS/test_sockets.rb"; then ok "test_sockets.rb"; else bad "test_sockets.rb"; fi
 

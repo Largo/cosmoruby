@@ -256,6 +256,68 @@ function referenced from C needs a `__attribute__((weak))` no-op stub in
 `yjit.c` (overridden at final link by `--whole-archive`), or the build fails
 with `package.ape: undefined symbol`.
 
+## Fat (x86-64 + aarch64) binaries
+
+The manual recipe above builds x86-64 only. To get a **fat** APE — one file
+containing both x86-64 and aarch64 machine code, which is what the releases
+ship — use the build script with `FAT=1`:
+
+```sh
+export COSMO_RUBY=$HOME/tools/cosmoruby-release/ruby.com
+FAT=1 JOBS=$(nproc) bash .github/scripts/build-cosmoruby.sh
+```
+
+It configures once, runs `make` for x86-64 and again with `m=aarch64`,
+`apelink`s the two `.dbg` files together with the x86-64/aarch64 APE loaders
+and `ape-m1.c`, then lets `package_ruby.sh` append the shared `/zip` stdlib.
+Final artifacts land in `dist/` (and `releases/`) with a `SHA256SUMS`.
+
+```
+dist/ruby.com        32,975,939 B   (x86-64 only: 21,224,287 B)
+dist/irb.com         32,975,907 B
+dist/miniruby.com    27,895,330 B
+```
+
+≈2 min on 8 cores with libc already built (55–62 s per architecture, apelink
+0.12 s, packaging ~12 s) — the fat build costs almost exactly one extra `make`.
+`COSMO_RUBY=… ./bake -j8 <target>` does the same two-arch-plus-apelink dance
+for any cosmopolitan target.
+
+### Verifying the aarch64 half without ARM hardware
+
+`build/bootstrap/ape.aarch64` is a static AArch64 APE loader that ships in this
+repo, so `qemu-user` is enough to *run* the ARM half:
+
+```sh
+sudo apt-get install -y qemu-user-static
+qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com -e 'puts RUBY_PLATFORM'
+# => aarch64-cosmo
+```
+
+`qemu-aarch64` decodes only AArch64 instructions, so anything that runs really
+is the ARM half. The negative control makes that concrete — point it at the
+x86-64-only binary and the loader refuses:
+
+```
+ape error: o/third_party/ruby/ruby.com: couldn't find ELF header with AARCH64 machine type
+```
+
+This proves the *code* is correct. It does not prove the *platform*: for that,
+`.github/workflows/cosmoruby-test.yml` runs the same acceptance script on
+GitHub's `ubuntu-24.04-arm` and `macos-latest` (Apple Silicon) runners, which
+are blocking jobs precisely because the artifact is fat.
+
+### Gotcha: weak YJIT stubs are the real implementation on aarch64
+
+`yjit/BUILD.mk` sets `RUBY_YJIT_ENABLED := 0` for `ARCH=aarch64` (the Rust
+staticlib targets `x86_64-unknown-linux-gnu`). The `__attribute__((weak))`
+stubs in `yjit.c` are therefore not linker placeholders on that half — they are
+the whole implementation for the run. Each one must be a valid *runtime*
+answer, not just a symbol. `rb_yjit_parse_option()` returning `false` made
+`ruby.com --yjit` die with `invalid YJIT option ''` on ARM, because `ruby.c`
+turns that into an `rb_raise`. If you add a stub, ask what it does when it is
+the only implementation.
+
 ## Adding a native-extension gem
 
 `PORTING-NOTES.md` has a complete worked recipe ("Recipe: adding a
@@ -275,12 +337,10 @@ dies with an unhelpful `.pkg: open failed with ENOENT`.
 
 ## Known build-level limitations
 
-- **x86-64 only.** These steps produce x86-64 binaries. igravious's v1.3.0
-  release shipped fat x86-64 + aarch64 APEs; reproducing that needs
-  `make ARCH=aarch64` plus `apelink`, which is not wired up here.
 - **cosmocc is pinned to 3.9.2** and auto-downloaded. Newer standalone cosmocc
   releases are not used by this build system.
-- **No clean-checkout CI yet.** The upstream CI only smoke-tests prebuilt
-  release binaries. A clean-checkout build job and a `windows-latest` smoke job
-  are the two most valuable things this repo is still missing — the 4.0.6
-  Windows segfault would have been caught the minute it was introduced.
+- **YJIT is x86-64/Linux only** and always will be until the Rust half is
+  cross-compiled: `yjit/BUILD.mk` disables it for `ARCH=aarch64`, and the C
+  call sites are gated on `IsLinux()`. `--yjit` is accepted everywhere and is
+  simply inert where YJIT cannot run; check `RubyVM::YJIT.enabled?`, never the
+  `+YJIT` in `RUBY_DESCRIPTION`.

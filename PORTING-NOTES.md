@@ -794,6 +794,245 @@ payload-provided when
 declares extensions **or** ships `.so`/`.bundle` files — i.e. hoist the
 `native_files` detection above the `spec.extensions.any?` branch.
 
+## Fat (x86_64 + aarch64) APEs — branch `fat-ape`, 2026-08-09
+
+igravious's `v1.3.0` release shipped **fat** binaries; every build since the
+`modernize` work produced x86-64 only, and `BUILDING.md` listed that as a known
+limitation. This section is how it was put back.
+
+### The machinery was already in the tree, just never exercised
+
+| File | State when found |
+| --- | --- |
+| `bake` | The intended fat driver: `make <target>` → `make m=aarch64 <arm target>` → `apelink` the two `.dbg` files → `releases/<name>.com`. Correct in outline; trusted `make`'s exit status (see BUILDING.md gotcha 3). |
+| `check_ape.sh` | Good component inspector (APE magic, x86_64 ELF, aarch64 ELF, Mach-O header, gzip-compressed `ape-m1.c`). Source-only, and silently returned "skipped" when no system `ruby` was on `PATH` — i.e. on exactly the machines that build this repo. |
+| `fat_smoke_test.sh` / `trigger_ci.sh` / `.github/workflows/cosmo-ci-fat-smoke-test.yml` | An older upload-to-a-release-tag-and-poll flow aimed at `hello.com`, pointed at `igravious/cosmoruby`. Left alone; the reusable `cosmoruby-{build,test}.yml` workflows on the `ci` branch supersede it. |
+| `third_party/ruby/yjit/BUILD.mk` | Already contained `ifeq ($(ARCH),aarch64) → RUBY_YJIT_ENABLED := 0`. So somebody had thought about this. |
+| `package_ruby.sh` | Already embeds the stdlib zip into `releases/*.com` *and* `o//third_party/ruby/*.com`, i.e. it was written for a world where fat binaries exist. |
+
+So the fat path was not missing, it was unexercised. Nothing needed inventing.
+
+### How the fat build works
+
+```
+configure (once)                     generated files + codegen are arch-neutral;
+                                     $COSMO_RUBY always runs on the BUILD HOST
+   │
+   ├── make MODE=        ──────────▶ o//third_party/ruby/ruby.dbg          (x86_64)
+   ├── make m=aarch64    ──────────▶ o/aarch64/third_party/ruby/ruby.dbg   (aarch64)
+   │
+   ├── apelink -l ape-x86_64.elf -l ape-aarch64.elf -M ape-m1.c \
+   │           <x86 .dbg> <arm .dbg>  ─────────────▶ releases/ruby.com
+   │
+   └── package_ruby.sh ────────────▶ zipcopy the ONE shared /zip stdlib onto it
+```
+
+Points worth knowing:
+
+- **One configure, two makes.** `cosmo_configure.sh` and all of
+  `ruby.codegen.mk` run on the build host with `$COSMO_RUBY` (an x86-64
+  CosmoRuby APE). Codegen output is architecture-independent, so it is not
+  re-done per arch and the bootstrap interpreter stays x86-64 even for the
+  aarch64 half. Checked: `diff -r o/third_party/ruby/generated
+  o/aarch64/third_party/ruby/generated` reports only build-directory paths
+  (`o//…` vs `o/aarch64/…` inside `configure-ext.mk` and the generated
+  `parse.c`/`parse.h` `#line`s) and manifest key ordering — no semantic
+  difference. So a *second* configure/codegen pass is not needed, and the
+  aarch64 half is compiled from exactly the same generated sources.
+- **apelink consumes `.dbg`, not the stripped output.** `bake` had this right.
+  The `o/$(MODE)/%: %.dbg` objcopy rule is what produces the single-arch
+  binaries; the fat link goes straight from the two unstripped ELFs.
+- **The stdlib zip is appended once, after the link.** It is pure Ruby, so both
+  halves read the same `/zip`. This is why `lib/rbconfig.rb` cannot bake in an
+  architecture (see below).
+- **`ruby.deps.mk` already selects `coroutine/arm64/Context.S`** for
+  `ARCH=aarch64` — the one genuinely arch-specific source in the port.
+- **`apelink` is instant** (~0.12 s for a 24 MB fat ruby). Almost all the extra
+  wall time is the second `make`.
+
+### Reproducing it
+
+`.github/scripts/build-cosmoruby.sh` (used by CI *and* by humans) now takes
+`FAT=1` and does everything above, including verified-make loops for both
+arches, the apelink step, the component check and a qemu-user boot of the
+aarch64 half:
+
+```sh
+export COSMO_RUBY=$HOME/tools/cosmoruby-release/ruby.com
+FAT=1 JOBS=$(nproc) bash .github/scripts/build-cosmoruby.sh
+# → dist/{ruby,irb,miniruby}.com + dist/SHA256SUMS
+```
+
+`COSMO_RUBY=… ./bake -j8 o//third_party/ruby/ruby` still works for one-off fat
+links of any cosmopolitan target; it now retries `make` until the product's
+size/mtime stops changing instead of believing `$?`. (Verified end to end on
+`o//examples/hello`: 430,226 B x86-64 + 342,858 B aarch64 → 909,772 B fat,
+which runs on both halves.)
+
+Trap while testing that: `export HOST_RUBY=$COSMO_RUBY` **before** COSMO_RUBY is
+set exports `HOST_RUBY=""`, and `ruby.env.mk` uses `HOST_RUBY ?=`, which does not
+override an empty-but-defined environment variable. The result is the very
+confusing `No Ruby interpreter found` even though COSMO_RUBY is correct.
+
+### What was actually broken (two real bugs, one of them user-facing)
+
+**1. `ruby.com --yjit` died on the aarch64 half.**
+
+```
+/path/ruby.com: invalid YJIT option '' (--help will show valid yjit options) (RuntimeError)
+```
+
+`yjit/BUILD.mk` correctly disables the Rust staticlib for `ARCH=aarch64`
+(it targets `x86_64-unknown-linux-gnu`), which means the `__attribute__((weak))`
+stubs in `yjit.c` are not placeholders on that half — **they are the
+implementation**. One of them was written as a linker placeholder rather than a
+behaviour:
+
+```c
+YJIT_WEAK bool rb_yjit_parse_option(const char *str_ptr) { return false; }
+```
+
+`ruby.c`'s `setup_yjit_options()` turns `false` into `rb_raise(rb_eRuntimeError,
+"invalid YJIT option '%s'")`, so any `--yjit*` flag was a hard startup error on
+ARM. Fixed by returning `true` (accept and ignore), which reproduces the
+existing Windows behaviour: option honoured, `RUBY_DESCRIPTION` still says
+`+YJIT`, `RubyVM::YJIT.enabled?` is `false` because `rb_yjit_enabled_p` stays
+`false`.
+
+This is the same *class* of bug as the 4.0.6 Windows segfault
+(`rb_yjit_init_builtin_cmes` called unguarded), with the failure mode inverted:
+there, unguarded C reached into Rust that could not run; here, C reached a stub
+that answered "no such thing" instead of "not available". **Standing rule,
+extended:** every weak YJIT stub must be a valid *runtime* answer for a build
+where the Rust half is absent, not merely a symbol that links.
+
+The rest of the stub set was audited against that rule and is fine:
+`rb_yjit_enabled_p = false`, `rb_yjit_iseq_gen_entry_point → NULL`,
+`rb_yjit_count_side_exit_op → exit_pc`, `rb_yjit_enable → Qfalse`,
+`rb_yjit_get_stats → Qnil`, all the invalidation hooks no-op.
+`rb_yjit_option_disable → false` is deliberate: it keeps `opt->yjit` true so the
+banner and `--yjit` behave as they do on Windows.
+`rb_yjit_show_usage` is a no-op, so `--help` has no YJIT section on aarch64 —
+cosmetic, left alone.
+
+**2. `RUBY_PLATFORM` lied on the ARM half.**
+
+`include/ruby/config.h` hard-coded `#define RUBY_PLATFORM "x86_64-cosmo"`, so
+the aarch64 half of a fat APE reported `x86_64-cosmo` while executing AArch64
+instructions. This is not new — igravious's v1.3.0 fat release does the same
+thing (verified by running its ARM half under qemu-user). Fixed with an
+`#if defined(__aarch64__)` switch; `loadpath.c` derives `RUBY_ARCH` from it, so
+the arch-specific `$LOAD_PATH` entries follow.
+
+`lib/rbconfig.rb` had the matching problem from the other direction: there is
+only *one* rbconfig.rb in the shared `/zip`, and `ruby.codegen.mk` always calls
+`tool/mkconfig.rb` with a hard-coded `-arch=x86_64-linux`. `CONFIG["arch"]` and
+`CONFIG["target_cpu"]` are now derived from `RUBY_PLATFORM` at runtime so the
+two agree. (`CONFIG["config_target"]` and `configure_args` still record the
+x86-64 configure run — they describe history, not the running interpreter.)
+
+### Verifying the ARM half without ARM hardware
+
+Two independent routes, in increasing order of trustworthiness:
+
+**(a) qemu-user on the build box.** `build/bootstrap/ape.aarch64` is a static
+AArch64 APE loader that ships in this repo (`ruby-platforms.yml` already
+installs it via binfmt_misc on ARM runners). So:
+
+```sh
+apt-get install -y qemu-user-static
+qemu-aarch64 build/bootstrap/ape.aarch64 ./dist/ruby.com -e 'puts RUBY_PLATFORM'
+```
+
+**How much does this prove?** `qemu-aarch64` is a user-mode emulator that
+decodes only AArch64 instructions — it cannot execute a single x86-64 opcode.
+The loader it runs is an AArch64 ELF, and it maps the aarch64 program headers
+out of the fat file. So everything that executes really is the ARM half: this
+is genuine evidence that the aarch64 Ruby boots, initialises the VM, loads the
+zip stdlib, threads, sockets and sqlite3. What it does **not** prove is
+anything about a real ARM kernel/libc boundary — syscall emulation, ARM
+memory-ordering under real concurrency, or the ARM APE loader's own
+platform-detection path on a genuine device. Treat it as "the code is correct",
+not "the platform is supported".
+
+*Negative control, so this is not self-congratulatory:* the same command
+against the **x86-64-only** `o/third_party/ruby/ruby.com` fails immediately —
+the loader finds no aarch64 program headers. A fat binary passing while its
+single-arch sibling fails, under an emulator that cannot run x86, is the actual
+proof that the aarch64 half exists and is what ran.
+
+**(b) GitHub Actions `ubuntu-24.04-arm` / `macos-latest`.** Real hardware.
+`.github/workflows/cosmoruby-test.yml` runs the *same*
+`.github/scripts/test-cosmoruby.sh` on every platform. Those two jobs were
+`experimental: true` (non-blocking) precisely because an x86-64-only artifact
+could only ever fail them; with a fat artifact they are now blocking, and the
+job asserts the artifact contains both ELF headers *before* claiming an arm64
+pass, so a silently-x86-only build cannot masquerade as an arm64 success.
+`windows-11-arm` is added but stays experimental — nothing in this port has
+ever been proven there.
+
+### Numbers (Debian 13 amd64, 8 cores, 2026-08-09)
+
+| Artifact | x86-64 only | fat | delta |
+| --- | ---: | ---: | ---: |
+| `ruby` (unpackaged) | 12,720,749 | 24,472,401 | +11,751,652 (+92 %) |
+| `ruby.com` (with /zip stdlib) | 21,224,287 | 32,975,939 | +11,751,652 (+55 %) |
+| `irb.com` | 21,224,287 | 32,975,907 | +11,751,620 |
+| `miniruby.com` | 18,738,030 | 27,895,330 | +9,157,300 |
+| aarch64 `ruby` alone | — | 11,267,989 | 1.45 MB *smaller* than the x86-64 half (no YJIT staticlib) |
+
+(The x86-64-only `ruby.com` differs from the 21,225,070 B in the release notes
+above by ~800 B of ZIP metadata; the unpackaged `ruby` is bit-identical at
+12,720,749 B, which is the number to compare.)
+
+For reference, igravious's fat `v1.3.0` `ruby.com` (Ruby 4.0.0, no sqlite3) is
+30,950,680 bytes — the same order, so nothing has gone structurally wrong.
+
+Build time on 8 cores with libc already built and a full Ruby recompile forced
+(`-j8`, measured by the script itself):
+
+| Phase | Wall |
+| --- | ---: |
+| `make` x86-64 (5 exts + YJIT cargo staticlib) | 55–61 s |
+| `make m=aarch64` | 60–62 s |
+| `apelink` × 3 | 0.12 s each |
+| `assemble_stdlib.sh` + 6 × `zipcopy` | ~12 s |
+| **whole `FAT=1` run** | **2 min 05 s – 2 min 09 s** |
+
+So the fat build costs almost exactly **one extra `make`** — roughly double the
+wall time, no other overhead. The aarch64 half is not much cheaper despite
+skipping the YJIT cargo build, because it has to compile cosmopolitan libc for
+the second architecture too (that part is cached across runs; a genuinely cold
+`o/` tree pays it once).
+
+
+### Verification results for the fat build (2026-08-09)
+
+Artifacts: `dist/{ruby,irb,miniruby}.com`, `ruby.com` = **32,975,939 B**,
+sha256 `c03ab1aaf857a2ef2e33eed6186859afbb46224842f5f12d64ae9a4ec0452f58`.
+Components: APE magic `MZqFpD`, x86_64 ELF @ 0x11000, aarch64 ELF @ 0xc1c000,
+Mach-O header (x86_64) @ 0xc98, gzip-compressed `ape-m1.c` present.
+
+| Check | Linux x86-64 (native) | aarch64 (qemu-user) | Windows 11 x86-64 |
+| --- | --- | --- | --- |
+| `cosmo_tests/smoke_test.sh` | **14/14** | **14/14** | — |
+| `cosmo_tests/ci_smoke.rb` | **30/30** | **30/30** | 28 pass / 0 fail / 2 warn (the pre-existing Windows TCP breakage) |
+| `cosmo_tests/test_sqlite3.rb` under `env -i` | **5/5** | **5/5** | **5/5** (from `C:\Users\vagrant`) |
+| `env -i` from an empty dir | OK | OK | n/a |
+| `ci_exit7.rb` exit status | 7 | 7 | 1792 (= 7 << 8, pre-existing) |
+| `irb.com` pipe mode | `42` | `42` | `42` |
+| `miniruby.com` | 4.0.6 | 4.0.6, `aarch64-cosmo` | 4.0.6, `Gem` defined |
+| `RUBY_PLATFORM` | `x86_64-cosmo` | `aarch64-cosmo` | `x86_64-cosmo` |
+| `--yjit` accepted | yes, `enabled? == true` | yes, `enabled? == false` | yes, `enabled? == false` |
+
+Windows matters here beyond the usual reason: a fat APE is a materially
+different PE (bigger, extra loaders, a second ELF payload). It boots and runs
+unchanged — no regression from the size or the extra loaders.
+
+The x86-64 numbers are identical to the x86-64-only build from the same tree
+(`o/third_party/ruby/ruby.com`, 21,224,287 B, 14/14 + 30/30 + 5/5), so making
+the binary fat costs nothing on the platform that already worked.
+
 ## Fork roadmap / recommended next steps
 
 1. Upstream the `modernize` commits (all are fresh-checkout blockers):
@@ -825,9 +1064,13 @@ declares extensions **or** ships `.so`/`.bundle` files — i.e. hoist the
 5. Consider pinning/documenting the cosmocc version story: repo builds
    with .cosmocc/3.9.2 (auto-downloaded), while modern standalone cosmocc
    (GCC 14.1, e.g. /root/tools/cosmocc) is unused by this build system.
-6. Fat (x86_64+aarch64) binaries: releases are fat; local build produces
-   x86_64-only. The aarch64 half needs `make ARCH=aarch64` + apelink; the
-   wrapper scripts (`ccc`, `rcc`) and caboose CI hint at the intended flow.
+6. ~~Fat (x86_64+aarch64) binaries~~ — **done on `fat-ape`**, see "Fat
+   (x86_64 + aarch64) APEs" above. `FAT=1 .github/scripts/build-cosmoruby.sh`
+   builds both arches and apelinks them. Remaining gaps: no real ARM hardware
+   was available locally (qemu-user + GitHub `ubuntu-24.04-arm` were used),
+   YJIT is still x86-64-Linux-only, and the old `fat_smoke_test.sh` /
+   `cosmo-ci-fat-smoke-test.yml` flow (upload to a release tag, poll) was left
+   untouched and is now redundant — consider deleting it.
 7. Longer term: sync with jart/cosmopolitan master (fork last merged
    ~mid-2026) and rebase the Ruby port as a proper third_party module PR.
 

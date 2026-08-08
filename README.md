@@ -29,11 +29,16 @@ Latest release assets — <https://github.com/Largo/cosmoruby/releases/latest>
 
 Most people only want `ruby.com`.
 
-**Architecture: x86-64 only.** These binaries do not contain an aarch64 half, so
+**Architecture.** The `v4.0.6-cosmo1` assets linked above are **x86-64 only** —
 they will not run natively on Apple Silicon, an ARM Chromebook, a Raspberry Pi
-or Windows-on-ARM. (igravious's older `v1.3.0` release did ship fat
-x86-64 + aarch64 binaries; rebuilding this one fat is future work — see
-`PORTING-NOTES.md`.)
+or Windows-on-ARM. The tree now builds **fat x86-64 + aarch64** APEs again
+(as igravious's older `v1.3.0` release did): `FAT=1
+.github/scripts/build-cosmoruby.sh`, and CI produces them on every push. The
+next tagged release will be fat; until then, build one yourself or take the CI
+artifact. See "Fat (x86-64 + aarch64) binaries" in `BUILDING.md`.
+
+A fat `ruby.com` is about 33 MB instead of 21 MB — the aarch64 half is an
+entire second copy of the interpreter.
 
 ## 30-second quickstart
 
@@ -138,14 +143,15 @@ API will need checking.
 The YJIT compiler is Rust code built for `x86_64-unknown-linux-gnu` and is only
 initialised when the APE is running on Linux.
 
-| | `--yjit` on Linux | `--yjit` on Windows |
-| --- | --- | --- |
-| `RubyVM::YJIT.enabled?` | `true` | `false` |
-| `RUBY_DESCRIPTION` | `+YJIT` | `+YJIT` (misleading) |
+| | Linux x86-64 | Windows x86-64 | any aarch64 |
+| --- | --- | --- | --- |
+| `RubyVM::YJIT.enabled?` | `true` | `false` | `false` |
+| `RUBY_DESCRIPTION` | `+YJIT` | `+YJIT` (misleading) | `+YJIT` (misleading) |
 
-Passing `--yjit` on Windows is harmless — it does not crash, it just does
-nothing. Do not trust `RUBY_DESCRIPTION` on Windows; trust
-`RubyVM::YJIT.enabled?`.
+Passing `--yjit` anywhere else is harmless — it is accepted and does nothing.
+Do not trust `RUBY_DESCRIPTION`; trust `RubyVM::YJIT.enabled?`. On the aarch64
+half the Rust staticlib is not even linked in (`yjit/BUILD.mk` disables it for
+`ARCH=aarch64`).
 
 ## What is *not* supported
 
@@ -166,7 +172,6 @@ nothing. Do not trust `RUBY_DESCRIPTION` on Windows; trust
   Linux. This is pre-existing — igravious's Ruby 4.0.0 release binary fails the
   same way — and is a cosmopolitan/port-level bug, not something introduced
   here. No network client or server code will run on Windows.
-- **x86-64 only** (see above).
 - **32-bit anything, BIOS/metal.** Not tested, not claimed.
 
 ### `sqlite3` limitations
@@ -199,9 +204,12 @@ UTF-8 round-trips, read-only handles, custom SQL functions and aggregates,
 | --- | --- |
 | Linux x86-64 | **Verified.** 14/14 smoke checks, sqlite3 5/5, `env -i` from an empty dir, YJIT on. |
 | Windows 11 x86-64 | **Verified.** Smoke script, sqlite3 5/5, `irb.com`, `miniruby.com`. Caveats above (sockets, subprocesses, exit-code shift). |
-| macOS x86-64 | **Untested.** No runner was available. Cosmopolitan APEs are designed to run on macOS 23.1.0+ and nothing in this build is Linux-specific outside YJIT, so it is *expected* to work — but nobody has run it. |
+| macOS x86-64 | **Untested locally**; covered by the `macos-15-intel` CI job. Cosmopolitan APEs are designed to run on macOS 23.1.0+ and nothing in this build is Linux-specific outside YJIT. |
 | FreeBSD / OpenBSD 7.3+ / NetBSD, x86-64 | **Untested**, same reasoning as macOS. |
-| Anything aarch64 (Apple Silicon, Windows-on-ARM, Pi) | **Not supported** — these binaries are x86-64 only. |
+| Linux aarch64 (fat builds) | **Verified against the fat binary** under `qemu-user`: 14/14 smoke checks, 30/30 `ci_smoke.rb`, sqlite3 5/5, `env -i`, `irb`/`miniruby`. `RUBY_PLATFORM` is `aarch64-cosmo`. No YJIT (see above). CI additionally runs the same acceptance script on GitHub's real `ubuntu-24.04-arm` runner, as a blocking job. |
+| macOS aarch64 / Apple Silicon (fat builds) | Covered by the `macos-latest` CI job; the fat APE carries the `ape-m1` loader. |
+| Windows-on-ARM | **Untested / not claimed.** There is a non-blocking `windows-11-arm` CI job and nothing more. |
+| Anything aarch64, using the **x86-64-only** `v4.0.6-cosmo1` assets | **Not supported** — build fat, or wait for the next release. |
 
 If you run it somewhere untested, please open an issue either way.
 

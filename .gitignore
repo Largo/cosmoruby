@@ -24,9 +24,10 @@ __pycache__
 /build/bootstrap/mtdeps
 
 # Ruby generated configuration files
-/third_party/ruby/.cosmo_configured
-/third_party/ruby/include/ruby/config.mode.h
-/third_party/ruby/lib/rbconfig.mode.rb
+/third_party/ruby-wip-4.0.6/.cosmo_configured
+/third_party/ruby-wip-4.0.6/patches/
+/third_party/ruby-wip-4.0.6/include/ruby/config.mode.h
+/third_party/ruby-wip-4.0.6/lib/rbconfig.mode.rb
 
 # IDE settings (AI agent configurations)
 /.claude/

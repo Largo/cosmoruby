@@ -1,0 +1,29 @@
+ORIGIN
+
+  https://rubygems.org/downloads/racc-1.8.1.gem
+  sha256 4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
+
+  Byte-identical to the copy Ruby 4.0.6 already ships under
+  third_party/ruby/.bundle/gems/racc-1.8.1 (verified with diff -r).
+
+WHY IT IS HERE
+
+  Before this directory existed, the xml-libs branch copied only
+  racc/parser.rb and racc/info.rb onto the plain load path, as a stopgap so
+  nokogiri's generated CSS parser could load.  `require "racc"`, the racc
+  *generator*, and any Bundler dependency on racc all still failed, and the
+  parse engine was the slow pure-Ruby one.  This vendoring replaces that:
+  the whole gem, a real default gemspec, and the cparse C runtime linked in.
+
+LOCAL CHANGES
+
+  - ext/racc/cparse/{cparse.c,extconf.rb} -> cparse/ (unmodified)
+  - lib/**                                -> lib/ (unmodified)
+  - COPYING, BSDL                         -> here
+  - extconf.rb is kept for reference only; its single -D
+    (RACC_INFO_VERSION) is hand transcribed into BUILD.mk.
+  - racc.gemspec is hand-written (upstream's declares `extensions`).
+  - bin/racc, doc/ and the test suite are not vendored; bin/racc is already
+    copied into /zip/bin by assemble_stdlib.sh from .bundle/gems.
+
+  No .c or .h file has been modified.

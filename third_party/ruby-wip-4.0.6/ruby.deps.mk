@@ -21,6 +21,7 @@
 # To enable/disable extensions, comment/uncomment these includes
 # and update ext/extinit.c accordingly
 include third_party/cosmo_plugin/BUILD.mk
+include third_party/ruby/ext/bigdecimal/BUILD.mk
 include third_party/ruby/ext/continuation/BUILD.mk
 include third_party/ruby/ext/coverage/BUILD.mk
 include third_party/ruby/ext/date/BUILD.mk
@@ -34,9 +35,12 @@ include third_party/ruby/ext/json/BUILD.mk
 include third_party/ruby/ext/ripper/BUILD.mk
 include third_party/ruby/ext/mbedtls/BUILD.mk
 include third_party/ruby/ext/monitor/BUILD.mk
+include third_party/ruby/ext/nio4r/BUILD.mk
 include third_party/ruby/ext/nokogiri/BUILD.mk
 include third_party/ruby/ext/objspace/BUILD.mk
 include third_party/ruby/ext/psych/BUILD.mk
+include third_party/ruby/ext/puma/BUILD.mk
+include third_party/ruby/ext/racc/BUILD.mk
 include third_party/ruby/ext/rbconfig/sizeof/BUILD.mk
 include third_party/ruby/ext/socket/BUILD.mk
 include third_party/ruby/ext/sqlite3/BUILD.mk
@@ -62,6 +66,7 @@ RUBY_SLIM_STATIC ?= 0
 
 # All C extensions bundled with this port (production).
 RUBY_ALL_EXTENSIONS =			\
+	THIRD_PARTY_RUBY_EXT_BIGDECIMAL		\
 	THIRD_PARTY_RUBY_EXT_CONTINUATION		\
 	THIRD_PARTY_RUBY_EXT_COVERAGE			\
 	THIRD_PARTY_RUBY_EXT_DATE			\
@@ -75,9 +80,12 @@ RUBY_ALL_EXTENSIONS =			\
 	THIRD_PARTY_RUBY_EXT_RIPPER			\
 	THIRD_PARTY_RUBY_EXT_MBEDTLS			\
 	THIRD_PARTY_RUBY_EXT_MONITOR			\
+	THIRD_PARTY_RUBY_EXT_NIO4R			\
 	THIRD_PARTY_RUBY_EXT_NOKOGIRI			\
 	THIRD_PARTY_RUBY_EXT_OBJSPACE			\
 	THIRD_PARTY_RUBY_EXT_PSYCH			\
+	THIRD_PARTY_RUBY_EXT_PUMA			\
+	THIRD_PARTY_RUBY_EXT_RACC			\
 	THIRD_PARTY_RUBY_EXT_RBCONFIG_SIZEOF		\
 	THIRD_PARTY_RUBY_EXT_SOCKET			\
 	THIRD_PARTY_RUBY_EXT_SQLITE3			\

@@ -2672,6 +2672,12 @@ minute job timeout** on macos-arm64, while passing everywhere else --
 including on windows-arm64, which is the tell that Windows-on-ARM runs
 the x86_64 half of the APE under its own emulation rather than the
 aarch64 half.
+including on windows-arm64. That last one is not a contradiction: the
+windows-arm64 runner reports `RUBY_PLATFORM = x86_64-cosmo`, i.e.
+Windows-on-ARM runs the **x86_64** half of the APE under its own
+emulation and never touches the aarch64 code at all. The aarch64 half is
+therefore exercised only by linux-arm64 and macos-arm64 -- and by
+`qemu-aarch64 build/bootstrap/ape.aarch64` locally.
 Bisecting under `qemu-aarch64 build/bootstrap/ape.aarch64` narrowed it to
 one line of racc's own grammar parser:
 
@@ -2720,6 +2726,9 @@ executable's own archive, it is not an OS facility — and the function four lin
 below already relied on that (`access("/zip/.cosmo_ruby_packaged", F_OK)`).
 
 ### The one real design decision: positional arguments
+#define COROUTINE_H "coroutine/amd64/Context.h"
+```
+
 flat, with no arch condition — configure ran on an x86_64 host and could
 not know any better. `ruby.deps.mk` *does* pick the right assembly
 (`ifeq ($(ARCH),aarch64)` → `coroutine/arm64/Context.S`), so the aarch64
@@ -3255,3 +3264,219 @@ native shell has this problem, and the honest answer is probably that
 cosmopolitan should stop encoding wait statuses into Windows exit codes and
 teach `wait4()` to recognise its own children some other way. Until then, doing
 it per-program (as ocran's stub and now `ruby.com` do) is the available fix.
+### puma 8.0.2 — no SSL, and that is upstream's own configuration
+
+Vendored: `ext/puma_http11/*.{c,h}` (`http11_parser.c` ships
+pre-generated, so no Ragel at build time), the `.rl` files for reference,
+all of `lib/**` including `lib/rack/handler/puma.rb`, `LICENSE`.
+
+The only `-D` is `-DHAVE_RB_EXT_RACTOR_SAFE`, plus
+`-Wno-implicit-fallthrough` for the Ragel state machine (upstream passes
+the same when it turns warnings into errors).
+
+**SSL is compiled out.** `mini_ssl.c` is compiled with
+`HAVE_OPENSSL_BIO_H` *undefined*, which is exactly what upstream's
+`extconf.rb` produces when it cannot find OpenSSL or when
+`PUMA_DISABLE_SSL` is set: the entire file is inside
+`#ifdef HAVE_OPENSSL_BIO_H`, so it becomes an empty translation unit, and
+`puma_http11.c` skips its `Init_mini_ssl()` call under the same guard.
+The Ruby side handles it natively —
+
+```ruby
+HAS_SSL = const_defined?(:MiniSSL, false) && MiniSSL.const_defined?(:Engine, false)
+```
+
+— becomes `false`. What you lose: `bind "ssl://…"`, the `ssl_bind` DSL,
+and `Puma::MiniSSL::Context`. What you keep: everything else, including
+`Puma::Server#run` over plain HTTP, which is all a packaged app behind a
+reverse proxy needs. The reason it had to go is that this build's
+`openssl` is a 413-line MbedTLS shim (`third_party/ruby/lib/openssl.rb`
+over `ext/mbedtls`), *not* Ruby's OpenSSL extension — `ext/openssl/` is
+vendored in the tree but has never been added to `ruby.deps.mk` — and it
+exposes none of the `BIO_*` / `SSL_CTX_*` / `X509_*` / `DH_*` C API
+`mini_ssl.c` uses.
+
+`mini_ssl.c` is still listed as a source so the vendored tree and the
+build stay in one-to-one correspondence and a future MbedTLS-backed port
+is a flag flip. It contributes zero bytes today.
+
+`ext/extinit.c`: `init(Init_puma_http11, "puma/puma_http11")`.
+
+### Tests
+
+Four new files, wired into `.github/scripts/test-cosmoruby.{sh,ps1}` next
+to `test_nokogiri.rb`, so they run on all six CI platforms:
+
+| test | checks | what it covers |
+|---|---|---|
+| `test_bigdecimal.rb` | 44 | construction from String/Integer/Float/Rational/BigDecimal/Complex, 100-digit division, 40! exactly, `sqrt`, every rounding mode, `mode()` for exceptions, NaN/Infinity, all of `BigMath` (PI, E, sqrt, log/exp round trip, sin), `to_d`/`to_r` interop, `split`, `precision`/`scale`, Marshal, sorting |
+| `test_racc.rb` | 21 | `Racc_Runtime_Type == "c"` and the cparse/info version agreement; then **generates a parser from a grammar at runtime** with `GrammarFileParser` + `States` + `ParserFileGenerator`, evals it and drives it: precedence, associativity, 200-deep nesting, a 2000-term expression, `Racc::ParseError`, the `yyparse` push entry point; and nokogiri's CSS parser on the same runtime |
+| `test_nio4r.rb` | 24 | backend is `:poll`; register/deregister/`registered?`; timeout, `select(0)`, readable, writable, interest changes, `Monitor#value` (how puma finds its client), 8 sockets with only 3 ready, cross-thread `wakeup`, GVL release during a blocking select, `ByteBuffer` including `read_from`/`write_to` a socket |
+| `test_puma.rb` | 25 | `Puma::HAS_SSL == false`; the Ragel parser directly (request line, query string, fragment, header folding, partial requests, malformed input, a 200 KB header, reset/reuse); then a **real `Puma::Server` on loopback** — GET, POST with a body, multi-part Rack bodies, 404, keep-alive, a 512 KB response, four concurrent requests across the thread pool, HTTP/1.0, garbage on the wire answered with 400, clean shutdown |
+
+Each also asserts the gem is registered as a **default gem**, which is
+the mechanism ocran's payload-provides-gem check relies on; `test_puma.rb`
+additionally resolves puma's `nio4r ~> 2.0` dependency out of the payload.
+
+Local results (Debian 13 amd64, `o/third_party/ruby/ruby.com`):
+
+```
+test_bigdecimal  pass=44 fail=0
+test_racc        pass=21 fail=0
+test_nio4r       pass=24 fail=0
+test_puma        pass=25 fail=0
+```
+
+No regressions: `smoke_test.sh` 15/15, `ci_smoke.rb` 36/36,
+`test_sockets.rb` 19/19 SOCKET-OK, `test_sqlite3.rb` failures=0,
+`test_nokogiri.rb` 36/36.
+
+### Size impact — under 1 % for all four
+
+Measured by rebuilding the same tree five times with the extensions
+enabled cumulatively, forcing a relink each time (a stale `ruby` binary
+is exactly the failure mode the recipe warns about; the first attempt at
+this table produced a "baseline" that was silently the full build).
+
+| step | `ruby` (zipless) | Δ | `ruby.com` | Δ |
+|---|---|---|---|---|
+| xml-libs baseline | 14,625,389 | — | 23,265,232 | — |
+| + bigdecimal | 14,695,021 | **+69,632** | 23,252,801 | **−12,431** |
+| + racc | 14,707,309 | **+12,288** | 23,215,430 | **−37,371** |
+| + nio4r | 14,760,557 | **+53,248** | 23,275,973 | **+60,543** |
+| + puma | 14,776,941 | **+16,384** | 23,408,593 | **+132,620** |
+| **total** | | **+151,552 (+1.04 %)** | | **+143,361 (+0.62 %)** |
+
+The two negative `ruby.com` deltas are real: bigdecimal and racc were
+already in the zip twice over as gemspec-less `.bundle/gems` copies, and
+`assemble_stdlib.sh` now drops those in favour of the single `ext/` copy.
+So bigdecimal and racc cost 82 KB of native code and *save* 50 KB of zip.
+puma is the opposite shape — 16 KB of C, 133 KB of compressed Ruby (its
+`lib/` is ~450 KB of source).
+
+For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri cost
++2,033 KB (+9.6 %). All four of these together are +0.62 %.
+
+The shipped binaries at the head of this branch (which also carry the
+io/console/size.rb fix, +772 bytes of zip):
+
+| binary | bytes |
+|---|---|
+| `o/third_party/ruby/ruby` (zipless, x86_64) | 14,776,941 |
+| `o/aarch64/third_party/ruby/ruby` (zipless, aarch64) | 13,423,445 |
+| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 |
+| `o/third_party/ruby/miniruby.com` | 18,866,916 |
+| `dist/ruby.com` (**fat**, x86_64 + aarch64) | 37,428,476 |
+| `dist/miniruby.com` (fat) | 28,024,372 |
+
+(The reproduced baseline is 4,096 / 7,744 bytes off the numbers recorded
+for `xml-libs` HEAD — link padding plus the `errno_wrapper.h` comment.
+The last row reproduces the committed build byte for byte.)
+
+### Rails 8.1.3.1 boots inside `ruby.com` and serves HTTP
+
+Using the application that OCRAN's own test generates
+(`ocran/rails/test/rails_app_generator.rb` from Largo/ocran#53:
+`rails new --minimal --database=sqlite3`, a `bin/rails generate scaffold
+Widget`, two hand-written controllers, an ERB view added on the fly, and
+`server.rb` which runs `Puma::Server.new(Rails.application)` directly),
+with `GEM_PATH` pointing at a curated tree of the *pure-Ruby* halves of
+Rails 8.1.3.1 and `/zip/lib/ruby/gems/4.0.0`:
+
+```
+$ ruby.com -e 'require "rails"; puts Rails::VERSION::STRING'
+8.1.3.1
+
+$ ruby.com server.rb
+== 20260809175359 CreateWidgets: migrated (0.0022s) ===========================
+OCRAN-RAILS-READY port=3124
+
+$ curl -s http://127.0.0.1:3124/status
+{"ok":true,"rails":"8.1.3.1","env":"production","ruby":"4.0.6",
+ "platform":"x86_64-cosmo","packaged":false,"script":"server.rb",
+ "database":".../demo.sqlite3","adapter":"SQLite",
+ "sqlite_version":"3.40.0","widget_count":0}
+```
+
+`GET /` (the scaffold index), `GET /report` (the ERB template written by
+the test rather than by a generator) and `GET /status` all return 200, and
+ActiveRecord round-trips real rows:
+
+```
+AR-COUNT=3   AR-SUM=30   AR-WHERE=["w1", "w2"]
+AR-JSON={"id":1,"name":"w0","qty":0,"created_at":"2026-08-09T18:10:28.432Z",…}
+AR-SQLITE=3.40.0
+```
+
+So: railties, activesupport, activemodel, activerecord, actionpack,
+actionview, zeitwerk, rack 3.2, tzinfo, i18n, concurrent-ruby, erubi and
+the rest load and run unmodified on CosmoRuby, over the sqlite3, nokogiri,
+bigdecimal, nio4r, puma and racc extensions this port provides.
+
+**Both halves of the fat APE do it.** The same `server.rb`, run as
+`qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com server.rb`,
+answers with `"platform":"aarch64-cosmo"` and serves `/`, `/status` and
+`/report` — so Rails works on ARM as well, which it could not have done
+before the two coroutine fixes above (ActiveSupport reaches
+`Enumerator#next` long before it reaches a controller).
+
+### The OpenSSL shim is the remaining blocker — and it is not a gem
+
+The boot above needed **one** shim file preloaded (`-r openssl_gap_probe.rb`,
+kept out of the repo because none of it is cryptographically real). Every
+missing piece is in `third_party/ruby/lib/openssl.rb`, the MbedTLS shim —
+no gem is missing, and nothing else about Rails needed help. Precisely:
+
+1. **`OpenSSL::Cipher` does not exist.** `ActiveSupport::MessageEncryptor`
+   does `OpenSSLCipherError = OpenSSL::Cipher::CipherError` at class-body
+   time, so merely `require "rails"` raises `NameError` without it. Needs
+   at least AES-256-GCM and AES-256-CBC with `#encrypt`, `#decrypt`,
+   `#key=`, `#iv=`, `#auth_data=`, `#auth_tag`, `#authenticated?`,
+   `#update`, `#final`, `#random_iv`, `#key_len`, `#iv_len`.
+2. **`OpenSSL::Digest` is a module of aliases, not a class hierarchy.**
+   `ActiveSupport::KeyGenerator.hash_digest_class=` explicitly rejects
+   anything that is not an `OpenSSL::Digest` subclass, so
+   `OpenSSL::Digest::SHA256 = ::Digest::SHA256` is not good enough. It has
+   to be `class OpenSSL::Digest < ::Digest::Class` with real subclasses.
+3. **`OpenSSL::HMAC`, `OpenSSL::KDF.pbkdf2_hmac` and
+   `OpenSSL::PKCS5.pbkdf2_hmac` are absent**, and
+   `ActiveSupport::KeyGenerator` uses PBKDF2 to derive every key Rails
+   signs or encrypts with.
+4. **`OpenSSL.fixed_length_secure_compare` is absent** — and the shim's
+   own `OpenSSL.secure_compare` *calls* it, so that method is dead code
+   as shipped.
+
+There is also a deployment consequence worth writing down: Rails 8's
+ActiveRecord railtie reads `Rails.application.credentials` during boot
+whenever ActiveRecord is loaded, which decrypts `config/credentials.yml.enc`
+with AES-256-GCM. Until (1) is real, **a packaged Rails app must not ship
+`config/credentials.yml.enc`** (delete it and use `SECRET_KEY_BASE`); with
+the file present the boot dies inside `ActiveSupport::EncryptedFile` no
+matter what else works.
+
+Fixing this means giving `ext/mbedtls` a cipher/HMAC/PBKDF2 surface —
+mbedtls has AES, GCM, MD and PKCS5 — and rewriting the shim on top. It is
+a bounded job, but it is an openssl job, not a gem-vendoring job, so it
+was deliberately left out of this branch.
+
+### What is left before OCRAN can package a Rails app as an APE
+
+- **the OpenSSL shim work above.** This is the only functional blocker.
+- **ocran has still not been run end to end** against this `ruby.com`
+  (the same caveat the nokogiri section ends on). All six gems now appear
+  in `Gem::Specification` as default gems, which is what the
+  payload-provides-gem short-circuit in `lib/ocran/direction.rb` keys on,
+  but nobody has yet asked ocran to build a Rails `.com`.
+- **the curated `GEM_PATH` is a stand-in for what ocran will do.** The
+  boot above pointed `GEM_PATH` at a tree of pure-Ruby Rails gems with the
+  six natively-provided ones removed. ocran packs the gems it observes
+  being loaded, so it should arrive at the same set, but that is an
+  assumption until it is run.
+- **Windows has not been booted by hand** for this branch; the standing
+  rule in the "Windows verification" section still applies before a
+  release. CI covers windows-x86_64 and windows-arm64 with all four new
+  tests.
+- **nio4r on Windows is the thing to watch.** libev's poll backend and its
+  pipe-based wakeup both go through cosmopolitan's `poll-nt.c`. It passes
+  in CI; if it ever does not, `NIO4R_PURE=true` is the escape hatch and
+  puma will still work.

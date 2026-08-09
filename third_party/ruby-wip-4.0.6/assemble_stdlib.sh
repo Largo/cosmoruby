@@ -57,6 +57,11 @@ cp -r "$RUBY_SRC"/ext/objspace/lib/objspace*     cosmo-ruby/lib/ruby/4.0.0/
 # Note: pathname is a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
 cp    "$RUBY_SRC"/ext/socket/lib/socket.rb       cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/sqlite3/lib/sqlite3*       cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/bigdecimal/lib/bigdecimal*  cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/nio4r/lib/nio*             cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/puma/lib/puma*             cosmo-ruby/lib/ruby/4.0.0/
+mkdir -p cosmo-ruby/lib/ruby/4.0.0/rack/handler
+cp    "$RUBY_SRC"/ext/puma/lib/rack/handler/puma.rb cosmo-ruby/lib/ruby/4.0.0/rack/handler/
 cp -r "$RUBY_SRC"/ext/nokogiri/lib/nokogiri*     cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/nokogiri/lib/xsd           cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/ripper/lib/ripper*         cosmo-ruby/lib/ruby/4.0.0/
@@ -90,20 +95,23 @@ if [[ "$DLEXT" != "so" ]]; then
   find cosmo-ruby/lib/ruby/4.0.0 -name "*.rb" -type f -exec sed -i "s/require ['\"]\\([^'\"]*\\)\\.so['\"]/require '\\1.$DLEXT'/g" {} \;
 fi
 
-# racc's *runtime* (racc/parser.rb + racc/info.rb) into the plain load path.
-# nokogiri's CSS selector parser is a generated racc parser and does
-# `require "racc/parser.rb"` at load time. racc ships as a bundled gem whose
-# gemspec is not installed (it declares a C extension, ext/racc/cparse, that
-# this build does not compile), so RubyGems never activates it. Only the two
-# pure-Ruby runtime files are needed; racc/parser.rb already falls back to its
-# pure-Ruby engine when racc/cparse is absent.
-mkdir -p cosmo-ruby/lib/ruby/4.0.0/racc
-cp "$RUBY_SRC"/.bundle/gems/racc-*/lib/racc/parser.rb cosmo-ruby/lib/ruby/4.0.0/racc/
-cp "$RUBY_SRC"/.bundle/gems/racc-*/lib/racc/info.rb   cosmo-ruby/lib/ruby/4.0.0/racc/
+# racc, in full, on the plain load path. Up to the rails-exts branch only
+# racc/parser.rb and racc/info.rb were copied here, as a stopgap for
+# nokogiri's generated CSS parser. racc is now vendored properly under
+# ext/racc (whole lib/, a default gemspec, and the cparse C runtime linked
+# into ruby.com), so `require "racc"` and a Bundler dependency on racc work.
+cp -r "$RUBY_SRC"/ext/racc/lib/racc*              cosmo-ruby/lib/ruby/4.0.0/
 
 # Copy bundled gems (rake, minitest, etc.)
 mkdir -p cosmo-ruby/lib/ruby/gems/4.0.0
 cp -r "$RUBY_SRC"/.bundle/* cosmo-ruby/lib/ruby/gems/4.0.0/
+
+# bigdecimal and racc are bundled gems that this build now ships as *default*
+# gems out of ext/ (sources, gemspec and a linked C extension). Their
+# .bundle/gems copies would be a second, gemspec-less copy of the same Ruby
+# files in the zip, so drop them.
+rm -rf cosmo-ruby/lib/ruby/gems/4.0.0/gems/bigdecimal-* \
+       cosmo-ruby/lib/ruby/gems/4.0.0/gems/racc-*
 
 # Copy plugin extension archives when building in plugin mode (EXTSTATIC=0)
 # Plugins must go in the archdir (lib/ruby/4.0.0/x86_64-cosmo/) which is in $LOAD_PATH,
@@ -126,6 +134,7 @@ if [[ "$EXTSTATIC" == "0" ]]; then
       echo "Warning: plugin archive missing: $src"
     fi
   done <<'EOF'
+bigdecimal bigdecimal
 continuation continuation
 coverage coverage
 date_core date
@@ -146,7 +155,10 @@ ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
+nio4r_ext nio4r
 nokogiri/nokogiri nokogiri
+puma/puma_http11 puma
+racc/cparse racc
 sqlite3/sqlite3_native sqlite3
 stringio stringio
 strscan strscan
@@ -234,6 +246,7 @@ elif [[ "$EXTSTATIC" == "1" && "$SLIM_STATIC" == "1" ]]; then
     mkdir -p "$(dirname "$dst")"
     : > "$dst"
   done <<'EOF'
+bigdecimal bigdecimal
 continuation continuation
 coverage coverage
 date_core date
@@ -255,7 +268,10 @@ ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
+nio4r_ext nio4r
 nokogiri/nokogiri nokogiri
+puma/puma_http11 puma
+racc/cparse racc
 sqlite3/sqlite3_native sqlite3
 stringio stringio
 strscan strscan

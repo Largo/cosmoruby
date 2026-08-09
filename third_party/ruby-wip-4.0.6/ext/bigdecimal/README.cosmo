@@ -1,0 +1,25 @@
+ORIGIN
+
+  https://rubygems.org/downloads/bigdecimal-4.0.1.gem
+  sha256 8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7
+
+  Byte-identical to the copy Ruby 4.0.6 already ships under
+  third_party/ruby/.bundle/gems/bigdecimal-4.0.1 (verified with diff -r).
+  bigdecimal stopped being a *default* gem in Ruby 3.4, so without this
+  extension `require "bigdecimal"` fails with the
+  "bigdecimal is not part of the default gems since Ruby 3.4" message.
+
+LOCAL CHANGES
+
+  - ext/bigdecimal/*.{c,h}      -> here (unmodified)
+  - ext/bigdecimal/missing/dtoa.c -> missing/ (unmodified; it is #included by
+                                   missing.c, it is not its own TU)
+  - lib/**                      -> lib/ (unmodified)
+  - LICENSE                     -> LICENSE
+  - extconf.rb is kept for reference only; it never runs (no mkmf, no dlopen).
+    Its have_func()/have_header()/have_builtin_func() results are hand
+    transcribed into BUILD.mk.
+  - bigdecimal.gemspec is hand-written (upstream's declares `extensions`).
+  - sample/ and the test suite are not vendored.
+
+  No .c or .h file has been modified.

@@ -17,6 +17,7 @@ RUBY_PLUGIN_FEATURES := \
 	coverage \
 	date \
 	digest \
+	bigdecimal \
 	digest/md5 \
 	digest/sha1 \
 	digest/sha2 \
@@ -34,7 +35,10 @@ RUBY_PLUGIN_FEATURES := \
 	rbconfig/sizeof \
 	ripper \
 	socket \
+	nio4r_ext \
 	nokogiri/nokogiri \
+	puma/puma_http11 \
+	racc/cparse \
 	sqlite3/sqlite3_native \
 	stringio \
 	strscan \
@@ -50,6 +54,8 @@ ruby.plugins: $(RUBY_PLUGIN_ARCHIVES) ruby.encodings ruby.transcoders ruby.encdb
 	@mkdir -p $(RUBY_PLUGIN_DIR)/rbconfig
 	@mkdir -p $(RUBY_PLUGIN_DIR)/sqlite3
 	@mkdir -p $(RUBY_PLUGIN_DIR)/nokogiri
+	@mkdir -p $(RUBY_PLUGIN_DIR)/puma
+	@mkdir -p $(RUBY_PLUGIN_DIR)/racc
 ifeq ($(RUBY_EXTSTATIC),0)
 	@test -f o/$(MODE)/third_party/ruby/ext/continuation/continuation.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/continuation/continuation.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/continuation.$(RUBY_PLUGIN_DLEXT) || true
 	@test -f o/$(MODE)/third_party/ruby/ext/coverage/coverage.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/coverage/coverage.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/coverage.$(RUBY_PLUGIN_DLEXT) || true
@@ -74,6 +80,10 @@ ifeq ($(RUBY_EXTSTATIC),0)
 	@test -f o/$(MODE)/third_party/ruby/ext/socket/socket.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/socket/socket.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/socket.$(RUBY_PLUGIN_DLEXT) || true
 	@test -f o/$(MODE)/third_party/ruby/ext/sqlite3/sqlite3.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/sqlite3/sqlite3.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/sqlite3/sqlite3_native.$(RUBY_PLUGIN_DLEXT) || true
 	@test -f o/$(MODE)/third_party/ruby/ext/nokogiri/nokogiri.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/nokogiri/nokogiri.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/nokogiri/nokogiri.$(RUBY_PLUGIN_DLEXT) || true
+	@test -f o/$(MODE)/third_party/ruby/ext/bigdecimal/bigdecimal.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/bigdecimal/bigdecimal.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/bigdecimal.$(RUBY_PLUGIN_DLEXT) || true
+	@test -f o/$(MODE)/third_party/ruby/ext/nio4r/nio4r.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/nio4r/nio4r.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/nio4r_ext.$(RUBY_PLUGIN_DLEXT) || true
+	@test -f o/$(MODE)/third_party/ruby/ext/puma/puma.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/puma/puma.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/puma/puma_http11.$(RUBY_PLUGIN_DLEXT) || true
+	@test -f o/$(MODE)/third_party/ruby/ext/racc/racc.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/racc/racc.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/racc/cparse.$(RUBY_PLUGIN_DLEXT) || true
 	@test -f o/$(MODE)/third_party/ruby/ext/stringio/stringio.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/stringio/stringio.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/stringio.$(RUBY_PLUGIN_DLEXT) || true
 	@test -f o/$(MODE)/third_party/ruby/ext/strscan/strscan.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/strscan/strscan.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/strscan.$(RUBY_PLUGIN_DLEXT) || true
 	@test -f o/$(MODE)/third_party/ruby/ext/zlib/zlib.$(RUBY_PLUGIN_DLEXT) && cp -a o/$(MODE)/third_party/ruby/ext/zlib/zlib.$(RUBY_PLUGIN_DLEXT) $(RUBY_PLUGIN_DIR)/zlib.$(RUBY_PLUGIN_DLEXT) || true
@@ -102,6 +112,10 @@ else ifeq ($(RUBY_SLIM_STATIC),1)
 	@: > $(RUBY_PLUGIN_DIR)/socket.$(RUBY_PLUGIN_DLEXT)
 	@: > $(RUBY_PLUGIN_DIR)/sqlite3/sqlite3_native.$(RUBY_PLUGIN_DLEXT)
 	@: > $(RUBY_PLUGIN_DIR)/nokogiri/nokogiri.$(RUBY_PLUGIN_DLEXT)
+	@: > $(RUBY_PLUGIN_DIR)/bigdecimal.$(RUBY_PLUGIN_DLEXT)
+	@: > $(RUBY_PLUGIN_DIR)/nio4r_ext.$(RUBY_PLUGIN_DLEXT)
+	@: > $(RUBY_PLUGIN_DIR)/puma/puma_http11.$(RUBY_PLUGIN_DLEXT)
+	@: > $(RUBY_PLUGIN_DIR)/racc/cparse.$(RUBY_PLUGIN_DLEXT)
 	@: > $(RUBY_PLUGIN_DIR)/stringio.$(RUBY_PLUGIN_DLEXT)
 	@: > $(RUBY_PLUGIN_DIR)/strscan.$(RUBY_PLUGIN_DLEXT)
 	@: > $(RUBY_PLUGIN_DIR)/zlib.$(RUBY_PLUGIN_DLEXT)

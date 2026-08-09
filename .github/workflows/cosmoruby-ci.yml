@@ -16,7 +16,7 @@ name: CosmoRuby CI
 
 on:
   push:
-    branches: [main, ci, rails-exts]
+    branches: [main, ci]
   pull_request:
   workflow_dispatch:
 

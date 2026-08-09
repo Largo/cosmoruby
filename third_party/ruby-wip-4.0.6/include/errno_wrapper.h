@@ -117,10 +117,26 @@
 #define WNOHANG 1
 #define WUNTRACED 2
 
-/* Signal mask constants */
+/* Signal mask constants
+ *
+ * cosmo: guarded. Cosmopolitan's <signal.h> (libc/sysv/consts/sig.h) defines
+ * these as host-correct `extern const int`s, and any translation unit that
+ * reaches <signal.h> before this header -- e.g. ext/nio4r, whose nio4r.h
+ * includes libev's ev.h ahead of ruby.h -- would otherwise fail with
+ * "SIG_BLOCK redefined" under -Werror. Every use of these three in the tree
+ * is a function argument (sigprocmask/pthread_sigmask), never a case label,
+ * so letting cosmopolitan's runtime values win where they got there first is
+ * both harmless and more correct than the hardcoded Linux numbers below.
+ */
+#ifndef SIG_BLOCK
 #define SIG_BLOCK 0
+#endif
+#ifndef SIG_UNBLOCK
 #define SIG_UNBLOCK 1
+#endif
+#ifndef SIG_SETMASK
 #define SIG_SETMASK 2
+#endif
 
 /* Socket errno constants */
 #define EMSGSIZE 90
@@ -157,6 +173,30 @@
 /* Address families: Use Cosmopolitan's compile-time constants from af.h */
 /* AF_UNIX, AF_INET, AF_INET6 are already defined as compile-time constants in libc/sysv/consts/af.h */
 
+/* cosmo: the POLL* block below hard-codes the *Linux* numbering and then
+ * blocks cosmopolitan's own <poll.h>.  That is wrong off Linux -- cosmopolitan
+ * drives Windows poll() in Winsock's numbering (POLLIN 0x0300, POLLOUT 0x0010,
+ * POLLERR 0x0001, see libc/calls/poll-nt.c), so a caller passing the Linux
+ * POLLIN (1) is really asking for Winsock's POLLERR, which poll-nt.c masks
+ * away: poll() then never reports a socket ready and simply times out.
+ *
+ * It was left alone up to the xml-libs branch because *Ruby* never calls
+ * poll() in this build (thread.c only defines USE_POLL for __linux__ /
+ * FreeBSD, and cosmocc defines neither), which made the whole block dead
+ * code.  ext/nio4r changed that: libev's poll(2) backend is a real caller,
+ * and with the Linux numbering it worked on Linux and macOS and reported
+ * nothing at all on Windows.
+ *
+ * Rather than change the numbering for the entire tree, a translation unit
+ * that genuinely calls poll() defines COSMO_RUBY_HOST_POLL and gets
+ * cosmopolitan's host-correct `extern const int16_t` POLL* values and its
+ * real struct pollfd instead.  ext/nio4r/BUILD.mk is the only user today.
+ * The general fix -- deleting this block outright -- is safe as far as
+ * anyone can tell (nothing else compiles a POLL* reference) but has a much
+ * larger blast radius, so it is left for a branch of its own.
+ */
+#ifndef COSMO_RUBY_HOST_POLL
+
 /* Poll constants (Linux values) */
 #define POLLIN 0x0001
 #define POLLPRI 0x0002
@@ -175,16 +215,20 @@ struct pollfd {
 /* Poll function declaration */
 int poll(struct pollfd *, unsigned long, int);
 
+#endif /* !COSMO_RUBY_HOST_POLL */
+
 /* Now block Cosmopolitan's errno.h, fcntl, signal, wait, open, poll, and socket constant headers */
 #define COSMOPOLITAN_LIBC_ERRNO_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_F_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_O_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_SIG_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_W_H_
+#ifndef COSMO_RUBY_HOST_POLL
 #define LIBC_ISYSTEM_POLL_H_
 #define COSMOPOLITAN_LIBC_ISYSTEM_SYS_POLL_H_
 #define COSMOPOLITAN_LIBC_SOCK_STRUCT_POLLFD_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_POLL_H_
+#endif
 /* Note: NOT blocking SOL_H_/SCM_H_/AF_H_ -- those constants are runtime
  * polymorphic in Cosmopolitan and must keep their host values. */
 

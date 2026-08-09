@@ -95,6 +95,18 @@ if "$RUBY" "$TESTS/test_sqlite3.rb"; then ok "test_sqlite3.rb"; else bad "test_s
 head_ "nokogiri acceptance (cosmo_tests/test_nokogiri.rb)"
 if "$RUBY" "$TESTS/test_nokogiri.rb"; then ok "test_nokogiri.rb"; else bad "test_nokogiri.rb"; fi
 
+head_ "bigdecimal acceptance (cosmo_tests/test_bigdecimal.rb)"
+if "$RUBY" "$TESTS/test_bigdecimal.rb"; then ok "test_bigdecimal.rb"; else bad "test_bigdecimal.rb"; fi
+
+head_ "racc acceptance (cosmo_tests/test_racc.rb)"
+if "$RUBY" "$TESTS/test_racc.rb"; then ok "test_racc.rb"; else bad "test_racc.rb"; fi
+
+head_ "nio4r acceptance (cosmo_tests/test_nio4r.rb)"
+if "$RUBY" "$TESTS/test_nio4r.rb"; then ok "test_nio4r.rb"; else bad "test_nio4r.rb"; fi
+
+head_ "puma acceptance (cosmo_tests/test_puma.rb)"
+if "$RUBY" "$TESTS/test_puma.rb"; then ok "test_puma.rb"; else bad "test_puma.rb"; fi
+
 head_ "irb.com boots (pipe mode)"
 out=$(echo 'puts 40 + 2' | "$IRB" 2>&1)
 case "$out" in

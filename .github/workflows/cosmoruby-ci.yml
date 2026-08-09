@@ -16,7 +16,7 @@ name: CosmoRuby CI
 
 on:
   push:
-    branches: [main, ci, fat-ape, zip-main]
+    branches: [main, ci, fat-ape, zip-main, zip-main-fixes]
   pull_request:
   workflow_dispatch:
 

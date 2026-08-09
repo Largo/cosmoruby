@@ -61,6 +61,28 @@ head_ "exit-status propagation (ci_exit7.rb must exit 7)"
 rc=$?
 if [ "$rc" -eq 7 ]; then ok "exit status 7"; else bad "exit status: got $rc, want 7"; fi
 
+# The status the shell sees must be exactly the status the script asked for,
+# on every platform.  Windows was the odd one out: cosmopolitan encodes a
+# POSIX wait status (status << 8) into the Windows exit code, so `exit 3`
+# surfaced as 768 in cmd and PowerShell.  Kept identical here and in the
+# PowerShell script so the two cannot drift.
+head_ "exact exit statuses (0, 1, 3, 7, 255, >255, uncaught exception)"
+exit_ok=1
+for want in 0 1 3 7 255; do
+  "$RUBY" -e "exit $want"; got=$?
+  [ "$got" -eq "$want" ] || { exit_ok=0; bad "exit $want: got $got"; }
+done
+# Ruby and POSIX narrow the status to eight bits: 300 & 0xff == 44.
+"$RUBY" -e 'exit 300'; got=$?
+[ "$got" -eq 44 ] || { exit_ok=0; bad "exit 300: got $got, want 44"; }
+# exit! skips the teardown but must still report honestly.
+"$RUBY" -e 'exit! 3'; got=$?
+[ "$got" -eq 3 ] || { exit_ok=0; bad "exit! 3: got $got, want 3"; }
+# An uncaught exception is 1.
+"$RUBY" -e 'raise "boom"' 2>/dev/null; got=$?
+[ "$got" -eq 1 ] || { exit_ok=0; bad "uncaught exception: got $got, want 1"; }
+[ "$exit_ok" -eq 1 ] && ok "exit statuses are exact (incl. exit!, >255, exceptions)"
+
 head_ "socket diagnostic (cosmo_tests/ci_diag_sockets.rb, informational, never fails)"
 "$RUBY" "$TESTS/ci_diag_sockets.rb" || true
 
@@ -146,6 +168,39 @@ else
     *)                               bad "zip main multi-file app (require_relative)" ;;
   esac
   if [ "$rc" -eq 7 ]; then ok "zip main exit status 7"; else bad "zip main exit status: got $rc, want 7"; fi
+
+  # A packed binary is an application, so Ruby claims NONE of the command
+  # line: option-shaped arguments reach the app instead of Ruby's option
+  # parser, which is what makes `myapp.com --version` behave like a native
+  # binary's.  This is the single most common shape of a CLI invocation.
+  out=$("$ZM" --verbose -e --version -- x 2>&1); rc=$?
+  case "$out" in
+    *'"argv":["--verbose","-e","--version","--","x"]'*)
+      ok "zip main takes the whole command line (leading flags reach the app)" ;;
+    *) bad "zip main leading flags :: $(printf '%s' "$out" | head -5)" ;;
+  esac
+  case "$out" in
+    *invalid\ option*) bad "zip main: Ruby parsed an application argument" ;;
+    *)                 ok "zip main: no interpreter option parsing" ;;
+  esac
+
+  # Exit status is the app's, exactly, on every platform.  On Windows this
+  # used to be status<<8 (cosmopolitan encodes a POSIX wait status into the
+  # Windows exit code); ruby.c now bypasses that.
+  exit_ok=1
+  for want in 0 1 3 7 255; do
+    "$ZM" "--exit=$want" >/dev/null 2>&1; got=$?
+    [ "$got" -eq "$want" ] || { exit_ok=0; bad "zip main --exit=$want: got $got"; }
+  done
+  [ "$exit_ok" -eq 1 ] && ok "zip main exit statuses 0/1/3/7/255 are exact"
+
+  # Interpreter options stay reachable through RUBYOPT, which is how a packed
+  # binary gets -I / -r / -w / --yjit without stealing them from the app.
+  out=$(RUBYOPT=-w "$ZM" 2>&1)
+  case "$out" in
+    *'"verbose":true'*) ok "RUBYOPT still reaches the interpreter" ;;
+    *)                  bad "RUBYOPT :: $(printf '%s' "$out" | head -5)" ;;
+  esac
 
   # The escape hatch turns a packed binary back into a plain interpreter.
   out=$(COSMORUBY_NO_ZIP_MAIN=1 "$ZM" -e 'puts "hatch-ok"' 2>&1)

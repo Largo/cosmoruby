@@ -267,6 +267,12 @@ cat > "$ZIPTMP/main.rb" <<'ZIPMAIN_EOF'
 # the part that is easy to get wrong.
 require_relative "zmlib/support"
 require "json"
+# --exit=N lets the test jobs drive the process exit status from the command
+# line.  It is deliberately option-shaped: a packed binary must hand its whole
+# command line to the app, so a leading "--exit=3" has to arrive in ARGV
+# instead of being parsed (and rejected) by Ruby.
+status = 7
+ARGV.each { |arg| status = Regexp.last_match(1).to_i if arg =~ /\A--exit=(\d+)\z/ }
 puts JSON.generate({
   "marker"   => "zipmain",
   "platform" => RUBY_PLATFORM,
@@ -275,8 +281,10 @@ puts JSON.generate({
   "dir"      => __dir__,
   "argv"     => ARGV,
   "lib"      => ZipMainSupport.ok,
+  # Interpreter options reach a packed binary through RUBYOPT; -w flips this.
+  "verbose"  => $VERBOSE,
 })
-exit 7
+exit status
 ZIPMAIN_EOF
 cat > "$ZIPTMP/zmlib/support.rb" <<'ZIPLIB_EOF'
 module ZipMainSupport
@@ -298,6 +306,15 @@ case "$zmout" in
   *) die "zipmain.com did not auto-run /zip/main.rb: $zmout" ;;
 esac
 [ "$zmrc" = 7 ] || die "zipmain.com exit status: got $zmrc, want 7"
+
+# A packed binary claims none of its command line, so an option-shaped first
+# argument must reach the app rather than Ruby's option parser.
+zmout="$("$DIST_DIR/zipmain.com" --exit=3 2>&1)"; zmrc=$?
+case "$zmout" in
+  *'"argv":["--exit=3"]'*) echo "  $zmout" ;;
+  *) die "zipmain.com swallowed a leading option-shaped argument: $zmout" ;;
+esac
+[ "$zmrc" = 3 ] || die "zipmain.com --exit=3 status: got $zmrc, want 3"
 
 log "build complete"
 ls -l "$DIST_DIR"/*.com

@@ -11,9 +11,13 @@ this job exists to catch.
 PowerShell specifics, learned the hard way:
   * native stderr interleaved into a PowerShell pipeline gets mangled, so
     every run goes through `cmd /c ... > file 2>&1` and the file is read back;
-  * PowerShell reports a cosmo APE's exit status shifted left by 8
-    (exit 7 -> 1792), so status checks accept both;
   * quoting `-e` through pwsh -> cmd is a minefield: always use script files.
+
+Exit statuses used to arrive here shifted left by 8 (exit 7 -> 1792), because
+cosmopolitan Libc encodes a POSIX wait status into the Windows process exit
+code.  ruby.c now bypasses that on Windows, so the checks below demand the
+exact status and would catch a regression back to the old encoding.  See
+PORTING-NOTES.md.
 
 Usage: .github\scripts\test-cosmoruby.ps1 [-BinDir dist]
 #>
@@ -47,8 +51,10 @@ function Invoke-Ape([string]$commandLine) {
     return [pscustomobject]@{ Code = $code; Text = $text }
 }
 
-# exit N from an APE shows up as N or (N << 8) depending on the shell layer
-function Status-Is([int]$code, [int]$want) { return ($code -eq $want) -or ($code -eq ($want * 256)) }
+# An APE's exit status must be the plain status, like any other Windows
+# program.  ($want * 256) is the cosmopolitan wait-status encoding this used
+# to report and must never come back.
+function Status-Is([int]$code, [int]$want) { return ($code -eq $want) }
 
 Section "environment"
 Write-Host "repo   : $repo"
@@ -81,8 +87,33 @@ else { Bad "ci_smoke.rb (status $($r.Code))" }
 Section "exit-status propagation (ci_exit7.rb must exit 7)"
 $r = Invoke-Ape "`"$ruby`" `"$tests\ci_exit7.rb`""
 $allText += $r.Text
-if (Status-Is $r.Code 7) { Ok "exit status: raw=$($r.Code) (7 or 7<<8=1792)" }
-else { Bad "exit status: raw=$($r.Code), want 7 or 1792" }
+if (Status-Is $r.Code 7) { Ok "exit status: $($r.Code)" }
+else { Bad "exit status: got $($r.Code), want exactly 7 (1792 means the <<8 encoding is back)" }
+
+Section "exact exit statuses (0, 1, 3, 7, 255, >255, exit!, uncaught exception)"
+$exitOk = $true
+foreach ($want in @(0, 1, 3, 7, 255)) {
+    $f = Join-Path $work "exit$want.rb"
+    Set-Content -Path $f -Value "exit $want" -Encoding ascii
+    $r = Invoke-Ape "`"$ruby`" `"$f`""
+    if (-not (Status-Is $r.Code $want)) { $exitOk = $false; Bad "exit $want -> $($r.Code)" }
+}
+# Ruby and POSIX narrow the status to eight bits: 300 & 0xff == 44.
+$f = Join-Path $work "exit300.rb"
+Set-Content -Path $f -Value "exit 300" -Encoding ascii
+$r = Invoke-Ape "`"$ruby`" `"$f`""
+if (-not (Status-Is $r.Code 44)) { $exitOk = $false; Bad "exit 300 -> $($r.Code), want 44" }
+# exit! skips the teardown but must still report honestly.
+$f = Join-Path $work "exitbang.rb"
+Set-Content -Path $f -Value "exit! 3" -Encoding ascii
+$r = Invoke-Ape "`"$ruby`" `"$f`""
+if (-not (Status-Is $r.Code 3)) { $exitOk = $false; Bad "exit! 3 -> $($r.Code)" }
+# An uncaught exception is 1.
+$f = Join-Path $work "boom.rb"
+Set-Content -Path $f -Value 'raise "boom"' -Encoding ascii
+$r = Invoke-Ape "`"$ruby`" `"$f`""
+if (-not (Status-Is $r.Code 1)) { $exitOk = $false; Bad "uncaught exception -> $($r.Code), want 1" }
+if ($exitOk) { Ok "exit statuses are exact (incl. exit!, >255, exceptions)" }
 
 Section "socket diagnostic (cosmo_tests\ci_diag_sockets.rb, informational, never fails)"
 $r = Invoke-Ape "`"$ruby`" `"$tests\ci_diag_sockets.rb`""
@@ -127,7 +158,34 @@ if (-not (Test-Path $zm)) {
     if ($r.Text -match '"argv":\["zm-a","zm-b"\]') { Ok "zip main ARGV passthrough" } else { Bad "zip main ARGV passthrough" }
     if (($r.Text -match '"zero":"/zip/main\.rb"') -and ($r.Text -match '"dir":"/zip"')) { Ok 'zip main $0 and __dir__' } else { Bad 'zip main $0 and __dir__' }
     if ($r.Text -match '"lib":"require_relative-ok"') { Ok "zip main multi-file app (require_relative)" } else { Bad "zip main multi-file app (require_relative)" }
-    if (Status-Is $r.Code 7) { Ok "zip main exit status: raw=$($r.Code)" } else { Bad "zip main exit status: raw=$($r.Code), want 7 or 1792" }
+    if (Status-Is $r.Code 7) { Ok "zip main exit status: $($r.Code)" } else { Bad "zip main exit status: got $($r.Code), want exactly 7" }
+
+    # A packed binary is an application, so Ruby claims NONE of the command
+    # line: option-shaped arguments reach the app instead of Ruby's option
+    # parser.  `myapp.com --version` has to behave like a native binary's.
+    $r = Invoke-Ape "`"$zm`" --verbose -e --version -- x"
+    $allText += $r.Text
+    if ($r.Text -match '"argv":\["--verbose","-e","--version","--","x"\]') {
+        Ok "zip main takes the whole command line (leading flags reach the app)"
+    } else { Bad "zip main leading flags" }
+    if ($r.Text -match "invalid option") { Bad "zip main: Ruby parsed an application argument" }
+    else { Ok "zip main: no interpreter option parsing" }
+
+    # Exit status is the app's, exactly.
+    $zmExitOk = $true
+    foreach ($want in @(0, 1, 3, 7, 255)) {
+        $r = Invoke-Ape "`"$zm`" --exit=$want"
+        if (-not (Status-Is $r.Code $want)) { $zmExitOk = $false; Bad "zip main --exit=$want -> $($r.Code)" }
+    }
+    if ($zmExitOk) { Ok "zip main exit statuses 0/1/3/7/255 are exact" }
+
+    # Interpreter options stay reachable through RUBYOPT, which is how a
+    # packed binary gets -I / -r / -w / --yjit without stealing them from the
+    # app's own command line.
+    $r = Invoke-Ape "set RUBYOPT=-w && `"$zm`""
+    $allText += $r.Text
+    if ($r.Text -match '"verbose":true') { Ok "RUBYOPT still reaches the interpreter" }
+    else { Bad "RUBYOPT does not reach the interpreter" }
 
     # The escape hatch turns a packed binary back into a plain interpreter.
     $hatchScript = Join-Path $work "hatch.rb"

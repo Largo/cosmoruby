@@ -100,6 +100,12 @@ $allText += $r.Text
 if ((Status-Is $r.Code 0) -and ($r.Text -match "failures=0")) { Ok "test_sqlite3.rb" }
 else { Bad "test_sqlite3.rb (status $($r.Code))" }
 
+Section "nokogiri acceptance (cosmo_tests/test_nokogiri.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_nokogiri.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "fail=0")) { Ok "test_nokogiri.rb" }
+else { Bad "test_nokogiri.rb (status $($r.Code))" }
+
 Section "irb.com boots (pipe mode)"
 $r = Invoke-Ape "echo puts 40 + 2 | `"$irb`""
 $allText += $r.Text

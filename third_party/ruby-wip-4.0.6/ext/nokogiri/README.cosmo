@@ -1,0 +1,29 @@
+ORIGIN
+
+  https://rubygems.org/downloads/nokogiri-1.19.4.gem
+  sha256 50c951611c92bca05c51411aef45f1cbc50f2821c4802758c5c6d34696533ab5
+
+LOCAL CHANGES
+
+  - ext/nokogiri/*.{c,h}  -> here (unmodified)
+  - gumbo-parser/src/*    -> gumbo/ (unmodified)  nokogiri's bundled HTML5
+                             parser; always linked, never optional
+  - lib/**                -> lib/  (minus lib/nokogiri/jruby, JRuby only)
+  - ports/ (the bundled libxml2/libxslt/zlib/libiconv tarballs) is NOT
+    vendored. The extension links against third_party/libxml2 and
+    third_party/libxslt, which are exactly the versions this gem pins in
+    dependencies.yml (libxml2 2.13.9, libxslt 1.1.43).
+  - extconf.rb is kept for reference only; it never runs (no mkmf, no
+    dlopen). Its have_func() results are hand-transcribed into BUILD.mk.
+  - nokogiri.gemspec is hand-written (upstream generates it with Rake).
+
+  No .c or .h file has been modified.
+
+RUNTIME DEPENDENCY WORTH KNOWING
+
+  lib/nokogiri/css/parser.rb is a generated racc parser and does
+  `require "racc/parser.rb"` at load time. racc ships with Ruby as a
+  bundled gem whose gemspec is not installed in this build, so
+  assemble_stdlib.sh copies racc/parser.rb and racc/info.rb into
+  /zip/lib/ruby/4.0.0/racc/. racc's pure-Ruby engine is used (its
+  cparse C extension is not compiled).

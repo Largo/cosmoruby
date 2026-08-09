@@ -34,6 +34,7 @@ include third_party/ruby/ext/json/BUILD.mk
 include third_party/ruby/ext/ripper/BUILD.mk
 include third_party/ruby/ext/mbedtls/BUILD.mk
 include third_party/ruby/ext/monitor/BUILD.mk
+include third_party/ruby/ext/nokogiri/BUILD.mk
 include third_party/ruby/ext/objspace/BUILD.mk
 include third_party/ruby/ext/psych/BUILD.mk
 include third_party/ruby/ext/rbconfig/sizeof/BUILD.mk
@@ -74,6 +75,7 @@ RUBY_ALL_EXTENSIONS =			\
 	THIRD_PARTY_RUBY_EXT_RIPPER			\
 	THIRD_PARTY_RUBY_EXT_MBEDTLS			\
 	THIRD_PARTY_RUBY_EXT_MONITOR			\
+	THIRD_PARTY_RUBY_EXT_NOKOGIRI			\
 	THIRD_PARTY_RUBY_EXT_OBJSPACE			\
 	THIRD_PARTY_RUBY_EXT_PSYCH			\
 	THIRD_PARTY_RUBY_EXT_RBCONFIG_SIZEOF		\
@@ -1187,6 +1189,8 @@ THIRD_PARTY_RUBY_A_DIRECTDEPS =					\
     THIRD_PARTY_ZLIB					\
     THIRD_PARTY_LIBYAML					\
     THIRD_PARTY_SQLITE3					\
+    THIRD_PARTY_LIBXML2					\
+    THIRD_PARTY_LIBXSLT					\
     THIRD_PARTY_COSMO_PLUGIN
 
 # NOTE: Removed LIBC_NT - it's not a package itself but a directory.

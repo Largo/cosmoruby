@@ -70,6 +70,9 @@ if "$RUBY" "$TESTS/test_sockets.rb"; then ok "test_sockets.rb"; else bad "test_s
 head_ "sqlite3 acceptance (cosmo_tests/test_sqlite3.rb)"
 if "$RUBY" "$TESTS/test_sqlite3.rb"; then ok "test_sqlite3.rb"; else bad "test_sqlite3.rb"; fi
 
+head_ "nokogiri acceptance (cosmo_tests/test_nokogiri.rb)"
+if "$RUBY" "$TESTS/test_nokogiri.rb"; then ok "test_nokogiri.rb"; else bad "test_nokogiri.rb"; fi
+
 head_ "irb.com boots (pipe mode)"
 out=$(echo 'puts 40 + 2' | "$IRB" 2>&1)
 case "$out" in

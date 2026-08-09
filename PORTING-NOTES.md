@@ -2613,9 +2613,12 @@ bug waiting for its first caller. `POLL*` has now had its first caller;
 
 `test_racc.rb` **segfaulted** on linux-arm64 and **hung until the 30
 minute job timeout** on macos-arm64, while passing everywhere else --
-including on windows-arm64, which is the tell that Windows-on-ARM runs
-the x86_64 half of the APE under its own emulation rather than the
-aarch64 half.
+including on windows-arm64. That last one is not a contradiction: the
+windows-arm64 runner reports `RUBY_PLATFORM = x86_64-cosmo`, i.e.
+Windows-on-ARM runs the **x86_64** half of the APE under its own
+emulation and never touches the aarch64 code at all. The aarch64 half is
+therefore exercised only by linux-arm64 and macos-arm64 -- and by
+`qemu-aarch64 build/bootstrap/ape.aarch64` locally.
 Bisecting under `qemu-aarch64 build/bootstrap/ape.aarch64` narrowed it to
 one line of racc's own grammar parser:
 
@@ -2802,6 +2805,18 @@ puma is the opposite shape — 16 KB of C, 133 KB of compressed Ruby (its
 
 For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri cost
 +2,033 KB (+9.6 %). All four of these together are +0.62 %.
+
+The shipped binaries at the head of this branch (which also carry the
+io/console/size.rb fix, +772 bytes of zip):
+
+| binary | bytes |
+|---|---|
+| `o/third_party/ruby/ruby` (zipless, x86_64) | 14,776,941 |
+| `o/aarch64/third_party/ruby/ruby` (zipless, aarch64) | 13,423,445 |
+| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 |
+| `o/third_party/ruby/miniruby.com` | 18,866,916 |
+| `dist/ruby.com` (**fat**, x86_64 + aarch64) | 37,428,476 |
+| `dist/miniruby.com` (fat) | 28,024,372 |
 
 (The reproduced baseline is 4,096 / 7,744 bytes off the numbers recorded
 for `xml-libs` HEAD — link padding plus the `errno_wrapper.h` comment.

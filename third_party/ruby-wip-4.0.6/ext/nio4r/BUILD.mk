@@ -54,6 +54,15 @@
 #
 #   EV_STANDALONE=1 stops libev looking for an autoconf "config.h".
 #
+#   COSMO_RUBY_HOST_POLL is NOT a libev flag: it tells
+#   third_party/ruby/include/errno_wrapper.h to keep its hands off <poll.h>
+#   for these translation units. That header otherwise hard-codes the Linux
+#   POLL* numbering, which on Windows means POLLIN(1) is really Winsock's
+#   POLLERR and cosmopolitan's poll-nt.c masks it away -- poll() then never
+#   reports a socket ready and every select() times out. Linux and macOS did
+#   not care; Windows CI failed six checks in test_nio4r.rb until this flag
+#   was added. See the comment in errno_wrapper.h.
+#
 #   extconf.rb's other probes:
 #
 #     HAVE_UNISTD_H         yes
@@ -104,6 +113,7 @@ o/$(MODE)/third_party/ruby/ext/nio4r/%.o: private			\
 		-fno-strict-aliasing					\
 		-DRUBY_EXPORT						\
 		-DRUBY_COSMOPOLITAN					\
+		-DCOSMO_RUBY_HOST_POLL					\
 		-DEV_STANDALONE=1					\
 		-DEV_USE_POLL=1						\
 		-DEV_USE_SELECT=1					\

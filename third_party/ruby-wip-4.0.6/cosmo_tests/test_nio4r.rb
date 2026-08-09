@@ -293,11 +293,22 @@ check("ByteBuffer read_from / write_to a socket") do
   a, b = pipe_pair
   b.write("payload")
   buf = NIO::ByteBuffer.new(64)
-  buf.read_from(a)
+  # read_from is a single non-blocking read: wait for the bytes to actually
+  # arrive first, and keep reading until all 7 are in. On a loopback socket
+  # under macOS the write is not visible to the reader immediately.
+  deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+  while buf.position < 7 && Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+    IO.select([a], nil, nil, 0.2)
+    begin
+      buf.read_from(a)
+    rescue IO::WaitReadable, NIO::ByteBuffer::UnderflowError
+      nil
+    end
+  end
   buf.flip
   c, d = pipe_pair
   buf.write_to(c)
-  got = d.readpartial(7)
+  got = d.read(7)
   [a, b, c, d].each(&:close)
   got == "payload"
 end

@@ -403,6 +403,9 @@ ruby_mbedtls_ssl_close(VALUE self)
     return Qnil;
 }
 
+/* third_party/ruby/ext/mbedtls/crypto.c */
+void Init_mbedtls_crypto(VALUE mod);
+
 /*
  * Initialize the MbedTLS module
  */
@@ -423,4 +426,7 @@ Init_mbedtls(void)
 
     /* Define MbedTLS::SSLError exception */
     cSSLError = rb_define_class_under(mMbedTLS, "SSLError", rb_eStandardError);
+
+    /* Symmetric ciphers, message digests, HMAC and PBKDF2 */
+    Init_mbedtls_crypto(mMbedTLS);
 }

@@ -6,7 +6,9 @@ PKGS += THIRD_PARTY_RUBY_EXT_MBEDTLS
 THIRD_PARTY_RUBY_EXT_MBEDTLS_A = o/$(MODE)/third_party/ruby/ext/mbedtls/mbedtls.a
 THIRD_PARTY_RUBY_EXT_MBEDTLS_FILES := $(wildcard third_party/ruby/ext/mbedtls/*)
 THIRD_PARTY_RUBY_EXT_MBEDTLS_HDRS = $(filter %.h,$(THIRD_PARTY_RUBY_EXT_MBEDTLS_FILES))
-THIRD_PARTY_RUBY_EXT_MBEDTLS_SRCS = third_party/ruby/ext/mbedtls/mbedtls.c
+THIRD_PARTY_RUBY_EXT_MBEDTLS_SRCS =				\
+		third_party/ruby/ext/mbedtls/mbedtls.c		\
+		third_party/ruby/ext/mbedtls/crypto.c
 THIRD_PARTY_RUBY_EXT_MBEDTLS_OBJS = $(THIRD_PARTY_RUBY_EXT_MBEDTLS_SRCS:%.c=o/$(MODE)/%.o)
 
 $(THIRD_PARTY_RUBY_EXT_MBEDTLS_A):			\

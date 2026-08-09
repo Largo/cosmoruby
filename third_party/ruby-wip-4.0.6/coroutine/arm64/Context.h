@@ -98,6 +98,29 @@ static inline void coroutine_initialize(
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
+#if defined(__COSMOPOLITAN__)
+    /* cosmo: Cosmopolitan Libc keeps the thread information block in x28 on
+     * aarch64 -- cosmocc passes -ffixed-x28 and libc/thread/tls.h reads the
+     * TIB straight out of that register (`register struct CosmoTib *__tls
+     * __asm__("x28")`).  coroutine_transfer saves and restores x28 correctly
+     * for an already-running coroutine, but a *new* one's register frame is
+     * the memset above, so it would start life with x28 == NULL and fault on
+     * its very first thread-local access -- which is errno, GET_EC(), and
+     * essentially everything else.  Symptom: SIGSEGV with si_addr=0x40 on the
+     * first Fiber#resume, i.e. on every Enumerator#next, on the aarch64 half
+     * of a fat APE.  Seed the slot with this thread's x28: a fiber runs on
+     * the thread that created it, so that is the right value.
+     *
+     * 0x88 is x28's slot -- Context.S does
+     * `stp x27, x28, [sp, 0x80 + TEB_OFFSET]`.
+     */
+    {
+        register void *cosmo_x28 __asm__("x28");
+        __asm__ ("" : "=r"(cosmo_x28));
+        context->stack_pointer[(0x88 + TEB_OFFSET) / 8] = cosmo_x28;
+    }
+#endif
+
     void *addr = (void*)(uintptr_t)start;
     context->stack_pointer[(0x98 + TEB_OFFSET) / 8] = ptrauth_sign_instruction_addr(addr, (void*)top);
 #if defined(_WIN32)

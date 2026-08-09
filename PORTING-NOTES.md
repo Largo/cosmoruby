@@ -1928,6 +1928,662 @@ branch.
 Ruby where the interpreter decides what its program is — the `if (!opt->e_script)`
 block that otherwise assigns `opt->script = "-"` (stdin) or `argv[0]`. The check
 goes in front of that block, so nothing else in startup had to change:
+Resulting matrix (`awk '/^#if [01]$/{v=$2} /_ENABLED/{print $2,v}'`):
+
+| ON | OFF |
+|---|---|
+| THREAD, TREE, OUTPUT, PUSH, READER, PATTERN, WRITER, SAX1, VALID, HTML, LEGACY, C14N, CATALOG, XPATH, XPTR, XINCLUDE, ICONV, ISO8859X, UNICODE, REGEXP, AUTOMATA, SCHEMAS, ZLIB | THREAD_ALLOC, FTP, HTTP, XPTR_LOCS, ICU, DEBUG, SCHEMATRON, MODULES, LZMA |
+
+and for libxslt: `WITH_XSLT_DEBUG=0`, `WITH_DEBUGGER=0`, `WITH_PROFILER=0`,
+`WITH_MODULES=0`, `EXSLT_CRYPTO_ENABLED=0`.
+
+Rationale, item by item:
+
+- **MODULES off** — `xmlmodule.c` is `dlopen`. There is no dlopen in an APE
+  and there never will be. Same for libxslt's `--without-plugins`. This is
+  the single most important switch here.
+- **HTTP and FTP off** — a document parser that will silently open a socket
+  because a DTD had a URL in it does not belong in a self-contained binary.
+  (They are already off by default in 2.13; the flags are passed explicitly
+  so an upgrade cannot flip them back silently.) The C test asserts
+  `#ifndef LIBXML_HTTP_ENABLED`, and nokogiri's `VERSION_INFO` reports
+  `"http_enabled" => false`.
+- **ICU off** — a huge external dependency cosmopolitan does not have; the
+  iconv path covers the same ground.
+- **LZMA off** — no liblzma in cosmopolitan, and nokogiri never asks for it.
+- **python / readline / history off** — bindings and the interactive
+  `xmllint` shell; neither is built.
+- **DEBUG off** — `debugXML.c` is `xmlDebugDumpDocument` and the xmllint
+  shell. nokogiri passes `--with-debug` in its own build, but a grep of
+  every `.c`/`.h` in `ext/nokogiri` finds **zero** `xmlDebug*`/`xmlShell*`
+  references, and libxslt's uses are all behind `#ifdef
+  LIBXML_DEBUG_ENABLED`. Verified by building: nothing needs it.
+- **SCHEMATRON off** — nokogiri exposes `XML::Schema` (XSD) and
+  `XML::RelaxNG` only; there is no `XML::Schematron`. Verified by grep and
+  by the build.
+- **THREAD_ALLOC / TLS off** — `--with-thread-alloc` is per-thread malloc
+  hooks (off upstream too), and `--with-tls` would put
+  `XML_THREAD_LOCAL` (C11 `_Thread_local`) on libxml2's globals.
+  Cosmopolitan's TLS works, but the port already has to route every object
+  through `build/bootstrap/tlscc`, and libxml2's non-TLS path (pthread key
+  based) is the long-standing default. Not worth the risk for no gain.
+- **XPTR_LOCS off** — XPointer ranges/points, off upstream since 2.10 and
+  unused by XInclude's common paths.
+- **SAX1 + LEGACY on** — nokogiri's build passes `--with-legacy` by
+  default (`config_with_xml2_legacy?`), and `SAX.c` only exists when both
+  are on.
+- **C14N on** — `xml_document.c` calls `xmlC14NExecute`
+  (`Document#canonicalize`).
+- **XINCLUDE on** — `xml_node.c` calls `xmlXIncludeProcessTreeFlags`.
+- **CATALOG on** — upstream default and libxslt uses it; it only touches
+  `XML_CATALOG_FILES` / `/etc/xml/catalog`, which simply do not exist
+  inside an APE, so it is inert but harmless.
+- **SCHEMAS/REGEXP/AUTOMATA/PATTERN/READER/PUSH/WRITER on** — nokogiri has
+  `xml_schema.c`, `xml_relax_ng.c`, `xml_reader.c` and the SAX push
+  parser; PATTERN is what `xmlreader` needs for `PreservePattern`.
+
+**zlib**: linked against cosmopolitan's own `third_party/zlib` +
+`third_party/zlib/gz` via `-Ithird_party/zlib` and the two packages in
+`_A_DIRECTDEPS`. No second copy of zlib is vendored.
+
+### iconv — the sticking point that wasn't
+
+The task flagged iconv as a likely problem. It is not one.
+**Cosmopolitan has iconv**: `third_party/musl/iconv.c` (musl's
+implementation), declared in `libc/stdio/iconv.h` and reachable as
+`<iconv.h>` through `libc/isystem/iconv.h`, with the standard
+`iconv_open`/`iconv`/`iconv_close` and glibc-compatible `char **`
+signatures. It lives in the `THIRD_PARTY_MUSL` package, which is
+therefore a `_A_DIRECTDEPS` entry.
+
+So `--with-iconv` was enabled, and it demonstrably works: the C test
+decodes a `windows-1251` document (a charset libxml2 has **no** built-in
+handler for, so it can only come from iconv) to the right UTF-8 bytes, on
+both x86_64 and aarch64. musl's charmap table covers the ISO-8859-x
+family, the windows-125x family, KOI8, GB18030, Big5, Shift-JIS, EUC-JP,
+EUC-KR and the UTF/UCS variants, and its name lookup normalises case and
+dashes, so `windows-1251`, `WINDOWS1251` and `cp1251` all resolve.
+
+`--with-iso8859x` is *also* on, so the Latin-1..-16 family is handled by
+libxml2's built-in tables without going through iconv at all — that is
+the fast path and it is what the "ISO-8859-1 input is decoded to UTF-8"
+assertion exercises.
+
+What you do **not** get: anything outside musl's table (e.g. the more
+obscure IBM code pages, or `//TRANSLIT`). libxml2 degrades the way it
+does on any system with a thin iconv — `xmlReadMemory` returns NULL with
+an "unsupported encoding" error rather than crashing.
+
+### Cosmopolitan-specific patches: six one-liners, all in generated files
+
+**No `.c` or `.h` file of libxml2, libxslt or libexslt was modified.**
+This is worth stating plainly because it was the main risk going in.
+The entire cosmo delta is in the two generated `config.h` files, and every
+edit is marked with a `cosmo:` comment so it can be re-applied mechanically
+on an upgrade:
+
+| File | Edit | Why |
+|---|---|---|
+| `third_party/libxml2/config.h` | `HAVE_DLFCN_H` → undef | No dlopen in an APE. Unused once MODULES is off, but leaving it defined invites a future `#ifdef` to do the wrong thing. |
+| `third_party/libxml2/config.h` | `HAVE_FTIME` → undef | Cosmopolitan has no `ftime()`. |
+| `third_party/libxml2/config.h` | `HAVE_SYS_TIMEB_H` → undef | Cosmopolitan has no `<sys/timeb.h>`. `gettimeofday` is used instead. |
+| `third_party/libxslt/config.h` | same three | same three reasons |
+
+Everything else configure detected on Debian is also true under
+cosmopolitan and was left alone: `HAVE_MMAP`/`HAVE_MUNMAP`,
+`HAVE_GETENTROPY` + `HAVE_SYS_RANDOM_H` (cosmo has
+`libc/calls/getentropy.c`), `HAVE_GLOB_H`, `HAVE_PTHREAD_H`,
+`HAVE_ATTRIBUTE_DESTRUCTOR` (cosmopolitan runs `.fini_array`, see
+`libc/runtime/exit.c`), `HAVE_STRXFRM_L` for libxslt's `xsltlocale.c`
+(`libc/str/locale.h:59`). `HAVE_ZLIB_H` is *not* defined by configure even
+with `--with-zlib` — that macro is vestigial in 2.13; the real switch is
+`LIBXML_ZLIB_ENABLED` in `xmlversion.h`.
+
+### Things that were expected to hurt and did not
+
+Worth recording, because the next person will budget time for them:
+
+- **No `-Wno-` suppressions are needed.** Cosmopolitan compiles with
+  `-Wall -Werror`; libxml2 and libxslt are warning-clean under it. (This
+  was verified deliberately: a first pass carried six `-Wno-*` flags,
+  they were then removed and a from-scratch rebuild of both packages
+  produced zero warnings. The committed `BUILD.mk`s carry none.)
+- **No stack `QUOTA` overrides are needed** either, despite `xpath.c`,
+  `xmlschemas.c` and `parser.c` being exactly the kind of enormous
+  functions that usually trip `fixupobj`. Also verified by removing them
+  and rebuilding.
+- **No `stdatomic`, no TLS, no `dlopen`, no `#ifdef` platform block**
+  needed touching. libxml2's threading is plain pthreads, which
+  cosmopolitan implements.
+- **The `.pkg` symbol check passed on the first honest attempt.** The only
+  hiccup was naming a package that does not exist: there is no `LIBC_TIME`
+  in cosmopolitan, and `localtime_r`/`gmtime_r` come from
+  `THIRD_PARTY_TZ` (which is how `third_party/sqlite3/BUILD.mk` gets
+  them). Symptom is a bare ``-d.pkg`` in the `package.ape` command line
+  and `.pkg: open failed with ENOENT`.
+
+Final `_A_DIRECTDEPS` for libxml2: `LIBC_CALLS LIBC_FMT LIBC_INTRIN
+LIBC_MEM LIBC_NEXGEN32E LIBC_RUNTIME LIBC_STDIO LIBC_STR LIBC_SYSV
+LIBC_SYSV_CALLS LIBC_THREAD LIBC_TINYMATH THIRD_PARTY_COMPILER_RT
+THIRD_PARTY_MUSL THIRD_PARTY_TZ THIRD_PARTY_ZLIB THIRD_PARTY_ZLIB_GZ`.
+libxslt is the same minus the two zlib packages and `LIBC_SYSV_CALLS`,
+plus `THIRD_PARTY_LIBXML2`.
+
+Header `.ok` checks (`$(HDRS:%=o/$(MODE)/%.ok)`) are deliberately **not**
+in `_A_CHECKS` for either package: libxml2's public headers only compile
+after `-Ithird_party/libxml2/include`, which the generic `o/%.h.ok`
+pattern rule does not carry, and `include/private/*.h` are documented
+"include libxml.h first" internals. `$(_A).pkg` is the check that matters
+and it is present.
+
+### The C test — `third_party/libxslt/test/xmlxslt_test.c`
+
+```sh
+make -j8 o//third_party/libxslt/test/xmlxslt_test
+o/third_party/libxslt/test/xmlxslt_test          # 41 passed, 0 failed
+```
+
+It lives under libxslt because it links **both** archives (libxslt already
+depends on libxml2, so the reverse would be an include-order inversion).
+It is a plain cosmocc APE built by the normal `APELINK` rule and it is
+part of the `.PHONY: o/$(MODE)/third_party/libxslt` target, so
+`make o//third_party/libxslt` builds it.
+
+41 assertions: in-memory `xmlReadMemory`; tree walk (element/attribute/
+namespace access); XPath with predicates, a registered namespace prefix,
+`sum()` and `normalize-space()`; `xmlDocDumpMemory` and
+`xmlDocDumpMemoryEnc("ISO-8859-1")`; ISO-8859-1 decoding (built-in) and
+windows-1251 decoding (iconv); the push parser fed in 7-byte chunks;
+`xmlTextReader` streaming; `xmlTextWriter` escaping; tag-soup HTML via
+`htmlReadMemory` (implied `</li>`, unquoted attributes, `htmlNodeDump`);
+`xmlXIncludeProcessFlags` against a real file; DTD-validating parse;
+RelaxNG accept **and** reject; XSD accept **and** reject; `xmlC14NDocDumpMemory`;
+`xsltParseStylesheetDoc` + `xsltApplyStylesheet` with a string param,
+`count()` and `xsl:sort`; EXSLT `str:tokenize` and `math:max` after
+`exsltRegisterAll()`; and six compile-time assertions that HTTP, FTP,
+libxml2 modules and libxslt plugins are **off** while iconv and zlib are
+**on**.
+
+Results:
+
+| Arch | libxml2.a | libxslt.a | test |
+|---|---|---|---|
+| x86_64 | 8,215,908 B | 2,203,780 B | **41 passed, 0 failed** |
+| aarch64 | 8,632,108 B | 2,300,388 B | **41 passed, 0 failed** (under `qemu-aarch64`) |
+
+The aarch64 build is `make m=aarch64 o/aarch64/third_party/{libxml2,libxslt}`
+and needed no arch-specific anything.
+
+### Regression check on the rest of the tree
+
+With the two packages present but **not** linked into ruby (the state of
+commit `de77cd892`), `o/third_party/ruby/ruby` rebuilt to **12,720,749
+bytes** and `ruby.com` to **21,224,287** — byte-for-byte the sizes
+BUILDING.md records for `main`. So the libraries cost the interpreter
+nothing until something asks for them.
+
+- `cosmo_tests/smoke_test.sh` — 15/15 pass
+- `cosmo_tests/ci_smoke.rb ci-arg-1 ci-arg-2` — 36/36 pass
+- `cosmo_tests/test_sockets.rb` — 19/19 pass
+- `cosmo_tests/test_sqlite3.rb` — failures=0
+- `irb.com`, `miniruby.com` — boot fine
+
+CI: `xml-libs` added to the push triggers in
+`.github/workflows/cosmoruby-ci.yml` (the same one-word change `fat-ape`
+made). Run **31325091492** — https://github.com/Largo/cosmoruby/actions/runs/31325091492
+— **green on all six platforms** (linux-x86_64, linux-arm64,
+windows-x86_64, windows-arm64, macos-x86_64, macos-arm64) for the
+libraries-only commit.
+
+## nokogiri as a statically linked extension (the stretch goal — it works)
+
+`require "nokogiri"` works in `ruby.com`. Everything below followed the
+existing "Recipe: adding a native-extension gem to CosmoRuby" section
+without needing to extend it, which is a good sign for that recipe.
+
+### What was vendored
+
+`third_party/ruby/ext/nokogiri/` gets, unmodified:
+
+- `ext/nokogiri/*.{c,h}` — 40 C files;
+- `gumbo-parser/src/*` → `gumbo/` — 20 C files, nokogiri's bundled HTML5
+  parser. **Yes, gumbo comes along**: `gumbo.c` calls
+  `gumbo_parse_with_options`, `Nokogiri::HTML5` is not optional, and
+  `libgumbo` is a self-contained C90 library with no external
+  dependencies (checked: no dlopen, no pthreads, no fork). It costs about
+  300 KB and it is the only sane answer — omitting it would mean patching
+  nokogiri, which is exactly what this port is trying to avoid;
+- `lib/**` minus `lib/nokogiri/jruby` (JRuby only);
+- `extconf.rb` for reference only.
+
+`ports/` — the bundled libxml2/libxslt/zlib/libiconv tarballs — is **not**
+vendored, the same discipline sqlite3 followed with its bundled
+amalgamation.
+
+### The extconf.rb transcription
+
+`extconf.rb` never runs. Its three `have_func` probes plus the Ruby one
+become, in `ext/nokogiri/BUILD.mk`:
+
+```
+-DHAVE_XMLCTXTSETOPTIONS        # libxml2 >= 2.13 -> yes
+-DHAVE_XMLSWITCHENCODINGNAME    # libxml2 >= 2.13 -> yes
+-DHAVE_RB_CATEGORY_WARNING=1    # ruby >= 3.0 -> yes; guard is `#if`, not
+                                # `#ifdef`, so it needs a VALUE
+```
+
+and, deliberately, **no** `-DHAVE_XMLCTXTGETOPTIONS`: that is a libxml2
+2.14 API, we are on 2.13.9, and nokogiri's own `libxml2_polyfill.c`
+implements it under `#ifndef HAVE_XMLCTXTGETOPTIONS`. Getting this wrong
+in either direction produces a link error or a silently wrong parse-option
+readback.
+
+`NOKOGIRI_PACKAGED_LIBRARIES` is **not** defined. It is what upstream sets
+when the mini_portile2-built copies are used, and it makes nokogiri
+publish `Nokogiri::LIBXML2_PATCHES` / `LIBXSLT_PATCHES`. We apply no
+patches, so leaving it undefined makes `VERSION_INFO` report
+`"source" => "system"` and the patch lists `nil`, which is the truth.
+
+### Wiring (the same six files as sqlite3, plus a gemspec)
+
+| File | Change |
+|---|---|
+| `ext/nokogiri/BUILD.mk` | new; `PKGS += THIRD_PARTY_RUBY_EXT_NOKOGIRI`, sources = `ext/nokogiri/*.c` + `gumbo/*.c`, the `-I`/`-D` set above |
+| `ruby.deps.mk` | `include third_party/ruby/ext/nokogiri/BUILD.mk`; `THIRD_PARTY_RUBY_EXT_NOKOGIRI` in `RUBY_ALL_EXTENSIONS`; `THIRD_PARTY_LIBXML2` and `THIRD_PARTY_LIBXSLT` added to `THIRD_PARTY_RUBY_A_DIRECTDEPS` |
+| `ext/extinit.c` | `init(Init_nokogiri, "nokogiri/nokogiri");` — the feature path `lib/nokogiri/extension.rb` falls back to |
+| `assemble_stdlib.sh` | copy `ext/nokogiri/lib/nokogiri*` and `lib/xsd`; a `nokogiri/nokogiri nokogiri` line in **both** heredocs; plus the racc runtime (below) |
+| `ruby.plugins.mk` | matching `RUBY_PLUGIN_FEATURES` entry and both mode branches |
+| `BUILD.mk` | `nokogiri` added to the `ruby_missing` extension list |
+| `ext/nokogiri/nokogiri.gemspec` | hand-written; **no `extensions`**, **no `mini_portile2`** — same reasoning as sqlite3's |
+
+`lib/nokogiri/extension.rb` first tries `require_relative "4.0/nokogiri"`
+(the precompiled-gem layout), rescues the `LoadError`, and then does
+`require "nokogiri/nokogiri"` — which `extinit.c` has pre-registered. No
+patch required.
+
+### The one genuinely new problem: racc
+
+`lib/nokogiri/css/parser.rb` is a generated racc parser and does
+`require "racc/parser.rb"` at load time. Ruby ships racc, but as a
+**bundled gem**, and this port does not install its gemspec (racc declares
+a C extension, `ext/racc/cparse`, that nothing here compiles). Result
+before the fix:
+
+```
+$ ruby.com -e 'require "racc/parser"'
+LoadError: cannot load such file -- racc/parser
+$ ruby.com -e 'p Gem::Specification.map(&:name).grep(/racc/)'
+[]
+```
+
+even though `/zip/lib/ruby/gems/4.0.0/gems/racc-1.8.1/lib/racc/parser.rb`
+is right there in the zip — RubyGems just never activates it.
+
+Fix, three lines in `assemble_stdlib.sh`: copy `racc/parser.rb` and
+`racc/info.rb` into `/zip/lib/ruby/4.0.0/racc/`, i.e. onto the plain load
+path where no gem activation is needed. Nothing else from racc is
+required and **no racc C code is compiled** — `racc/parser.rb` already
+falls back to its pure-Ruby engine when `racc/cparse` is absent
+(`rescue LoadError` around the `require 'racc/cparse'`). This is
+deliberately the minimum: a real "racc gem in CosmoRuby" job (default
+gemspec, `cparse` as a linked extension for speed) is still separate work.
+
+### Results
+
+Zero patches to nokogiri's or gumbo's C sources. All 60 objects compile
+clean under `-Wall -Werror`.
+
+```
+$ ruby.com -e 'require "nokogiri"; p Nokogiri::VERSION_INFO'
+{"warnings"=>[],
+ "nokogiri"=>{"version"=>"1.19.4", ...},
+ "ruby"=>{"version"=>"4.0.6", "platform"=>"x86_64-cosmo", ...},
+ "libxml"=>{"source"=>"system", "memory_management"=>"ruby",
+            "iconv_enabled"=>true, "zlib_enabled"=>true,
+            "http_enabled"=>false, "compiled"=>"2.13.9", "loaded"=>"2.13.9"},
+ "libxslt"=>{"source"=>"system", "datetime_enabled"=>true,
+             "compiled"=>"1.1.43", "loaded"=>"1.1.43"}}
+```
+
+`third_party/ruby/cosmo_tests/test_nokogiri.rb` — **36 passed, 0 failed**:
+XML parse with namespaces; XPath with predicates, namespace binding and
+`sum()`; **CSS** selectors (descendant, attribute, `:first-child`,
+`at_css`); node mutation + reserialization; `XML::Builder`;
+`DocumentFragment`; HTML4 tag-soup parsing and serialization;
+**HTML5 via gumbo** (document and fragment, including implied `<tbody>`);
+`SAX::Parser`; `XML::Reader`; XSD and RelaxNG validation (accept *and*
+reject); DTD error reporting; **XSLT** with `quote_params` and `xsl:sort`;
+XInclude; `canonicalize`; ISO-8859-1 and windows-1251 decoding;
+serialization to ISO-8859-1; `EncodingHandler`; strict-mode
+`SyntaxError`; and `Gem::Specification.find_all_by_name("nokogiri")` →
+`[["1.19.4", true]]` (registered as a **default gem**, which is what makes
+ocran's payload-provides-gem detection fire, exactly as it does for
+sqlite3).
+
+The test is wired into `.github/scripts/test-cosmoruby.{sh,ps1}`, so it
+runs on all six CI platforms next to `test_sqlite3.rb`.
+
+No regressions with nokogiri linked in: `smoke_test.sh` 15/15,
+`ci_smoke.rb` 36/36, `test_sockets.rb` 19/19, `test_sqlite3.rb`
+failures=0, `irb.com` and `miniruby.com` boot.
+
+### Size impact
+
+| Binary | before (`main`) | with libxml2+libxslt+nokogiri | delta |
+|---|---|---|---|
+| `ruby` (zipless, x86_64) | 12,720,749 | 14,621,293 | **+1,900,544 (+14.9 %)** |
+| `ruby.com` (with /zip stdlib) | 21,224,287 | 23,257,488 | **+2,033,201 (+9.6 %)** |
+| `irb.com` | 21,224,287 | 23,257,488 | +2,033,201 |
+| `miniruby.com` | 18,738,030 | 18,870,687 | +132,657 (stdlib zip only — the ext is not in miniruby) |
+| `ruby` (zipless, aarch64) | — | 13,279,253 | — |
+| `dist/ruby.com` (**fat**, x86_64+aarch64) | 32,976,823 | 37,114,781 | +4,137,958 (+12.5 %) |
+
+The fat APE was produced with
+`FAT=1 JOBS=8 bash .github/scripts/build-cosmoruby.sh` and **both halves pass
+`test_nokogiri.rb` 36/36** — the x86-64 half natively and the aarch64 half via
+`qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com …`. So nokogiri,
+libxml2, libxslt, gumbo and the iconv path all work on ARM as well.
+
+For comparison, sqlite3 cost +928,502. Roughly 1.4 MB of the +1.9 MB is
+libxml2+libxslt themselves and ~0.5 MB is the nokogiri ext plus gumbo;
+`--gc-sections` drops whatever the ext does not reference.
+
+### What is left / known limitations
+
+- **No `Nokogiri::HTML5` streaming or `Nokogiri::XML::Node#write_to` with
+  an IO that is not a plain file** has been exercised beyond what the 36
+  checks cover. The obvious next test is a large real-world document.
+- **`xmlDebug*`, Schematron, XPointer ranges, HTTP/FTP loaders and libxslt
+  plugins are absent by construction** — `Nokogiri::XML::Document#debug_dump`
+  does not exist upstream anyway, but anything that expects libxml2 to
+  fetch a remote DTD will get a parse error instead of a network round
+  trip. That is the intended behaviour for an APE.
+- **libxslt's `--without-profiler`** means
+  `Nokogiri::XSLT::Stylesheet#transform` cannot be profiled. Nothing in
+  nokogiri's Ruby API exposes profiling, so this is invisible.
+- **racc is only half-present**: the two runtime files, not the gem. If
+  something later does `require "racc"` (the *generator*), or Bundler is
+  asked to resolve a `racc` dependency, it will fail. Doing racc properly
+  is separate work, as is puma/nio4r/bigdecimal.
+- **Windows has not been booted by hand** for this branch. CI covers
+  windows-x86_64 and windows-arm64 with the full test script including
+  `test_nokogiri.rb`, but the standing rule from the "Windows
+  verification" section above still applies before any release: run
+  `logs/win_smoke.sh` on the Vagrant VM.
+- **ocran has not been re-run** against a nokogiri-enabled `ruby.com`.
+  The mechanism that made sqlite3 work (default gemspec →
+  `Gem::Specification.map(&:name)` on the payload → the
+  payload-provides-gem short-circuit in `lib/ocran/direction.rb`) is in
+  place and verified at the `Gem::Specification` level, but the end-to-end
+  "package a script that requires nokogiri" check is the obvious next step
+  and the actual point of the exercise.
+
+## bigdecimal, racc, nio4r and puma — the Rails set (branch `rails-exts`, 2026-08-09)
+
+The four native-extension gems that OCRAN's
+`Direction.cosmo_gem_disposition` flagged as incompatible for a minimal
+Rails app once nokogiri was done (Largo/ocran#53). All four are in, all
+four are exercised by acceptance tests on all six CI platforms, and a
+Rails 8.1.3.1 application now boots inside `ruby.com` and serves HTTP —
+with one documented gap that is **not** about gems at all (see "The
+OpenSSL shim is the remaining blocker" below).
+
+### Versions and provenance
+
+| gem | version | sha256 of the `.gem` |
+|---|---|---|
+| bigdecimal | 4.0.1 | `8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7` |
+| racc | 1.8.1 | `4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f` |
+| nio4r | 2.7.5 | `6c90168e48fb5f8e768419c93abb94ba2b892a1d0602cb06eef16d8b7df1dca1` |
+| puma | 8.0.2 | `c8ed871dfbbe66448ea9ffd46692342d9804d4071522b52b5331b7b6e7b686fb` |
+
+All from `https://rubygems.org/downloads/<gem>-<version>.gem`. Each
+`ext/<gem>/README.cosmo` repeats the URL and hash next to the sources.
+
+`bigdecimal` and `racc` are **bundled gems that Ruby 4.0.6 already ships**
+under `third_party/ruby/.bundle/gems/`; `diff -r` says the vendored copies
+are byte-identical to the published gems, so the version choice made
+itself. Their gemspecs were never installed by this build precisely
+because they declare C extensions — which is the whole problem.
+
+`nio4r` and `puma` are the current releases and are also exactly what
+`bundle install` picks for a `rails new` app on this box (Rails 8.1.3.1,
+`gem "puma", ">= 5.0"`).
+
+### Zero source patches, again
+
+No `.c` or `.h` file of any of the four gems was modified — the standard
+nokogiri set. Two changes were needed *outside* the gems, and one
+packaging bug turned up:
+
+1. **`include/errno_wrapper.h`: guard `SIG_BLOCK` / `SIG_UNBLOCK` /
+   `SIG_SETMASK`.** That header hardcodes Linux constants and is included
+   from `ruby/config.h`, i.e. from `ruby.h`. `nio4r.h` includes libev's
+   `ev.h` (and therefore `<signal.h>`) **before** `ruby.h`, so
+   cosmopolitan's `libc/sysv/consts/sig.h` got there first and the
+   unguarded redefinitions were a `-Werror` failure. Every use of the
+   three in the tree is a function argument to `sigprocmask` /
+   `pthread_sigmask`, never a `case` label, so letting cosmopolitan's
+   host-correct `extern const int`s win where they arrived first is both
+   harmless and more correct — the same principle as the "Socket ABI"
+   section above.
+
+2. **`-Wno-error` on exactly one object.** `nio4r_ext.c` is the
+   translation unit that `#include`s libev's `ev.c`; libev is a unity
+   build and that one TU is ~5,700 lines of foreign C. GCC 14 objects to
+   nested `/*` in comments (`ev.c:573`, `5682-3`), `suggest parentheses
+   around arithmetic in operand of '|'` (`ev.c:4417`), and
+   `'ev_default_loop_ptr' initialized and declared 'extern'`
+   (`ev.c:2136`). The last of those is an **unconditional** GCC
+   diagnostic with no `-Wno-` spelling, so `-Wno-error` is the only lever
+   that does not mean patching libev. It is scoped to that single object
+   in `ext/nio4r/BUILD.mk`; nio4r's own four files stay `-Wall -Werror`.
+   Warnings are still printed.
+
+3. **`io-console`'s `size.rb` was installed at the wrong path** —
+   `assemble_stdlib.sh` put `ext/io/console/lib/console/size.rb` at
+   `/zip/lib/ruby/4.0.0/console/size.rb`, but for an extension the ext
+   directory name *is* the namespace and Ruby installs it as
+   `io/console/size.rb`. `require "io/console/size"` therefore raised
+   LoadError. Nothing in the existing tests noticed; actionpack's
+   `ActionDispatch::Routing::RouteWrapper` requires it while the default
+   middleware stack is built, so this alone stopped Rails booting. Fixed;
+   the old path is still installed as well.
+
+### bigdecimal 4.0.1
+
+Vendored: `ext/bigdecimal/*.{c,h}`, `missing/dtoa.c` (which `missing.c`
+`#include`s — it is not its own TU), `lib/**`, `LICENSE`. Not vendored:
+`sample/`, tests.
+
+`extconf.rb` transcription (`ext/bigdecimal/BUILD.mk`):
+
+```
+-DHAVE_BUILTIN___BUILTIN_CLZ  -DHAVE_BUILTIN___BUILTIN_CLZL
+-DHAVE_BUILTIN___BUILTIN_CLZLL
+-DHAVE_FLOAT_H -DHAVE_MATH_H -DHAVE_STDBOOL_H -DHAVE_STDLIB_H
+-DHAVE_RUBY_ATOMIC_H -DHAVE_RUBY_INTERNAL_HAS_BUILTIN_H
+-DHAVE_RUBY_INTERNAL_STATIC_ASSERT_H
+-DHAVE_RB_COMPLEX_REAL -DHAVE_RB_COMPLEX_IMAG
+-DHAVE_RB_OPTS_EXCEPTION_P -DHAVE_RB_CATEGORY_WARN
+-DHAVE_CONST_RB_WARN_CATEGORY_DEPRECATED
+```
+
+Deliberately **not** defined: `HAVE_X86INTRIN_H`, `HAVE__LZCNT_U32/64`,
+`HAVE_INTRIN_H`, `HAVE___LZCNT`, `HAVE__BITSCANREVERSE`. Those are the
+x86-only (and MSVC-only) leading-zero-count paths in `bits.h`, and this
+tree builds the same flag set for aarch64; `__builtin_clz` is what
+upstream falls back to and is correct everywhere.
+`HAVE_RB_OPTS_EXCEPTION_P` is worth a note: `rb_opts_exception_p` is
+declared only in `internal/object.h`, but it is a global symbol out of
+`object.c` and `bigdecimal.c` declares it itself, so `have_func` would
+succeed and so does the link.
+
+`ext/extinit.c`: `init(Init_bigdecimal, "bigdecimal")`. `lib/bigdecimal.rb`
+does `require 'bigdecimal.so'`, which `DLEXT` (`".so"` in static mode)
+makes match exactly.
+
+### racc 1.8.1 — done properly this time
+
+The xml-libs branch copied `racc/parser.rb` and `racc/info.rb` onto the
+plain load path as a stopgap for nokogiri's generated CSS parser, with no
+gemspec and no C engine. That is now replaced by the whole gem:
+`ext/racc/cparse/cparse.c`, all of `lib/**`, `bin/racc`, a default
+gemspec, and the extension linked in.
+
+Only one `-D`: `-DRACC_INFO_VERSION=1.8.1`, which `cparse.c` stringizes
+into `Racc::Parser::Racc_Runtime_Core_Version_C`. **It has to match
+`Racc::VERSION` in `lib/racc/info.rb`**, or `racc/parser.rb` decides the
+extension is stale (`raise LoadError, 'old cparse.so'`) and silently
+downgrades to the pure-Ruby engine — a performance bug that no `require`
+would ever report. `test_racc.rb` asserts both versions and
+`Racc_Runtime_Type == "c"` for exactly that reason.
+
+`ext/extinit.c`: `init(Init_cparse, "racc/cparse")`.
+
+`assemble_stdlib.sh` also now deletes `gems/bigdecimal-*` and `gems/racc-*`
+from the copied `.bundle` tree: those are gemspec-less second copies of
+Ruby files that `ext/` now installs properly, and dropping them is why the
+`ruby.com` deltas for these two gems come out *negative* (below).
+
+### nio4r 2.7.5 — the backend question, answered
+
+The gem's own `ext/nio4r/` + `ext/libev/` layout is preserved verbatim
+under `third_party/ruby/ext/nio4r/`, because `nio4r_ext.c` does
+`#include "../libev/ev.c"`. That redundant-looking path is what makes the
+vendoring patch-free.
+
+**Cosmopolitan has poll() and select() on every host it supports and has
+neither epoll nor kqueue.** There is no `<sys/epoll.h>` and no
+`<sys/event.h>` anywhere in the tree — only bare `sys_epoll_*.S` /
+`sys_kqueue.S` syscall stubs with no libc wrapper and no non-Linux
+fallback — while `libc/sock/` carries `poll.c` plus `poll-nt.c`,
+`poll-sysv.c` and `poll-metal.c`. So the choice was made for us, and it
+happens to be the portable one the brief asked for:
+
+```
+-DEV_STANDALONE=1
+-DEV_USE_POLL=1        -DEV_USE_SELECT=1
+-DEV_USE_EPOLL=0       -DEV_USE_KQUEUE=0      -DEV_USE_PORT=0
+-DEV_USE_LINUXAIO=0    -DEV_USE_IOURING=0
+-DEV_USE_INOTIFY=0     -DEV_USE_SIGNALFD=0    -DEV_USE_EVENTFD=0
+-DEV_USE_TIMERFD=0     -DEV_USE_CLOCK_SYSCALL=0
+-DEV_USE_MONOTONIC=1   -DEV_USE_REALTIME=1    -DEV_USE_NANOSLEEP=1
+-DHAVE_UNISTD_H -DHAVE_POLL_H -DHAVE_SYS_SELECT_H -DHAVE_SYS_RESOURCE_H
+-DHAVE_RB_IO_DESCRIPTOR
+-fno-strict-aliasing
+```
+
+Notes on the ones that are not simply "the header is missing":
+
+- **the Linux notification helpers are off on purpose.** `eventfd`,
+  `signalfd`, `inotify` and `timerfd` would compile (cosmopolitan has the
+  syscall stubs) and then return `ENOSYS` on a Mac or on Windows. With
+  `EV_USE_EVENTFD=0` libev falls back to an ordinary pipe for its async
+  wakeup, which is what `NIO::Selector#wakeup` rides on.
+- **`EV_USE_CLOCK_SYSCALL=0`** — that is a glibc-specific raw-syscall
+  shortcut. Cosmopolitan is not glibc, so go through `clock_gettime`.
+- **`-fno-strict-aliasing`** mirrors what `extconf.rb` appends to
+  `CONFIG["optflags"]`; libev type-puns its watchers.
+- upstream's `extconf.rb` gates `EV_USE_POLL` on
+  `have_type("port_event_t", "poll.h")`, which is a Solaris check and a
+  bug — on Linux nio4r therefore ships with epoll and *without* poll. Do
+  not copy that line.
+
+Verified at runtime, not just at compile time:
+`NIO::Selector.new.backend` → `:poll`, `NIO::Selector.backends` →
+`[:poll, :select]`, `NIO::ENGINE` → `"libev"`.
+
+`ext/extinit.c`: `init(Init_nio4r_ext, "nio4r_ext")`. Note that
+`lib/nio.rb` decides between the C and pure-Ruby engines with
+`Gem.win_platform?`, which is false under CosmoRuby (`RUBY_PLATFORM` is
+`x86_64-cosmo`), so the C extension is used on Windows too. If that ever
+misbehaves on some host, `NIO4R_PURE=true` in the environment selects the
+pure-Ruby `Kernel.select` engine, which is shipped alongside.
+
+### Two bugs the new tests found, both pre-existing and neither about gems
+
+CI on this branch turned up two failures that had nothing to do with the
+four gems and everything to do with the port. Both were invisible before
+because nothing in the tree exercised the code path.
+
+#### 1. `poll()` used the Linux numbering on Windows
+
+`test_nio4r.rb` failed six checks on **windows-x86_64 and windows-arm64
+only** — `readable socket is selected`, `a writable socket is selected for
+:w`, `several sockets, only the ready ones come back`, and friends. Every
+socket readiness check timed out; registration, `wakeup`, `ByteBuffer` and
+everything that does not depend on a socket becoming ready passed. Puma
+then failed exactly the requests that go through its Reactor (keep-alive,
+concurrency, a POST large enough to be read in two goes) with
+`Net::ReadTimeout`, and served the rest.
+
+The cause is the `POLL*` block in `include/errno_wrapper.h`, which the
+"Left unfixed (flagged, and now shown to be dead code): POLL*" section
+above describes exactly:
+
+> cosmopolitan's Windows poll (`libc/calls/poll-nt.c:57-66`) works in
+> Winsock's numbering — `POLLIN_ 0x0300`, `POLLOUT_ 0x0010`, `POLLERR_
+> 0x0001` — so a caller passing the Linux `POLLIN` (1) would be passing
+> Winsock's `POLLERR`, which `poll-nt.c:118` masks away entirely.
+
+and which ends "Revisit only if `USE_POLL` ever becomes defined here."
+`USE_POLL` is still not defined — but a poll() caller appeared anyway:
+libev's poll backend, i.e. `ext/nio4r`. It is compiled with
+`RUBY_COSMOPOLITAN`, so it inherited the Linux numbering and asked Windows
+for POLLERR on every socket.
+
+The fix keeps the blast radius at one extension.
+`errno_wrapper.h`'s POLL block and its four `#define`d cosmopolitan header
+guards are now inside `#ifndef COSMO_RUBY_HOST_POLL`, and
+`ext/nio4r/BUILD.mk` passes `-DCOSMO_RUBY_HOST_POLL`, so those four
+translation units — and only those — get cosmopolitan's real `<poll.h>`
+with its host-correct `extern const int16_t POLL*` values and its real
+`struct pollfd`. Nothing else in the tree changes.
+
+The general fix is to delete the block outright, which as far as anyone
+can tell is safe (`io.c`'s `STATIC_ASSERT(pollin_expected, …)` is inside
+`#if USE_POLL` and is not compiled; `ruby/io.h` already has an
+`#if defined(HAVE_POLL) && !defined(__COSMOPOLITAN__)` branch that keeps
+`RB_WAITFD_*` as plain numbers). That has a much larger blast radius and
+is left for a branch of its own.
+
+**Standing rule, restated:** a constant that cosmopolitan exports as
+`extern const` is exported that way because it differs per host. Any
+CosmoRuby header that redefines one as a compile-time Linux number is a
+bug waiting for its first caller. `POLL*` has now had its first caller;
+`SIG_BLOCK`/`SIG_UNBLOCK`/`SIG_SETMASK` in the same header are now
+`#ifndef`-guarded for the same reason.
+
+#### 2. Fibers were broken on the aarch64 half of every fat APE
+
+`test_racc.rb` **segfaulted** on linux-arm64 and **hung until the 30
+minute job timeout** on macos-arm64, while passing everywhere else --
+including on windows-arm64, which is the tell that Windows-on-ARM runs
+the x86_64 half of the APE under its own emulation rather than the
+aarch64 half.
+Bisecting under `qemu-aarch64 build/bootstrap/ape.aarch64` narrowed it to
+one line of racc's own grammar parser:
+
+```
+call  Racc::GrammarFileParser#_add_rule_block  racc/grammarfileparser.rb:244
+c_call Enumerator#next                         racc/grammarfileparser.rb:248
+qemu: uncaught target signal 11 (Segmentation fault)
+```
+
+`Enumerator#next` is a Fiber. And a Fiber, on the aarch64 half, is
+instant death:
+
+```
+$ qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com \
+    -e 'f = Fiber.new { Fiber.yield 1 }; p f.resume'
+qemu: uncaught target signal 11 (Segmentation fault) - core dumped
+```
+
+There turned out to be **two** bugs stacked on top of each other.
+
+**(a) the wrong `Context.h`.** `third_party/ruby/include/ruby/config.h`
+had
 
 ```c
 if (!opt->e_script) {
@@ -1954,6 +2610,72 @@ executable's own archive, it is not an OS facility — and the function four lin
 below already relied on that (`access("/zip/.cosmo_ruby_packaged", F_OK)`).
 
 ### The one real design decision: positional arguments
+flat, with no arch condition — configure ran on an x86_64 host and could
+not know any better. `ruby.deps.mk` *does* pick the right assembly
+(`ifeq ($(ARCH),aarch64)` → `coroutine/arm64/Context.S`), so the aarch64
+build assembled the ARM context switcher and then compiled `cont.c`
+against the **amd64** struct: `COROUTINE_REGISTERS` is 6 on amd64 and
+`(0xa0 + TEB_OFFSET) / 8` = 20 on arm64, so `coroutine_transfer` wrote
+160 bytes into a 48-byte structure the first time a fiber ran. Fixed by
+making the include arch-conditional in `config.h`
+(`#if defined(__aarch64__)`), which is the only place that can decide it,
+since `config.h` is generated once and shared by both halves of a fat
+build.
+
+That was necessary and **not sufficient** — Fibers still died, now with a
+cleaner signature that gave the second bug away:
+
+```
+--- SIGSEGV {si_signo=SIGSEGV, si_code=1, si_addr=0x0000000000000040} ---
+```
+
+A read at NULL + 0x40 is not a smashed stack, it is a null base pointer.
+
+**(b) a new coroutine started with x28 = NULL, and x28 is cosmopolitan's
+TLS register.** `cosmocc` compiles aarch64 with `-ffixed-x18 -ffixed-x28`
+(see `build/definitions.mk`: "Cosmopolitan Libc uses x28 for thread-local
+storage"), and `libc/thread/tls.h` reads the thread information block
+straight out of it:
+
+```c
+register struct CosmoTib *__tls __asm__("x28");
+return __tls - 1;
+```
+
+`coroutine_transfer` saves and restores x28 correctly for a coroutine
+that is already running — `stp x27, x28, [sp, 0x80 + TEB_OFFSET]`. But
+`coroutine_initialize` `memset`s a brand-new coroutine's register frame to
+zero and then fills in only the x30 slot, so a **new** fiber began life
+with x28 == NULL and faulted on its first thread-local access — which is
+`errno`, `GET_EC()`, and essentially everything. On x86_64 the same code
+is fine because TLS there is `%fs`-relative and `%fs` is not part of the
+saved register set.
+
+Fix, in `coroutine/arm64/Context.h`, marked `cosmo:` and guarded by
+`#if defined(__COSMOPOLITAN__)`: seed x28's slot (offset 0x88) with the
+creating thread's x28 before the first transfer. A fiber runs on the
+thread that created it, so that is the right value.
+
+With both fixes the aarch64 half of the fat APE passes everything:
+
+```
+aarch64  test_bigdecimal pass=44 fail=0     test_racc     pass=21 fail=0
+         test_nio4r      pass=24 fail=0     test_puma     pass=25 fail=0
+         test_sqlite3    failures=0         test_nokogiri pass=36 fail=0
+         test_sockets    SOCKET-OK          ci_smoke      SMOKE-OK
+```
+
+(run as `qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com <test>`).
+
+Both bugs are **pre-existing** — neither is specific to this branch, both
+affected the `fat-ape`, `xml-libs` and `main` builds identically, and
+together they mean every previously released fat APE segfaults on
+`Enumerator#next`,
+`Enumerator::Lazy`, `Enumerator#peek`, `Enumerator#size` on a lazy chain,
+`String#each_char.next`, and every `Fiber` a user writes, on ARM. Nothing
+in `smoke_test.sh`, `ci_smoke.rb`, `test_sockets.rb`, `test_sqlite3.rb` or
+`test_nokogiri.rb` used a Fiber, so six-platform CI had been green over it
+the whole time. `test_racc.rb` is the first test that does.
 
 > **Superseded on 2026-08-09** by "Two interpreter fixes for packed binaries"
 > at the end of this file. The half-measure below — Ruby still parses its own

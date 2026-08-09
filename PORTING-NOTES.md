@@ -1928,6 +1928,116 @@ branch.
 Ruby where the interpreter decides what its program is — the `if (!opt->e_script)`
 block that otherwise assigns `opt->script = "-"` (stdin) or `argv[0]`. The check
 goes in front of that block, so nothing else in startup had to change:
+## libxml2 + libxslt as cosmopolitan third_party libraries (branch `xml-libs`, 2026-08-09)
+
+Why: OCRAN can package Rails natively but not as an APE, and the wall is
+**nokogiri**, which needs libxml2 and libxslt. Cosmopolitan vendors
+neither (verified: `third_party/` has zlib, sqlite3, libyaml, mbedtls,
+pcre, … and nothing XML). Everything else Rails needs is either already
+linked in (sqlite3) or an ordinary C extension. See
+https://github.com/Largo/ocran/pull/53.
+
+Outcome, in one line: **both libraries build clean as cosmopolitan
+static libraries with zero source patches, and the nokogiri stretch goal
+also landed — `require "nokogiri"` works, 36/36 checks pass.**
+
+### Versions and provenance
+
+| What | Version | URL | sha256 |
+|---|---|---|---|
+| libxml2 | 2.13.9 | https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.9.tar.xz | `a2c9ae7b770da34860050c309f903221c67830c86e4a7e760692b803df95143a` |
+| libxslt | 1.1.43 | https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.43.tar.xz | `5a3d6b383ca5afc235b171118e90f5ff6aa27e9fea3303065231a6d403f0183a` |
+| nokogiri | 1.19.4 | https://rubygems.org/downloads/nokogiri-1.19.4.gem | `50c951611c92bca05c51411aef45f1cbc50f2821c4802758c5c6d34696533ab5` |
+
+**Why 2.13.9 and not 2.14.x** (2.14.6 is current): nokogiri 1.19.4's
+`dependencies.yml` pins exactly libxml2 2.13.9 + libxslt 1.1.43, with the
+matching sha256s. Those are the versions nokogiri is tested against and
+the ones its precompiled platform gems ship. Matching them removes a
+whole class of "works with the bundled build, not with yours" bugs, and
+it is the difference between `have_func("xmlCtxtGetOptions")` being a
+guess and being a known answer (2.14 API → not present → nokogiri's
+`libxml2_polyfill.c` supplies it, exactly as on a 2.13 system). Upgrading
+to 2.14 later is a re-run of the configure recipe below plus a source
+drop; nothing in the cosmo layer is version-specific.
+
+nokogiri's own `patches/libxml2/*.patch` (6 of them: script-macro removal,
+SSI entity handling, wildcard namespaces, config.guess refresh,
+`__libc_single_threaded` removal, an XPath hash-table change) are **not**
+applied. Five are cosmetic/build-system or hardening tweaks for nokogiri's
+packaging; `0011-rip-out-libxml2-s-libc_single_threaded-support.patch` is
+glibc-specific and irrelevant under cosmopolitan. If a nokogiri test ever
+turns out to depend on `0009-allow-wildcard-namespaces`, that is the one to
+revisit.
+
+### Layout
+
+```
+third_party/libxml2/
+    *.c                       38 library sources (see below)
+    libxml.h  timsort.h       private top-level headers
+    include/libxml/*.h        public API, incl. the generated xmlversion.h
+    include/private/*.h       internals
+    config.h                  generated, then trimmed (3 cosmo edits)
+    BUILD.mk  README.cosmo  COPYING
+third_party/libxslt/
+    libxslt/*.{c,h}           incl. the generated xsltconfig.h
+    libexslt/*.{c,h}          incl. the generated exsltconfig.h
+    config.h                  generated, then trimmed (3 cosmo edits)
+    test/xmlxslt_test.c       the end-to-end check for BOTH packages
+    BUILD.mk  README.cosmo  COPYING
+```
+
+Artifacts, exactly as the task asked:
+
+```
+o/$(MODE)/third_party/libxml2/libxml2.a
+o/$(MODE)/third_party/libxslt/libxslt.a      (libxslt + libexslt in one archive)
+```
+
+Both are declared like `third_party/zlib` and `third_party/sqlite3`:
+`PKGS +=`, `_A`/`_A_FILES`/`_A_HDRS`/`_A_SRCS`/`_A_OBJS`, a `.pkg` check,
+`_A_DIRECTDEPS`, private `CFLAGS`, and the trailing
+`_LIBS/_SRCS/_HDRS/_CHECKS/_OBJS` boilerplate. They are included from the
+top-level `Makefile` next to `third_party/sqlite3`, i.e. **above**
+`-include local-includes.mk`, for the immediate-expansion reason already
+documented in the sqlite3 recipe (§4 "Include-order gotcha"). libxslt must
+come after libxml2 because `THIRD_PARTY_LIBXSLT_A_DIRECTDEPS` names
+`THIRD_PARTY_LIBXML2`.
+
+Only library sources are vendored. Dropped entirely: `python/`, `fuzz/`,
+`example/`, `doc/`, `os400/`, `test/`, `result/`, `xstc/`, `xsltproc/`,
+the autotools/cmake/meson plumbing, and the `xmllint`/`xmlcatalog`/
+`runtest`/`testapi` drivers. Sources belonging to disabled features are
+not vendored at all, which is the honest way to make a feature switch
+irreversible-by-accident: **nanohttp.c, nanoftp.c, xmlmodule.c, xzlib.c,
+debugXML.c, schematron.c are not in the tree.**
+
+### The feature set, and why
+
+Cosmopolitan never runs `./configure`, so `config.h`,
+`include/libxml/xmlversion.h`, `libxslt/xsltconfig.h` and
+`libexslt/exsltconfig.h` are committed. They were produced by running the
+*real* configure on this Debian 13 amd64 box:
+
+```sh
+../libxml2-2.13.9/configure \
+  --disable-shared --enable-static --disable-dependency-tracking \
+  --without-python --without-readline --without-history --without-modules \
+  --without-http --without-ftp --without-icu --without-lzma \
+  --without-thread-alloc --without-tls --without-xptr-locs --without-debug \
+  --without-schematron \
+  --with-c14n --with-catalog --with-html --with-iconv --with-iso8859x \
+  --with-output --with-pattern --with-push --with-reader --with-regexps \
+  --with-sax1 --with-schemas --with-threads --with-tree \
+  --with-valid --with-writer --with-xinclude --with-xpath --with-xptr \
+  --with-legacy --with-zlib
+
+PKG_CONFIG_PATH=<libxml2 install>/lib/pkgconfig ../libxslt-1.1.43/configure \
+  --disable-shared --enable-static --disable-dependency-tracking \
+  --without-python --without-crypto --without-plugins \
+  --without-debug --without-debugger --without-profiler
+```
+
 Resulting matrix (`awk '/^#if [01]$/{v=$2} /_ENABLED/{print $2,v}'`):
 
 | ON | OFF |

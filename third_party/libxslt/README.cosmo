@@ -1,0 +1,26 @@
+ORIGIN
+
+  https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.43.tar.xz
+  sha256 5a3d6b383ca5afc235b171118e90f5ff6aa27e9fea3303065231a6d403f0183a
+
+  The version nokogiri 1.19.4 pins in its dependencies.yml.
+
+LOCAL CHANGES
+
+  - Only libxslt/ and libexslt/ are vendored, and they land in one
+    archive (libxslt.a). Dropped: python/, xsltproc/, tests/, doc/ and
+    the autotools/cmake/meson plumbing.
+  - config.h, libxslt/xsltconfig.h and libexslt/exsltconfig.h are the
+    output of the real ./configure on Debian 13 amd64. See
+    PORTING-NOTES.md for the command line. WITH_XSLT_DEBUG,
+    WITH_DEBUGGER, WITH_PROFILER, WITH_MODULES and EXSLT_CRYPTO_ENABLED
+    are all 0.
+  - config.h has one cosmopolitan edit, marked "cosmo:": HAVE_FTIME /
+    HAVE_SYS_TIMEB_H are undefined (no <sys/timeb.h> in cosmopolitan).
+  - No .c or .h file of the libraries themselves has been modified.
+
+  test/xmlxslt_test.c is cosmopolitan-local: the end-to-end check for
+  both this package and third_party/libxml2.
+
+    make -j8 o//third_party/libxslt/test/xmlxslt_test
+    o/third_party/libxslt/test/xmlxslt_test

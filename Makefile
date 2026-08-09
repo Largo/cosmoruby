@@ -318,6 +318,12 @@ include tool/args/BUILD.mk			#─┐
 # THIRD_PARTY_SQLITE3_A_DIRECTDEPS. Both only need packages included above.
 include third_party/linenoise/BUILD.mk		# │
 include third_party/sqlite3/BUILD.mk		# │
+# Same reasoning for libxml2/libxslt: they exist so a nokogiri extension
+# can link against them, and ruby.deps.mk would expand
+# THIRD_PARTY_LIBXML2{,_A} immediately. libxslt must come after libxml2
+# because its _A_DIRECTDEPS names THIRD_PARTY_LIBXML2.
+include third_party/libxml2/BUILD.mk		# │
+include third_party/libxslt/BUILD.mk		# │
 # Local project customizations (e.g. Ruby, libyaml, cosmo_plugin).
 # The - prefix means Make silently skips this if the file is missing,
 # which is expected on a clean checkout (it's not committed to the repo).

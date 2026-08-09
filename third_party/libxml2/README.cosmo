@@ -1,0 +1,27 @@
+ORIGIN
+
+  https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.9.tar.xz
+  sha256 a2c9ae7b770da34860050c309f903221c67830c86e4a7e760692b803df95143a
+
+  This is the version nokogiri 1.19.4 pins in its dependencies.yml, which
+  is why it was picked over 2.14.x.
+
+LOCAL CHANGES
+
+  - Only the library sources are vendored. Dropped: python/, fuzz/,
+    example/, doc/, os400/, test/, result/, xstc/, the autotools/cmake/
+    meson plumbing, and the xmllint/xmlcatalog/runtest/testapi drivers.
+  - Sources for disabled features are not vendored at all:
+    nanohttp.c, nanoftp.c, xmlmodule.c, xzlib.c, debugXML.c, schematron.c.
+  - config.h and include/libxml/xmlversion.h are the output of running the
+    real ./configure on Debian 13 amd64 (cosmopolitan never runs
+    configure). The exact configure command line, the resulting feature
+    matrix and the rationale are in PORTING-NOTES.md.
+  - config.h has three cosmopolitan edits, each marked "cosmo:":
+    HAVE_DLFCN_H, HAVE_FTIME and HAVE_SYS_TIMEB_H are undefined.
+  - No .c or .h file of the library itself has been modified. If you
+    upgrade libxml2, re-run configure with the documented flags, drop in
+    the new sources, and you are done.
+
+  zlib comes from third_party/zlib(+gz); iconv from third_party/musl.
+  No second copy of either is vendored.

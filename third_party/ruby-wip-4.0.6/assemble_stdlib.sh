@@ -57,6 +57,8 @@ cp -r "$RUBY_SRC"/ext/objspace/lib/objspace*     cosmo-ruby/lib/ruby/4.0.0/
 # Note: pathname is a built-in library in Ruby 4.0.0 (lib/pathname.rb), not an extension
 cp    "$RUBY_SRC"/ext/socket/lib/socket.rb       cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/sqlite3/lib/sqlite3*       cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/nokogiri/lib/nokogiri*     cosmo-ruby/lib/ruby/4.0.0/
+cp -r "$RUBY_SRC"/ext/nokogiri/lib/xsd           cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/ripper/lib/ripper*         cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/strscan/lib/strscan*       cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/io/console/lib/console*    cosmo-ruby/lib/ruby/4.0.0/
@@ -87,6 +89,17 @@ DLEXT=${DLEXT:-a}
 if [[ "$DLEXT" != "so" ]]; then
   find cosmo-ruby/lib/ruby/4.0.0 -name "*.rb" -type f -exec sed -i "s/require ['\"]\\([^'\"]*\\)\\.so['\"]/require '\\1.$DLEXT'/g" {} \;
 fi
+
+# racc's *runtime* (racc/parser.rb + racc/info.rb) into the plain load path.
+# nokogiri's CSS selector parser is a generated racc parser and does
+# `require "racc/parser.rb"` at load time. racc ships as a bundled gem whose
+# gemspec is not installed (it declares a C extension, ext/racc/cparse, that
+# this build does not compile), so RubyGems never activates it. Only the two
+# pure-Ruby runtime files are needed; racc/parser.rb already falls back to its
+# pure-Ruby engine when racc/cparse is absent.
+mkdir -p cosmo-ruby/lib/ruby/4.0.0/racc
+cp "$RUBY_SRC"/.bundle/gems/racc-*/lib/racc/parser.rb cosmo-ruby/lib/ruby/4.0.0/racc/
+cp "$RUBY_SRC"/.bundle/gems/racc-*/lib/racc/info.rb   cosmo-ruby/lib/ruby/4.0.0/racc/
 
 # Copy bundled gems (rake, minitest, etc.)
 mkdir -p cosmo-ruby/lib/ruby/gems/4.0.0
@@ -133,6 +146,7 @@ ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
+nokogiri/nokogiri nokogiri
 sqlite3/sqlite3_native sqlite3
 stringio stringio
 strscan strscan
@@ -241,6 +255,7 @@ ripper ripper
 io/console io/console
 io/wait io/wait
 socket socket
+nokogiri/nokogiri nokogiri
 sqlite3/sqlite3_native sqlite3
 stringio stringio
 strscan strscan

@@ -2612,7 +2612,10 @@ bug waiting for its first caller. `POLL*` has now had its first caller;
 #### 2. Fibers were broken on the aarch64 half of every fat APE
 
 `test_racc.rb` **segfaulted** on linux-arm64 and **hung until the 30
-minute job timeout** on macos-arm64, while passing everywhere else.
+minute job timeout** on macos-arm64, while passing everywhere else --
+including on windows-arm64, which is the tell that Windows-on-ARM runs
+the x86_64 half of the APE under its own emulation rather than the
+aarch64 half.
 Bisecting under `qemu-aarch64 build/bootstrap/ape.aarch64` narrowed it to
 one line of racc's own grammar parser:
 
@@ -2631,7 +2634,10 @@ $ qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com \
 qemu: uncaught target signal 11 (Segmentation fault) - core dumped
 ```
 
-`third_party/ruby/include/ruby/config.h` had
+There turned out to be **two** bugs stacked on top of each other.
+
+**(a) the wrong `Context.h`.** `third_party/ruby/include/ruby/config.h`
+had
 
 ```c
 #define COROUTINE_H "coroutine/amd64/Context.h"
@@ -2643,16 +2649,61 @@ not know any better. `ruby.deps.mk` *does* pick the right assembly
 build assembled the ARM context switcher and then compiled `cont.c`
 against the **amd64** struct: `COROUTINE_REGISTERS` is 6 on amd64 and
 `(0xa0 + TEB_OFFSET) / 8` = 20 on arm64, so `coroutine_transfer` wrote
-160 bytes into a 48-byte structure on its first use.
-
-Fixed by making the include arch-conditional in `config.h`
+160 bytes into a 48-byte structure the first time a fiber ran. Fixed by
+making the include arch-conditional in `config.h`
 (`#if defined(__aarch64__)`), which is the only place that can decide it,
 since `config.h` is generated once and shared by both halves of a fat
 build.
 
-This was **pre-existing** — it is not specific to this branch, it affected
-the `fat-ape`, `xml-libs` and `main` builds identically, and it means
-every previously released fat APE segfaults on `Enumerator#next`,
+That was necessary and **not sufficient** — Fibers still died, now with a
+cleaner signature that gave the second bug away:
+
+```
+--- SIGSEGV {si_signo=SIGSEGV, si_code=1, si_addr=0x0000000000000040} ---
+```
+
+A read at NULL + 0x40 is not a smashed stack, it is a null base pointer.
+
+**(b) a new coroutine started with x28 = NULL, and x28 is cosmopolitan's
+TLS register.** `cosmocc` compiles aarch64 with `-ffixed-x18 -ffixed-x28`
+(see `build/definitions.mk`: "Cosmopolitan Libc uses x28 for thread-local
+storage"), and `libc/thread/tls.h` reads the thread information block
+straight out of it:
+
+```c
+register struct CosmoTib *__tls __asm__("x28");
+return __tls - 1;
+```
+
+`coroutine_transfer` saves and restores x28 correctly for a coroutine
+that is already running — `stp x27, x28, [sp, 0x80 + TEB_OFFSET]`. But
+`coroutine_initialize` `memset`s a brand-new coroutine's register frame to
+zero and then fills in only the x30 slot, so a **new** fiber began life
+with x28 == NULL and faulted on its first thread-local access — which is
+`errno`, `GET_EC()`, and essentially everything. On x86_64 the same code
+is fine because TLS there is `%fs`-relative and `%fs` is not part of the
+saved register set.
+
+Fix, in `coroutine/arm64/Context.h`, marked `cosmo:` and guarded by
+`#if defined(__COSMOPOLITAN__)`: seed x28's slot (offset 0x88) with the
+creating thread's x28 before the first transfer. A fiber runs on the
+thread that created it, so that is the right value.
+
+With both fixes the aarch64 half of the fat APE passes everything:
+
+```
+aarch64  test_bigdecimal pass=44 fail=0     test_racc     pass=21 fail=0
+         test_nio4r      pass=24 fail=0     test_puma     pass=25 fail=0
+         test_sqlite3    failures=0         test_nokogiri pass=36 fail=0
+         test_sockets    SOCKET-OK          ci_smoke      SMOKE-OK
+```
+
+(run as `qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com <test>`).
+
+Both bugs are **pre-existing** — neither is specific to this branch, both
+affected the `fat-ape`, `xml-libs` and `main` builds identically, and
+together they mean every previously released fat APE segfaults on
+`Enumerator#next`,
 `Enumerator::Lazy`, `Enumerator#peek`, `Enumerator#size` on a lazy chain,
 `String#each_char.next`, and every `Fiber` a user writes, on ARM. Nothing
 in `smoke_test.sh`, `ci_smoke.rb`, `test_sockets.rb`, `test_sqlite3.rb` or

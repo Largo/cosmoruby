@@ -774,13 +774,13 @@ rsock_getfamily(rb_io_t *fptr)
     if (getsockname(fptr->fd, &ss.addr, &sslen) < 0)
         return AF_UNSPEC;
 
-    switch (ss.addr.sa_family) {
+    /* cosmopolitan: AF_INET6 is resolved at runtime (10 on Linux, 23 on
+     * Windows, 30 on XNU), so it cannot appear in a case label. */
 #ifdef AF_UNIX
-      case AF_UNIX: fptr->mode |= FMODE_UNIX; break;
+    if (ss.addr.sa_family == AF_UNIX) { fptr->mode |= FMODE_UNIX; } else
 #endif
-      case AF_INET: fptr->mode |= FMODE_INET; break;
-      case AF_INET6: fptr->mode |= FMODE_INET6; break;
-    }
+    if (ss.addr.sa_family == AF_INET) { fptr->mode |= FMODE_INET; }
+    else if (ss.addr.sa_family == AF_INET6) { fptr->mode |= FMODE_INET6; }
 
     return ss.addr.sa_family;
 }

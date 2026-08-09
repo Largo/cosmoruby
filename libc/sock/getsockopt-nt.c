@@ -59,6 +59,11 @@ textwindows int sys_getsockopt_nt(struct Fd *fd, int level, int optname,
       return __winsockerr();
     *(int *)out_opt_optval = __errno_windows2linux(err);
     *inout_optlen = sizeof(int);
+    // we must not fall through to the generic getsockopt() below: it would
+    // overwrite the translated errno with the raw winsock one, and reading
+    // SO_ERROR twice clears it, so the caller saw a bare 10061 instead of
+    // ECONNREFUSED after a failed non-blocking connect()
+    return 0;
   }
 
   if (level == SOL_SOCKET &&
@@ -89,9 +94,13 @@ textwindows int sys_getsockopt_nt(struct Fd *fd, int level, int optname,
     }
   }
 
-  if (in_optlen == 4 && *inout_optlen == 1) {
+  if (in_optlen >= 4 && *inout_optlen == 1) {
     // handle cases like this
     // getsockopt(8, SOL_TCP, TCP_FASTOPEN, [u"☺"], [1]) → 0
+    // winsock reports boolean options such as TCP_NODELAY as a single
+    // byte; unix reports an int. callers routinely pass a scratch buffer
+    // that's bigger than four bytes (ruby's ext/socket uses 256) so this
+    // must not be restricted to in_optlen == 4
     int32_t wut = *(signed char *)out_opt_optval;
     memcpy(out_opt_optval, &wut, 4);
     *inout_optlen = 4;

@@ -142,18 +142,17 @@
 #define ETOOMANYREFS 109
 #define EHOSTDOWN 112
 
-/* Socket level constants (Linux x86_64 values) */
-#define SOL_SOCKET 1
-#define SOL_IP 0
-#define SOL_TCP 6
-#define SOL_UDP 17
-#define SOL_IPV6 41
-
-/* Socket control message types (Linux x86_64 values) */
-#define SCM_RIGHTS 1
-#define SCM_TIMESTAMP 29
-#define SCM_TIMESTAMPNS 35
-/* Note: SCM_CREDENTIALS intentionally omitted - requires struct ucred which Cosmopolitan doesn't provide */
+/* NOTE: SOL_* and SCM_* are deliberately NOT defined here.
+ *
+ * Unlike errno / signal / open flags -- which Cosmopolitan normalises to
+ * the Linux numbering on every host -- SOL_SOCKET and the SCM_* values
+ * really are polymorphic: SOL_SOCKET is 1 on Linux but 0xffff on Windows,
+ * MacOS and the BSDs, and Cosmopolitan hands the value straight to the
+ * host's setsockopt()/getsockopt().  Hard-coding 1 here made every
+ * SOL_SOCKET socket option fail with EINVAL off Linux.  Let
+ * libc/sysv/consts/{sol,scm}.h supply the runtime values instead; the few
+ * places Ruby used them as `case` labels are now if/else chains.
+ */
 
 /* Address families: Use Cosmopolitan's compile-time constants from af.h */
 /* AF_UNIX, AF_INET, AF_INET6 are already defined as compile-time constants in libc/sysv/consts/af.h */
@@ -186,9 +185,8 @@ int poll(struct pollfd *, unsigned long, int);
 #define COSMOPOLITAN_LIBC_ISYSTEM_SYS_POLL_H_
 #define COSMOPOLITAN_LIBC_SOCK_STRUCT_POLLFD_H_
 #define COSMOPOLITAN_LIBC_SYSV_CONSTS_POLL_H_
-#define COSMOPOLITAN_LIBC_SYSV_CONSTS_SOL_H_
-#define COSMOPOLITAN_LIBC_SYSV_CONSTS_SCM_H_
-/* Note: NOT blocking AF_H_ because AF_UNIX and AF_INET are already compile-time constants */
+/* Note: NOT blocking SOL_H_/SCM_H_/AF_H_ -- those constants are runtime
+ * polymorphic in Cosmopolitan and must keep their host values. */
 
 /* But we still need errno_t,  __errno_location, and fcntl function */
 typedef int errno_t;

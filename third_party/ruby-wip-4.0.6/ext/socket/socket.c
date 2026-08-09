@@ -922,20 +922,20 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 {
     char *ptr;
 
-    switch (addr->sa_family) {
-      case AF_INET:
+    /* cosmopolitan: AF_INET6 is a runtime constant, so use if/else. */
+    if (addr->sa_family == AF_INET) {
         ptr = (char*)&((struct sockaddr_in*)addr)->sin_addr.s_addr;
         len = (socklen_t)sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
-        break;
+    }
 #ifdef AF_INET6
-      case AF_INET6:
+    else if (addr->sa_family == AF_INET6) {
         ptr = (char*)&((struct sockaddr_in6*)addr)->sin6_addr.s6_addr;
         len = (socklen_t)sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
-        break;
+    }
 #endif
-      default:
+    else {
         rb_raise(rb_eSocket, "unknown socket family:%d", addr->sa_family);
-        break;
+        return Qnil; /* not reached */
     }
     return rb_str_new(ptr, len);
 }
@@ -1462,28 +1462,26 @@ sockaddr_len(struct sockaddr *addr)
         return addr->sa_len;
 #endif
 
-    switch (addr->sa_family) {
-      case AF_INET:
+    /* cosmopolitan: AF_INET6 is a runtime constant, so use if/else. */
+    if (addr->sa_family == AF_INET)
         return (socklen_t)sizeof(struct sockaddr_in);
 
 #ifdef AF_INET6
-      case AF_INET6:
+    if (addr->sa_family == AF_INET6)
         return (socklen_t)sizeof(struct sockaddr_in6);
 #endif
 
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
-      case AF_UNIX:
+    if (addr->sa_family == AF_UNIX)
         return (socklen_t)sizeof(struct sockaddr_un);
 #endif
 
 #ifdef AF_PACKET
-      case AF_PACKET:
+    if (addr->sa_family == AF_PACKET)
         return (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + ((struct sockaddr_ll *)addr)->sll_halen);
 #endif
 
-      default:
-        return (socklen_t)(offsetof(struct sockaddr, sa_family) + sizeof(addr->sa_family));
-    }
+    return (socklen_t)(offsetof(struct sockaddr, sa_family) + sizeof(addr->sa_family));
 }
 
 socklen_t

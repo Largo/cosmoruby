@@ -61,22 +61,20 @@ constant_to_sym(int constant, ID (*intern_const)(int))
 static VALUE
 optname_to_sym(int level, int optname)
 {
-    switch (level) {
-      case SOL_SOCKET:
+    /* cosmopolitan: SOL_SOCKET is a runtime constant, so use if/else. */
+    if (level == SOL_SOCKET)
         return constant_to_sym(optname, rsock_intern_so_optname);
-      case IPPROTO_IP:
+    if (level == IPPROTO_IP)
         return constant_to_sym(optname, rsock_intern_ip_optname);
 #ifdef IPPROTO_IPV6
-      case IPPROTO_IPV6:
+    if (level == IPPROTO_IPV6)
         return constant_to_sym(optname, rsock_intern_ipv6_optname);
 #endif
-      case IPPROTO_TCP:
+    if (level == IPPROTO_TCP)
         return constant_to_sym(optname, rsock_intern_tcp_optname);
-      case IPPROTO_UDP:
+    if (level == IPPROTO_UDP)
         return constant_to_sym(optname, rsock_intern_udp_optname);
-      default:
-        return INT2NUM(optname);
-    }
+    return INT2NUM(optname);
 }
 
 /*
@@ -1262,151 +1260,138 @@ sockopt_inspect(VALUE self)
 
     if (level == SOL_SOCKET)
         family = AF_UNSPEC;
-    switch (family) {
-      case AF_UNSPEC:
-        switch (level) {
-          case SOL_SOCKET:
-            switch (optname) {
-#            if defined(SO_DEBUG) /* POSIX */
-              case SO_DEBUG: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_ERROR) /* POSIX */
-              case SO_ERROR: inspected = inspect_errno(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_TYPE) /* POSIX */
-              case SO_TYPE: inspected = inspect_socktype(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_ACCEPTCONN) /* POSIX */
-              case SO_ACCEPTCONN: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_BROADCAST) /* POSIX */
-              case SO_BROADCAST: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_REUSEADDR) /* POSIX */
-              case SO_REUSEADDR: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_KEEPALIVE) /* POSIX */
-              case SO_KEEPALIVE: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_OOBINLINE) /* POSIX */
-              case SO_OOBINLINE: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_SNDBUF) /* POSIX */
-              case SO_SNDBUF: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_RCVBUF) /* POSIX */
-              case SO_RCVBUF: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_DONTROUTE) /* POSIX */
-              case SO_DONTROUTE: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_RCVLOWAT) /* POSIX */
-              case SO_RCVLOWAT: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_SNDLOWAT) /* POSIX */
-              case SO_SNDLOWAT: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_LINGER) /* POSIX */
-              case SO_LINGER: inspected = inspect_linger(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_RCVTIMEO) /* POSIX */
-              case SO_RCVTIMEO: inspected = inspect_timeval_as_interval(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_SNDTIMEO) /* POSIX */
-              case SO_SNDTIMEO: inspected = inspect_timeval_as_interval(level, optname, data, ret); break;
-#            endif
-#            if defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
-              case SO_PEERCRED: inspected = inspect_peercred(level, optname, data, ret); break;
-#            endif
-            }
-            break;
+    /* cosmopolitan: AF_INET6, SOL_SOCKET, SO_*, IP_*, IPV6_* are runtime
+     * constants whose values depend on the host OS, so this dispatch table
+     * is written as if/else instead of the upstream nest of switches. */
+    if (family == AF_UNSPEC) {
+        if (level == SOL_SOCKET) {
+#          if defined(SO_DEBUG) /* POSIX */
+            if (optname == SO_DEBUG) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_ERROR) /* POSIX */
+            if (optname == SO_ERROR) inspected = inspect_errno(level, optname, data, ret); else
+#          endif
+#          if defined(SO_TYPE) /* POSIX */
+            if (optname == SO_TYPE) inspected = inspect_socktype(level, optname, data, ret); else
+#          endif
+#          if defined(SO_ACCEPTCONN) /* POSIX */
+            if (optname == SO_ACCEPTCONN) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_BROADCAST) /* POSIX */
+            if (optname == SO_BROADCAST) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_REUSEADDR) /* POSIX */
+            if (optname == SO_REUSEADDR) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_KEEPALIVE) /* POSIX */
+            if (optname == SO_KEEPALIVE) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_OOBINLINE) /* POSIX */
+            if (optname == SO_OOBINLINE) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_SNDBUF) /* POSIX */
+            if (optname == SO_SNDBUF) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_RCVBUF) /* POSIX */
+            if (optname == SO_RCVBUF) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_DONTROUTE) /* POSIX */
+            if (optname == SO_DONTROUTE) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_RCVLOWAT) /* POSIX */
+            if (optname == SO_RCVLOWAT) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_SNDLOWAT) /* POSIX */
+            if (optname == SO_SNDLOWAT) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(SO_LINGER) /* POSIX */
+            if (optname == SO_LINGER) inspected = inspect_linger(level, optname, data, ret); else
+#          endif
+#          if defined(SO_RCVTIMEO) /* POSIX */
+            if (optname == SO_RCVTIMEO) inspected = inspect_timeval_as_interval(level, optname, data, ret); else
+#          endif
+#          if defined(SO_SNDTIMEO) /* POSIX */
+            if (optname == SO_SNDTIMEO) inspected = inspect_timeval_as_interval(level, optname, data, ret); else
+#          endif
+#          if defined(SO_PEERCRED) /* GNU/Linux, OpenBSD */
+            if (optname == SO_PEERCRED) inspected = inspect_peercred(level, optname, data, ret); else
+#          endif
+            { /* unknown option name */ }
         }
-        break;
-
-      case AF_INET:
-#ifdef INET6
-      case AF_INET6:
-#endif
-        switch (level) {
-#        if defined(IPPROTO_IP)
-          case IPPROTO_IP:
-            switch (optname) {
-#            if defined(IP_MULTICAST_IF) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* 4.4BSD, GNU/Linux */
-              case IP_MULTICAST_IF: inspected = inspect_ipv4_multicast_if(level, optname, data, ret); break;
-#            endif
-#            if defined(IP_ADD_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
-              case IP_ADD_MEMBERSHIP: inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); break;
-#            endif
-#            if defined(IP_DROP_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
-              case IP_DROP_MEMBERSHIP: inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); break;
-#            endif
-#            if defined(IP_MULTICAST_LOOP) /* 4.4BSD, GNU/Linux */
-              case IP_MULTICAST_LOOP: inspected = inspect_ipv4_multicast_loop(level, optname, data, ret); break;
-#            endif
-#            if defined(IP_MULTICAST_TTL) /* 4.4BSD, GNU/Linux */
-              case IP_MULTICAST_TTL: inspected = inspect_ipv4_multicast_ttl(level, optname, data, ret); break;
-#            endif
-            }
-            break;
-#        endif
-
-#        if defined(IPPROTO_IPV6)
-          case IPPROTO_IPV6:
-            switch (optname) {
-#            if defined(IPV6_MULTICAST_HOPS) /* POSIX */
-              case IPV6_MULTICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(IPV6_MULTICAST_IF) /* POSIX */
-              case IPV6_MULTICAST_IF: inspected = inspect_ipv6_multicast_if(level, optname, data, ret); break;
-#            endif
-#            if defined(IPV6_MULTICAST_LOOP) /* POSIX */
-              case IPV6_MULTICAST_LOOP: inspected = inspect_uint(level, optname, data, ret); break;
-#            endif
-#            if defined(IPV6_JOIN_GROUP) /* POSIX */
-              case IPV6_JOIN_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
-#            endif
-#            if defined(IPV6_LEAVE_GROUP) /* POSIX */
-              case IPV6_LEAVE_GROUP: inspected = inspect_ipv6_mreq(level, optname, data, ret); break;
-#            endif
-#            if defined(IPV6_UNICAST_HOPS) /* POSIX */
-              case IPV6_UNICAST_HOPS: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(IPV6_V6ONLY) /* POSIX */
-              case IPV6_V6ONLY: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-            }
-            break;
-#        endif
-
-#        if defined(IPPROTO_TCP)
-          case IPPROTO_TCP:
-            switch (optname) {
-#            if defined(TCP_NODELAY) /* POSIX */
-              case TCP_NODELAY: inspected = inspect_int(level, optname, data, ret); break;
-#            endif
-#            if defined(TCP_INFO) && defined(HAVE_TYPE_STRUCT_TCP_INFO) /* Linux, FreeBSD */
-              case TCP_INFO: inspected = inspect_tcp_info(level, optname, data, ret); break;
-#            endif
-            }
-            break;
-#        endif
-        }
-        break;
-
-#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
-      case AF_UNIX:
-        switch (level) {
-          case 0:
-            switch (optname) {
-#            if defined(LOCAL_PEERCRED)
-              case LOCAL_PEERCRED: inspected = inspect_local_peercred(level, optname, data, ret); break;
-#            endif
-            }
-            break;
-        }
-        break;
-#endif
     }
+    else if (family == AF_INET
+#ifdef INET6
+             || family == AF_INET6
+#endif
+            ) {
+#      if defined(IPPROTO_IP)
+        if (level == IPPROTO_IP) {
+#          if defined(IP_MULTICAST_IF) && defined(HAVE_TYPE_STRUCT_IP_MREQN) /* 4.4BSD, GNU/Linux */
+            if (optname == IP_MULTICAST_IF) inspected = inspect_ipv4_multicast_if(level, optname, data, ret); else
+#          endif
+#          if defined(IP_ADD_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
+            if (optname == IP_ADD_MEMBERSHIP) inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); else
+#          endif
+#          if defined(IP_DROP_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
+            if (optname == IP_DROP_MEMBERSHIP) inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); else
+#          endif
+#          if defined(IP_MULTICAST_LOOP) /* 4.4BSD, GNU/Linux */
+            if (optname == IP_MULTICAST_LOOP) inspected = inspect_ipv4_multicast_loop(level, optname, data, ret); else
+#          endif
+#          if defined(IP_MULTICAST_TTL) /* 4.4BSD, GNU/Linux */
+            if (optname == IP_MULTICAST_TTL) inspected = inspect_ipv4_multicast_ttl(level, optname, data, ret); else
+#          endif
+            { /* unknown option name */ }
+        }
+#      endif
+#      if defined(IPPROTO_IPV6)
+        if (level == IPPROTO_IPV6) {
+#          if defined(IPV6_MULTICAST_HOPS) /* POSIX */
+            if (optname == IPV6_MULTICAST_HOPS) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(IPV6_MULTICAST_IF) /* POSIX */
+            if (optname == IPV6_MULTICAST_IF) inspected = inspect_ipv6_multicast_if(level, optname, data, ret); else
+#          endif
+#          if defined(IPV6_MULTICAST_LOOP) /* POSIX */
+            if (optname == IPV6_MULTICAST_LOOP) inspected = inspect_uint(level, optname, data, ret); else
+#          endif
+#          if defined(IPV6_JOIN_GROUP) /* POSIX */
+            if (optname == IPV6_JOIN_GROUP) inspected = inspect_ipv6_mreq(level, optname, data, ret); else
+#          endif
+#          if defined(IPV6_LEAVE_GROUP) /* POSIX */
+            if (optname == IPV6_LEAVE_GROUP) inspected = inspect_ipv6_mreq(level, optname, data, ret); else
+#          endif
+#          if defined(IPV6_UNICAST_HOPS) /* POSIX */
+            if (optname == IPV6_UNICAST_HOPS) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(IPV6_V6ONLY) /* POSIX */
+            if (optname == IPV6_V6ONLY) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+            { /* unknown option name */ }
+        }
+#      endif
+#      if defined(IPPROTO_TCP)
+        if (level == IPPROTO_TCP) {
+#          if defined(TCP_NODELAY) /* POSIX */
+            if (optname == TCP_NODELAY) inspected = inspect_int(level, optname, data, ret); else
+#          endif
+#          if defined(TCP_INFO) && defined(HAVE_TYPE_STRUCT_TCP_INFO) /* Linux, FreeBSD */
+            if (optname == TCP_INFO) inspected = inspect_tcp_info(level, optname, data, ret); else
+#          endif
+            { /* unknown option name */ }
+        }
+#      endif
+    }
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+    else if (family == AF_UNIX) {
+        if (level == 0) {
+#          if defined(LOCAL_PEERCRED)
+            if (optname == LOCAL_PEERCRED) inspected = inspect_local_peercred(level, optname, data, ret); else
+#          endif
+            { /* unknown option name */ }
+        }
+    }
+#endif
 
     if (!inspected) {
         rb_str_cat2(ret, " ");

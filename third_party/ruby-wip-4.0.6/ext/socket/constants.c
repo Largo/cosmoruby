@@ -67,62 +67,52 @@ rsock_level_arg(int family, VALUE level)
 int
 rsock_optname_arg(int family, int level, VALUE optname)
 {
+    /* cosmopolitan: SOL_SOCKET is a runtime constant, so use if/else. */
     if (IS_IP_FAMILY(family)) {
-        switch (level) {
-          case SOL_SOCKET:
+        if (level == SOL_SOCKET)
             return constant_arg(optname, rsock_so_optname_to_int, "unknown socket level option name");
-          case IPPROTO_IP:
+        if (level == IPPROTO_IP)
             return constant_arg(optname, rsock_ip_optname_to_int, "unknown IP level option name");
 #ifdef IPPROTO_IPV6
-          case IPPROTO_IPV6:
+        if (level == IPPROTO_IPV6)
             return constant_arg(optname, rsock_ipv6_optname_to_int, "unknown IPv6 level option name");
 #endif
-          case IPPROTO_TCP:
+        if (level == IPPROTO_TCP)
             return constant_arg(optname, rsock_tcp_optname_to_int, "unknown TCP level option name");
-          case IPPROTO_UDP:
+        if (level == IPPROTO_UDP)
             return constant_arg(optname, rsock_udp_optname_to_int, "unknown UDP level option name");
-          default:
-            return NUM2INT(optname);
-        }
+        return NUM2INT(optname);
     }
     else {
-        switch (level) {
-          case SOL_SOCKET:
+        if (level == SOL_SOCKET)
             return constant_arg(optname, rsock_so_optname_to_int, "unknown socket level option name");
-          default:
-            return NUM2INT(optname);
-        }
+        return NUM2INT(optname);
     }
 }
 
 int
 rsock_cmsg_type_arg(int family, int level, VALUE type)
 {
+    /* cosmopolitan: SOL_SOCKET is a runtime constant, so use if/else. */
     if (IS_IP_FAMILY(family)) {
-        switch (level) {
-          case SOL_SOCKET:
+        if (level == SOL_SOCKET)
             return constant_arg(type, rsock_scm_optname_to_int, "unknown UNIX control message");
-          case IPPROTO_IP:
+        if (level == IPPROTO_IP)
             return constant_arg(type, rsock_ip_optname_to_int, "unknown IP control message");
 #ifdef IPPROTO_IPV6
-          case IPPROTO_IPV6:
+        if (level == IPPROTO_IPV6)
             return constant_arg(type, rsock_ipv6_optname_to_int, "unknown IPv6 control message");
 #endif
-          case IPPROTO_TCP:
+        if (level == IPPROTO_TCP)
             return constant_arg(type, rsock_tcp_optname_to_int, "unknown TCP control message");
-          case IPPROTO_UDP:
+        if (level == IPPROTO_UDP)
             return constant_arg(type, rsock_udp_optname_to_int, "unknown UDP control message");
-          default:
-            return NUM2INT(type);
-        }
+        return NUM2INT(type);
     }
     else {
-        switch (level) {
-          case SOL_SOCKET:
+        if (level == SOL_SOCKET)
             return constant_arg(type, rsock_scm_optname_to_int, "unknown UNIX control message");
-          default:
-            return NUM2INT(type);
-        }
+        return NUM2INT(type);
     }
 }
 

@@ -243,7 +243,61 @@ rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 for t in $TARGETS; do cp "$OUT_DIR/$t.com" "$DIST_DIR/"; done
 chmod +x "$DIST_DIR"/*.com
-(cd "$DIST_DIR" && sha256sum ./*.com > SHA256SUMS && cat SHA256SUMS)
+# Only the release targets go into SHA256SUMS: zipmain.com below is a test
+# fixture, and cosmoruby-release.yml runs `sha256sum -c SHA256SUMS` against
+# exactly the files it publishes.
+(cd "$DIST_DIR" \
+  && sha256sum $(for t in $TARGETS; do printf './%s.com ' "$t"; done) > SHA256SUMS \
+  && cat SHA256SUMS)
+
+# ------------------------------------------------------- self-executing APE
+
+# An APE is also a ZIP archive, so an application ships by being appended to
+# ruby.com with a plain zip tool; ruby.c then runs /zip/main.rb when the
+# command line names no other program.  Build the fixture here, on the one
+# host that is guaranteed to have `zip`, and stage it in the artifact so that
+# every platform's test job runs the *same* packed binary.  (Windows runners
+# have no zip, and PowerShell's Compress-Archive cannot append to an APE.)
+log "building self-executing APE fixture ($DIST_DIR/zipmain.com)"
+ZIPTMP="$(mktemp -d)"
+mkdir -p "$ZIPTMP/zmlib"
+cat > "$ZIPTMP/main.rb" <<'ZIPMAIN_EOF'
+# Fixture for the /zip/main.rb auto-run convention.  Deliberately uses
+# require_relative and a subdirectory, because "a multi-file app works" is
+# the part that is easy to get wrong.
+require_relative "zmlib/support"
+require "json"
+puts JSON.generate({
+  "marker"   => "zipmain",
+  "platform" => RUBY_PLATFORM,
+  "zero"     => $0,
+  "file"     => __FILE__,
+  "dir"      => __dir__,
+  "argv"     => ARGV,
+  "lib"      => ZipMainSupport.ok,
+})
+exit 7
+ZIPMAIN_EOF
+cat > "$ZIPTMP/zmlib/support.rb" <<'ZIPLIB_EOF'
+module ZipMainSupport
+  def self.ok
+    "require_relative-ok"
+  end
+end
+ZIPLIB_EOF
+cp "$DIST_DIR/ruby.com" "$DIST_DIR/zipmain.com"
+(cd "$ZIPTMP" && zip -q "$REPO_ROOT/$DIST_DIR/zipmain.com" main.rb zmlib/support.rb) \
+  || die "could not append the fixture app to $DIST_DIR/zipmain.com"
+chmod +x "$DIST_DIR/zipmain.com"
+rm -rf "$ZIPTMP"
+
+# Fail here rather than in six test jobs if the hook is broken.
+zmout="$("$DIST_DIR/zipmain.com" zm-a zm-b 2>&1)"; zmrc=$?
+case "$zmout" in
+  *'"marker":"zipmain"'*) echo "  $zmout" ;;
+  *) die "zipmain.com did not auto-run /zip/main.rb: $zmout" ;;
+esac
+[ "$zmrc" = 7 ] || die "zipmain.com exit status: got $zmrc, want 7"
 
 log "build complete"
 ls -l "$DIST_DIR"/*.com

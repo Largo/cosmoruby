@@ -112,6 +112,39 @@ $r = Invoke-Ape "`"$mini`" `"$miniScript`""
 $allText += $r.Text
 if ($r.Text -match "MINI-4\.") { Ok "miniruby.com" } else { Bad "miniruby.com" }
 
+Section "self-executing APE (/zip/main.rb auto-run)"
+# dist\zipmain.com is ruby.com with a two-file app appended by the build job's
+# `zip` (Windows runners have none, and Compress-Archive cannot append to an
+# APE).  ruby.c runs /zip/main.rb when the command line names no other
+# program, so the packed binary *is* the app.
+$zm = Join-Path $bin "zipmain.com"
+if (-not (Test-Path $zm)) {
+    Bad "zipmain.com missing from $bin"
+} else {
+    $r = Invoke-Ape "`"$zm`" zm-a zm-b"
+    $allText += $r.Text
+    if ($r.Text -match '"marker":"zipmain"') { Ok "zip main auto-run" } else { Bad "zip main auto-run" }
+    if ($r.Text -match '"argv":\["zm-a","zm-b"\]') { Ok "zip main ARGV passthrough" } else { Bad "zip main ARGV passthrough" }
+    if (($r.Text -match '"zero":"/zip/main\.rb"') -and ($r.Text -match '"dir":"/zip"')) { Ok 'zip main $0 and __dir__' } else { Bad 'zip main $0 and __dir__' }
+    if ($r.Text -match '"lib":"require_relative-ok"') { Ok "zip main multi-file app (require_relative)" } else { Bad "zip main multi-file app (require_relative)" }
+    if (Status-Is $r.Code 7) { Ok "zip main exit status: raw=$($r.Code)" } else { Bad "zip main exit status: raw=$($r.Code), want 7 or 1792" }
+
+    # The escape hatch turns a packed binary back into a plain interpreter.
+    $hatchScript = Join-Path $work "hatch.rb"
+    Set-Content -Path $hatchScript -Value 'puts "hatch-ok"' -Encoding ascii
+    $r = Invoke-Ape "set COSMORUBY_NO_ZIP_MAIN=1 && `"$zm`" `"$hatchScript`""
+    $allText += $r.Text
+    if (($r.Text -match "hatch-ok") -and ($r.Text -notmatch '"marker":"zipmain"')) {
+        Ok "COSMORUBY_NO_ZIP_MAIN=1 suppresses auto-run"
+    } else { Bad "COSMORUBY_NO_ZIP_MAIN=1 suppresses auto-run" }
+
+    # ...and an unpacked ruby.com must be completely unaffected.
+    $r = Invoke-Ape "echo puts 123 | `"$ruby`""
+    $allText += $r.Text
+    if ($r.Text -match "123") { Ok "plain ruby.com still reads stdin (no auto-run)" }
+    else { Bad "plain ruby.com stdin" }
+}
+
 Section "no crash signatures in any output"
 if ($allText -match "\[BUG\]" -or $allText -match "Segmentation fault") {
     Bad "crash signature found in output (this is the 4.0.6 VM-init regression)"

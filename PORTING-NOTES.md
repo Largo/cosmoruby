@@ -1871,3 +1871,216 @@ instrumentation (the `volatile` stack-spill snapshot, described above) on
 `windows-latest` specifically — it now has a >99 % chance of firing within one
 200-iteration loop, so a single CI round should settle whether the register
 changed under the compare or the branch was entered without it.
+
+## Self-executing APEs: `/zip/main.rb` (branch `zip-main`, 2026-08-09)
+
+An APE is also a ZIP archive, and this Ruby already reads its own archive as
+`/zip` — `zip app.com pack/main.rb` followed by `File.read("/zip/pack/main.rb")`
+works on the released binaries and always has. The half that was missing was
+any way to make the binary *run* what you appended to it. This section adds it:
+
+```sh
+cp ruby.com myapp.com
+zip myapp.com main.rb lib/thing.rb
+./myapp.com hello world          # runs /zip/main.rb, ARGV == ["hello","world"]
+```
+
+No compiler, no launcher stub, no extraction to a temp directory at run time.
+That last point is the interesting one for ocran: the whole "unpack the payload
+into `%TEMP%` and exec a stub" machinery is unnecessary when the interpreter can
+read the app in place out of its own file.
+
+### Why not cosmopolitan's `/zip/.args`?
+
+That is the existing convention for this in the cosmopolitan world: a
+`/zip/.args` entry whose lines are prepended to `argv`, with a `...` token
+marking where the real arguments get spliced in. `python.com` ships
+`-m\nmymodule\n...` and becomes self-executing.
+
+**Correcting the assumption this work started from:** `LoadZipArgs` *is* in this
+tree — `tool/args/args.c:138`, declared in `libc/cosmo.h:30`, with tests in
+`test/tool/args/args_test.c`. Ruby even links `o//tool/args/args.a` already. It
+is opt-in: `main()` has to call it, and awk, lua, python, sqlite3 and redbean
+all do (`third_party/lua/lua.main.c:408` and friends). Ruby's `ruby.main.c` does
+not, which is why nothing happens today. Its docstring also marks it
+`@deprecated please use cosmo_args()`.
+
+Calling it from `ruby.main.c` was considered and rejected, because it does not
+actually deliver the goal:
+
+- it would still require the packager to author a `/zip/.args` file with the
+  exact right contents (`/zip/main.rb`, `...`), so `zip myapp.com main.rb` alone
+  would do nothing — and "one plain `zip` command" is the entire point;
+- it rewrites `argv` before Ruby has parsed anything, which is a riskier
+  startup-path change on every platform than a single `access()` call, for a
+  mechanism the tree's own header calls deprecated.
+
+So the hook went into Ruby's own startup instead, and the design below is the
+moral equivalent of a `/zip/.args` containing `/zip/main.rb` followed by `...`.
+The two are not mutually exclusive: anyone who wants literal `.args` support can
+add `LoadZipArgs(&argc, &argv)` to `ruby.main.c` later, and it composes with
+this — a binary with a `.args` naming a program never reaches the `main.rb`
+branch.
+
+### The hook
+
+`third_party/ruby/ruby.c`, `process_options()`. There is exactly one place in
+Ruby where the interpreter decides what its program is — the `if (!opt->e_script)`
+block that otherwise assigns `opt->script = "-"` (stdin) or `argv[0]`. The check
+goes in front of that block, so nothing else in startup had to change:
+
+```c
+if (!opt->e_script) {
+#ifdef __COSMOPOLITAN__
+    if (cosmo_zip_main_p(opt, argc, argv)) {
+        opt->script = COSMO_ZIP_MAIN;   /* "/zip/main.rb" */
+    }
+    else
+#endif
+    if (argc <= 0) { ... opt->script = "-"; }
+    else           { ... opt->script = argv[0]; argc--; argv++; }
+```
+
+`cosmo_zip_main_p()` (same file, just above `process_options`) is four
+conditions: not `-S` (`opt->do_search`), not `-x` (`opt->xflag`), the first
+remaining argument is not a bare `-`, `COSMORUBY_NO_ZIP_MAIN` is unset or empty,
+and `access("/zip/main.rb", F_OK) == 0`. `-e` is handled by the enclosing `if`.
+
+`F_OK` rather than `R_OK` deliberately: zipos answers `R_OK` from the mode bits
+in the central directory (`libc/runtime/zipos-access.c` → `GetZipCfileMode`),
+and not every zip writer fills those in. `F_OK` only asks whether the entry
+exists. `access()` on `/zip` works on every platform — zipos mmaps the
+executable's own archive, it is not an OS facility — and the function four lines
+below already relied on that (`access("/zip/.cosmo_ruby_packaged", F_OK)`).
+
+### The one real design decision: positional arguments
+
+"Run the embedded script when there is nothing else to run" and "`myapp.com foo
+bar` must give the app `ARGV == ["foo","bar"]`" cannot both be satisfied by the
+naive reading, because `foo` is *exactly* what Ruby normally treats as the
+script path. Something has to give.
+
+The resolution: **when `/zip/main.rb` exists, positional arguments are never
+script paths.** The binary is an application, not an interpreter that happens to
+contain one. `argc--; argv++` is not executed, so every remaining argument
+reaches `ARGV` untouched. Ruby's *flags* are still parsed exactly as before —
+`--yjit`, `-I`, `-w`, `-v` all work — because the flag parser (`proc_options`)
+runs before this point and is untouched.
+
+The alternative (trigger only when `argc == 0`) was rejected: it would make
+`myapp.com somefile.rb` silently execute a file from the user's disk instead of
+the app, which is both surprising and a nice little privilege-escalation
+primitive for anything that runs a packed binary with attacker-influenced
+arguments.
+
+Consequences, all documented in the README:
+
+- an app argument that looks like a Ruby flag needs `--`:
+  `myapp.com -- --verbose` → `ARGV == ["--verbose"]`. Without it,
+  `proc_options` raises `invalid option --verbose`, as it always would;
+- to use a packed binary as a plain interpreter, use the escape hatch:
+  `COSMORUBY_NO_ZIP_MAIN=1 myapp.com script.rb`.
+
+### Behaviour table
+
+Everything below was measured on the branch, not reasoned about.
+
+| Invocation (binary with `/zip/main.rb`) | Result |
+| --- | --- |
+| `myapp.com` | runs main.rb, `ARGV == []` |
+| `myapp.com foo bar` | runs main.rb, `ARGV == ["foo","bar"]` |
+| `myapp.com -- --flagish` | runs main.rb, `ARGV == ["--flagish"]` |
+| `myapp.com --yjit` | runs main.rb (YJIT on, on Linux/x86-64) |
+| `myapp.com -v` | prints the banner, **then** runs main.rb — same as `ruby -v script.rb` |
+| `myapp.com --version` | banner only, exit 0 (returns before the hook) |
+| `myapp.com -e 'code'` | `-e` wins, main.rb not run |
+| `echo code \| myapp.com -` | stdin wins, main.rb not run |
+| `myapp.com -S gem --version` | `-S` wins, main.rb not run |
+| `COSMORUBY_NO_ZIP_MAIN=1 myapp.com script.rb` | ordinary interpreter |
+| `myapp.com script.rb` (no hatch) | runs main.rb with `ARGV == ["script.rb"]` |
+
+`$0` and `__FILE__` are `/zip/main.rb`; `__dir__` is therefore `/zip`.
+
+`$LOAD_PATH` is **not** modified. It is the usual `/zip/lib/ruby/...` set, so
+`require_relative "lib/thing"` resolves inside the archive but `require "thing"`
+raises `LoadError`. Apps that want the latter must
+`$LOAD_PATH.unshift(__dir__)` themselves. This matches how Ruby treats an
+ordinary script (`.` has not been on `$LOAD_PATH` since 1.9.2), and doing it
+implicitly would be a surprising, hard-to-undo difference from stock Ruby.
+
+`irb.com` is structurally immune: `irb.main.c` starts the VM through
+`-e "require 'irb'; IRB.start"`, so `opt->e_script` is always set. Verified by
+appending a `main.rb` that prints `SHOULD NOT RUN` to `irb.com` — it does not.
+`miniruby.com` goes through the same `ruby.c` and does support the convention.
+
+### Why the existing binaries cannot accidentally trigger this
+
+The packaged stdlib archive has exactly one top-level entry,
+`.cosmo_ruby_packaged`; everything else is under `bin/` or `lib/`
+(`unzip -l ruby.com | grep -v /`). So no released or newly built `ruby.com` has
+a `/zip/main.rb`, `access()` fails, and startup takes literally the same
+branches as before. Nothing in ocran writes a root-level `main.rb` either
+(`grep -rn main.rb lib/ exe/` in Largo/ocran → nothing).
+
+### Verification
+
+Regression side, x86-64 Linux, comparing the *pre-change* fat binary against the
+new one on the same ten invocations (no args + stdin pipe, no args + closed
+stdin, `-e`, script path, `-`, `-v`, `--version`, `-S gem`, `-x`, invalid
+option): **identical output and exit status in all ten** (identical modulo the
+binary's own path, which Ruby prints in error messages). Plus
+`smoke_test.sh` 15/15, `ci_smoke.rb` 36/36, `test_sockets.rb` 19/19,
+`test_sqlite3.rb` 5/5, `irb.com`, `miniruby.com`.
+
+New-behaviour side, run under `env -i` from an empty directory, on every
+platform available:
+
+| | Linux x86-64 | aarch64 (qemu-user) | Windows 11 x86-64 |
+| --- | --- | --- | --- |
+| auto-run `/zip/main.rb` | yes | yes | yes |
+| `ARGV` passthrough | yes | yes | yes (`["foo","bar"]`) |
+| `$0` / `__FILE__` / `__dir__` | `/zip/main.rb`, `/zip` | same | same |
+| multi-file app via `require_relative` | yes | yes | yes |
+| exit status | 7 | 7 | 1792 (7 << 8, pre-existing) |
+| `COSMORUBY_NO_ZIP_MAIN=1` | plain interpreter | plain interpreter | plain interpreter |
+| unpacked `ruby.com` unchanged | yes | yes | yes |
+
+Windows note: the VM's PowerShell execution policy is `Restricted`, so
+`test-cosmoruby.ps1` could not be launched as a file there (GitHub's Windows
+images are `Unrestricted`, which is why CI can). The new assertions were run as
+inline PowerShell statements instead — same `Invoke-Ape` wrapper, same regexes —
+and all pass. CI runs the file itself.
+
+### CI fixture
+
+The obvious way to test this in CI — `zip` a fixture app onto `ruby.com` in each
+test job — does not work, because Windows runners have no `zip` and
+PowerShell's `Compress-Archive` cannot append to an existing APE (it rewrites
+the archive and would drop the executable stub). So the fixture is built once,
+in the build job, which is Linux and already needs `zip` for the stdlib:
+`build-cosmoruby.sh` stages `dist/zipmain.com` (ruby.com + `main.rb` +
+`zmlib/support.rb`) into the artifact, self-checks it, and all six test jobs run
+**the same packed binary**. Both `test-cosmoruby.sh` and `test-cosmoruby.ps1`
+assert the marker, `ARGV`, `$0`/`__dir__`, `require_relative`, exit 7, the
+escape hatch, and that the *unpacked* `ruby.com` still reads stdin.
+
+`SHA256SUMS` is now generated from the three release targets by name instead of
+`./*.com`, so the fixture does not end up in a checksum list that
+`cosmoruby-release.yml` verifies with `sha256sum -c` against a three-file
+release.
+
+### Size
+
+Nothing measurable. Fat `ruby.com` went 32,976,823 → 32,976,947 bytes
+(**+124**, +0.0004 %); the x86-64-only unpackaged `ruby` stayed at exactly
+12,720,749 bytes and the x86-64 `ruby.com` at 21,224,287 — the new code fits in
+existing section padding.
+
+### Upstreamable?
+
+Yes, and it is the most obviously upstreamable thing in this fork: ~40 lines,
+entirely inside `#ifdef __COSMOPOLITAN__`, no behaviour change for a binary
+without `/zip/main.rb`, and it makes every CosmoRuby release a general-purpose
+Ruby application packer for anyone with `zip`. The two things a PR should
+expect to argue about are the positional-argument decision above and the
+constant name `COSMORUBY_NO_ZIP_MAIN` (igravious may prefer `COSMO_RUBY_*`).

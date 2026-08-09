@@ -117,6 +117,52 @@ else
   esac
 fi
 
+# A self-executing APE: dist/zipmain.com is ruby.com with a two-file app
+# appended by the build job's `zip`.  ruby.c runs /zip/main.rb when the
+# command line names no other program, so the packed binary is the app.
+# Checked from an empty cwd so nothing can be picked up from the disk.
+head_ "self-executing APE (/zip/main.rb auto-run)"
+ZM="$BINDIR/zipmain.com"
+if [ ! -f "$ZM" ]; then
+  bad "zipmain.com missing from $BINDIR"
+else
+  chmod +x "$ZM" 2>/dev/null
+  out=$("$ZM" zm-a zm-b 2>&1); rc=$?
+  echo "$out"
+  case "$out" in
+    *'"marker":"zipmain"'*) ok "zip main auto-run" ;;
+    *)                      bad "zip main auto-run :: $(printf '%s' "$out" | head -5)" ;;
+  esac
+  case "$out" in
+    *'"argv":["zm-a","zm-b"]'*) ok "zip main ARGV passthrough" ;;
+    *)                          bad "zip main ARGV passthrough" ;;
+  esac
+  case "$out" in
+    *'"zero":"/zip/main.rb"'*'"dir":"/zip"'*) ok 'zip main $0 and __dir__' ;;
+    *)                                        bad 'zip main $0 and __dir__' ;;
+  esac
+  case "$out" in
+    *'"lib":"require_relative-ok"'*) ok "zip main multi-file app (require_relative)" ;;
+    *)                               bad "zip main multi-file app (require_relative)" ;;
+  esac
+  if [ "$rc" -eq 7 ]; then ok "zip main exit status 7"; else bad "zip main exit status: got $rc, want 7"; fi
+
+  # The escape hatch turns a packed binary back into a plain interpreter.
+  out=$(COSMORUBY_NO_ZIP_MAIN=1 "$ZM" -e 'puts "hatch-ok"' 2>&1)
+  case "$out" in
+    hatch-ok*) ok "COSMORUBY_NO_ZIP_MAIN=1 suppresses auto-run" ;;
+    *)         bad "COSMORUBY_NO_ZIP_MAIN=1 :: $(printf '%s' "$out" | head -5)" ;;
+  esac
+
+  # ...and an unpacked ruby.com must be completely unaffected: no /zip/main.rb
+  # means the old stdin path, which is what every existing use depends on.
+  out=$(echo 'puts "stdin-ok"' | "$RUBY" 2>&1)
+  case "$out" in
+    stdin-ok*) ok "plain ruby.com still reads stdin (no auto-run)" ;;
+    *)         bad "plain ruby.com stdin :: $(printf '%s' "$out" | head -5)" ;;
+  esac
+fi
+
 cd "$REPO_ROOT" || exit 1
 rm -rf "$WORK"
 

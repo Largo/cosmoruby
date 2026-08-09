@@ -2180,6 +2180,17 @@ similar):
   `argc--, argv++` to skip the program name, so its return value is ≥ 1 in the
   ordinary case. Returning `0` here would have left the program's own path in
   `ARGV`.
+- **`irb.com` needed one line back.** Its immunity to an appended `main.rb` used
+  to be structural: `irb.main.c` synthesises `-e "require 'irb'; IRB.start"`,
+  which `proc_options()` parsed before the hook was consulted. Deciding earlier
+  removes that, so an `irb.com` with a `main.rb` appended would have started the
+  app instead of the REPL. `rb_cosmo_disable_zip_main()` (`ruby.c:2422`) is the
+  explicit statement of what used to be an accident, called from
+  `irb.main.c:15`. A plain `ruby.com` never calls it, and `miniruby.com` still
+  supports the convention (verified: `mz.com --flag a` → `["--flag","a"]`).
+  Checked in `build-cosmoruby.sh` rather than in the six test jobs, because it
+  is startup-order behaviour rather than OS behaviour and a second 33 MB
+  fixture in the artifact would not earn its keep.
 - The script-selection branch (`ruby.c:2592`) now tests the cached
   `cosmo_zip_main` instead of re-deriving it, so `access()` still happens once.
 

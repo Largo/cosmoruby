@@ -2413,10 +2413,26 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
  */
 #define COSMO_ZIP_MAIN "/zip/main.rb"
 
+/* Set by an embedding main() that names its own program, so it keeps naming
+ * it whatever is appended to the binary.  irb.main.c is the one in tree: it
+ * synthesises `-e "require 'irb'; IRB.start"`, and because the hook now runs
+ * before Ruby's option parser, without this an appended main.rb would replace
+ * the REPL.  A plain `ruby.com` never calls it. */
+static int cosmo_zip_main_off;
+
+void
+rb_cosmo_disable_zip_main(void)
+{
+    cosmo_zip_main_off = 1;
+}
+
 static int
 cosmo_zip_main_p(void)
 {
     const char *disable;
+
+    if (cosmo_zip_main_off)
+        return FALSE;
 
     if ((disable = getenv("COSMORUBY_NO_ZIP_MAIN")) != NULL && *disable)
         return FALSE;

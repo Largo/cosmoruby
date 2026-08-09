@@ -316,5 +316,24 @@ case "$zmout" in
 esac
 [ "$zmrc" = 3 ] || die "zipmain.com --exit=3 status: got $zmrc, want 3"
 
+# irb.com names its own program (irb.main.c synthesises -e "IRB.start"), so an
+# appended main.rb must not replace the REPL.  That used to be structural --
+# the -e was parsed before the hook ran -- and is now explicit
+# (rb_cosmo_disable_zip_main), so it needs a test.  Checked here rather than in
+# the six test jobs because it is startup-order behaviour, not OS behaviour,
+# and a second 33 MB fixture in the artifact would not earn its keep.
+IRBTMP="$(mktemp -d)"
+printf 'puts "SHOULD-NOT-RUN"\n' > "$IRBTMP/main.rb"
+cp "$DIST_DIR/irb.com" "$IRBTMP/zipirb.com"
+(cd "$IRBTMP" && zip -q zipirb.com main.rb) || die "could not build the irb fixture"
+chmod +x "$IRBTMP/zipirb.com"
+irbout="$(echo 'puts 40 + 2' | "$IRBTMP/zipirb.com" 2>&1)"
+rm -rf "$IRBTMP"
+case "$irbout" in
+  *SHOULD-NOT-RUN*) die "irb.com ran an appended /zip/main.rb instead of the REPL" ;;
+  *42*)             echo "  irb.com ignores an appended main.rb" ;;
+  *)                die "irb.com fixture did not start the REPL: $irbout" ;;
+esac
+
 log "build complete"
 ls -l "$DIST_DIR"/*.com

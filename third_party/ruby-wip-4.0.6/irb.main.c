@@ -6,9 +6,18 @@
 
 #include "ruby_cosmo_main.h"
 
+/* Defined in ruby.c.  Keeps an appended /zip/main.rb from replacing the
+ * program this main() names below: irb is a REPL, not an application
+ * launcher, and its immunity to an appended main.rb is documented.  It used
+ * to be structural (the -e below was parsed first); the hook now runs before
+ * Ruby's option parser, so it has to be stated. */
+void rb_cosmo_disable_zip_main(void);
+
 static int
 rb_main(int argc, char **argv)
 {
+    rb_cosmo_disable_zip_main();
+
     /* Create argv for ruby_options to properly initialize the VM */
     /* This mimics: ruby -e "require 'rubygems'; require 'irb'; IRB.start" */
     int new_argc = 3;

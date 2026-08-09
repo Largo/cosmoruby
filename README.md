@@ -321,7 +321,7 @@ The rules:
 | **Exit status** | your app's, exactly, on every platform — including Windows |
 
 A `ruby.com` with no `/zip/main.rb` behaves exactly as it always has, so this
-costs existing users nothing. `irb.com` starts itself via `-e` and is therefore
+costs existing users nothing. `irb.com` names its own program and is therefore
 never affected by an appended `main.rb`; `miniruby.com` supports the convention
 just like `ruby.com`.
 

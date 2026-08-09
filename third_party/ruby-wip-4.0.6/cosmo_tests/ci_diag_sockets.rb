@@ -211,12 +211,18 @@ def churn_once
 end
 
 loop_errors = Hash.new(0)
-loop_n = 200
+loop_n = (ENV["COSMO_DIAG_ITERS"] || 1200).to_i
+# Background pressure: the failure needs an interrupt to land inside a
+# blocking region, so keep the VM interrupt machinery busy while connecting.
+diag_stop = false
+noise = 2.times.map { Thread.new { until diag_stop; Array.new(2000) { "x" * 32 }; Thread.pass; end } }
+hosts = ["localhost", "127.0.0.1", "::1"]
 loop_n.times do |i|
-  churn_once
+  churn_once if (i % 3).zero?
   begin
-    with_server("localhost") do |_, port|
-      s = TCPSocket.new("localhost", port)
+    host = hosts[i % hosts.size]
+    with_server(host) do |_, port|
+      s = TCPSocket.new(host, port)
       s.read(2)
       s.close
     end
@@ -228,6 +234,8 @@ loop_n.times do |i|
     end
   end
 end
+diag_stop = true
+noise.each { |t| t.join(3) }
 puts "  iterations=#{loop_n} errors=#{loop_errors.inspect}"
 
 # ------------------------------------------------------------------- verdict

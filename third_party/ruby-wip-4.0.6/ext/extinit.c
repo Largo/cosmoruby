@@ -13,6 +13,7 @@ void ruby_init_ext(const char *name, void (*init)(void));
 void Init_ext(void)
 {
 #if defined(EXTSTATIC) && EXTSTATIC
+    init(Init_bigdecimal, "bigdecimal");
     init(Init_continuation, "continuation");
     init(Init_coverage, "coverage");
     init(Init_date_core, "date_core");
@@ -29,8 +30,11 @@ void Init_ext(void)
     init(Init_parser, "json/ext/parser");
     init(Init_mbedtls, "mbedtls");
     init(Init_monitor, "monitor");
+    init(Init_nio4r_ext, "nio4r_ext");
     init(Init_nokogiri, "nokogiri/nokogiri");
     init(Init_psych, "psych");
+    init(Init_puma_http11, "puma/puma_http11");
+    init(Init_cparse, "racc/cparse");
     init(Init_sizeof, "rbconfig/sizeof");
     init(Init_ripper, "ripper");
     init(Init_socket, "socket");

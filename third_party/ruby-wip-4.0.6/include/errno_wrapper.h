@@ -117,10 +117,26 @@
 #define WNOHANG 1
 #define WUNTRACED 2
 
-/* Signal mask constants */
+/* Signal mask constants
+ *
+ * cosmo: guarded. Cosmopolitan's <signal.h> (libc/sysv/consts/sig.h) defines
+ * these as host-correct `extern const int`s, and any translation unit that
+ * reaches <signal.h> before this header -- e.g. ext/nio4r, whose nio4r.h
+ * includes libev's ev.h ahead of ruby.h -- would otherwise fail with
+ * "SIG_BLOCK redefined" under -Werror. Every use of these three in the tree
+ * is a function argument (sigprocmask/pthread_sigmask), never a case label,
+ * so letting cosmopolitan's runtime values win where they got there first is
+ * both harmless and more correct than the hardcoded Linux numbers below.
+ */
+#ifndef SIG_BLOCK
 #define SIG_BLOCK 0
+#endif
+#ifndef SIG_UNBLOCK
 #define SIG_UNBLOCK 1
+#endif
+#ifndef SIG_SETMASK
 #define SIG_SETMASK 2
+#endif
 
 /* Socket errno constants */
 #define EMSGSIZE 90

@@ -106,6 +106,30 @@ $allText += $r.Text
 if ((Status-Is $r.Code 0) -and ($r.Text -match "fail=0")) { Ok "test_nokogiri.rb" }
 else { Bad "test_nokogiri.rb (status $($r.Code))" }
 
+Section "bigdecimal acceptance (cosmo_tests/test_bigdecimal.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_bigdecimal.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "fail=0")) { Ok "test_bigdecimal.rb" }
+else { Bad "test_bigdecimal.rb (status $($r.Code))" }
+
+Section "racc acceptance (cosmo_tests/test_racc.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_racc.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "fail=0")) { Ok "test_racc.rb" }
+else { Bad "test_racc.rb (status $($r.Code))" }
+
+Section "nio4r acceptance (cosmo_tests/test_nio4r.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_nio4r.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "fail=0")) { Ok "test_nio4r.rb" }
+else { Bad "test_nio4r.rb (status $($r.Code))" }
+
+Section "puma acceptance (cosmo_tests/test_puma.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_puma.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "fail=0")) { Ok "test_puma.rb" }
+else { Bad "test_puma.rb (status $($r.Code))" }
+
 Section "irb.com boots (pipe mode)"
 $r = Invoke-Ape "echo puts 40 + 2 | `"$irb`""
 $allText += $r.Text

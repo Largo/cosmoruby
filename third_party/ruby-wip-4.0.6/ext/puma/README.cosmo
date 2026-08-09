@@ -1,0 +1,29 @@
+ORIGIN
+
+  https://rubygems.org/downloads/puma-8.0.2.gem
+  sha256 c8ed871dfbbe66448ea9ffd46692342d9804d4071522b52b5331b7b6e7b686fb
+
+LOCAL CHANGES
+
+  - ext/puma_http11/*.{c,h}  -> puma_http11/ (unmodified)
+  - ext/puma_http11/*.rl     -> puma_http11/ (unmodified; reference only --
+                                http11_parser.c ships pre-generated, no Ragel
+                                is run at build time)
+  - lib/**                   -> lib/ (unmodified, including
+                                lib/rack/handler/puma.rb)
+  - LICENSE                  -> LICENSE
+  - ext/puma_http11/org/**.java and no_ssl/*.java (JRuby) are not vendored.
+  - extconf.rb is kept for reference only.
+  - puma.gemspec is hand-written (upstream's declares `extensions`).
+
+  No .c or .h file has been modified.
+
+NO SSL
+
+  mini_ssl.c is compiled with HAVE_OPENSSL_BIO_H *undefined*, i.e. exactly
+  the configuration upstream produces when extconf.rb finds no OpenSSL or
+  when PUMA_DISABLE_SSL is set.  CosmoRuby's `openssl` is an MbedTLS shim,
+  not the OpenSSL C API mini_ssl.c needs.  Consequences: Puma::HAS_SSL is
+  false, Puma::MiniSSL does not exist, and `ssl_bind` / `bind "ssl://..."`
+  raise.  Plain HTTP -- which is all a packaged app behind a reverse proxy
+  needs -- is unaffected.  See BUILD.mk.

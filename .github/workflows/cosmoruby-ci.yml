@@ -16,7 +16,7 @@ name: CosmoRuby CI
 
 on:
   push:
-    branches: [main, ci, fat-ape, xml-libs]
+    branches: [main, ci, fat-ape, xml-libs, rails-exts]
   pull_request:
   workflow_dispatch:
 

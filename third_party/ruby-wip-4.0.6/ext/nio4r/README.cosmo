@@ -1,0 +1,38 @@
+ORIGIN
+
+  https://rubygems.org/downloads/nio4r-2.7.5.gem
+  sha256 6c90168e48fb5f8e768419c93abb94ba2b892a1d0602cb06eef16d8b7df1dca1
+
+  nio4r bundles libev 4.x (ext/libev), maintained by Marc Lehmann; see
+  ext/libev/LICENSE (BSD-2-Clause / GPL-2.0+ dual).
+
+WHY THE DIRECTORY LAYOUT LOOKS REDUNDANT
+
+  The gem's own tree (ext/nio4r/ and ext/libev/) is preserved verbatim under
+  this directory, so the paths are third_party/ruby/ext/nio4r/ext/nio4r/*.c
+  and third_party/ruby/ext/nio4r/ext/libev/*.  That is deliberate:
+  ext/nio4r/nio4r_ext.c does `#include "../libev/ev.c"`, and keeping the
+  layout is what makes this a zero-patch vendoring.
+
+LOCAL CHANGES
+
+  - ext/nio4r/*.{c,h} + extconf.rb -> ext/nio4r/ (unmodified)
+  - ext/libev/*                    -> ext/libev/ (unmodified)
+  - lib/**                         -> lib/ (unmodified)
+  - license.md                     -> here
+  - ext/nio4r/org/**.java (JRuby backend) is not vendored.
+  - extconf.rb is kept for reference only; its have_header()/have_func()
+    results and its libev backend selection are hand transcribed into
+    BUILD.mk.  See BUILD.mk for why the poll(2) backend was chosen.
+  - nio4r.gemspec is hand-written (upstream's declares `extensions`).
+
+  No .c or .h file has been modified.
+
+RUNTIME NOTE
+
+  lib/nio.rb picks the pure-Ruby Kernel.select engine when NIO.pure? is true,
+  which it decides from Gem.win_platform?.  Under CosmoRuby RUBY_PLATFORM is
+  "x86_64-cosmo"/"aarch64-cosmo", so win_platform? is false and the C
+  extension is used on every host, Windows included -- cosmopolitan's poll()
+  works there (libc/sock/poll-nt.c).  Setting NIO4R_PURE=true in the
+  environment forces the pure-Ruby engine if that ever needs a workaround.

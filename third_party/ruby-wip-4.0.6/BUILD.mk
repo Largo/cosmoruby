@@ -74,7 +74,7 @@ ruby_missing:
 	    missing=1; \
 	  fi; \
 	done; \
-	for ext in date digest etc io/nonblock json mbedtls monitor nokogiri pathname psych socket sqlite3 stringio strscan zlib; do \
+	for ext in bigdecimal date digest etc io/nonblock json mbedtls monitor nio4r nokogiri pathname psych puma racc socket sqlite3 stringio strscan zlib; do \
 	  path=o/$(MODE)/third_party/ruby/ext/$$ext/$$ext.a; \
 	  if [ ! -e "$$path" ]; then \
 	    echo "missing extension archive: $$path"; \

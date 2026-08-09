@@ -2847,6 +2847,13 @@ actionview, zeitwerk, rack 3.2, tzinfo, i18n, concurrent-ruby, erubi and
 the rest load and run unmodified on CosmoRuby, over the sqlite3, nokogiri,
 bigdecimal, nio4r, puma and racc extensions this port provides.
 
+**Both halves of the fat APE do it.** The same `server.rb`, run as
+`qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com server.rb`,
+answers with `"platform":"aarch64-cosmo"` and serves `/`, `/status` and
+`/report` — so Rails works on ARM as well, which it could not have done
+before the two coroutine fixes above (ActiveSupport reaches
+`Enumerator#next` long before it reaches a controller).
+
 ### The OpenSSL shim is the remaining blocker — and it is not a gem
 
 The boot above needed **one** shim file preloaded (`-r openssl_gap_probe.rb`,

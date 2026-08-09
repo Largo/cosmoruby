@@ -569,6 +569,34 @@ check("decrypting with the wrong key fails (GCM authenticates)") do
   end
 end
 
+check("a cipher with no explicit IV behaves like OpenSSL (CBC/CTR) or refuses (GCM)") do
+  # OpenSSL encrypts CBC/CTR/ECB with an all-zero IV when none was set --
+  # deterministic, and reproduced here byte for byte.  For GCM it uses
+  # whatever is left in the EVP context, so its output differs from run to
+  # run; CosmoRuby refuses instead, because a fixed GCM nonce would leak the
+  # authentication key on the second message.
+  %w[aes-256-cbc aes-256-ctr].each do |name|
+    a = OpenSSL::Cipher.new(name)
+    a.encrypt; a.key = "k" * 32
+    without = a.update("hello world 1234") + a.final
+    b = OpenSSL::Cipher.new(name)
+    b.encrypt; b.key = "k" * 32; b.iv = "\0" * b.iv_len
+    assert_eq(b.update("hello world 1234") + b.final, without,
+              "#{name}: no iv == zero iv")
+  end
+  if defined?(MbedTLS)
+    g = OpenSSL::Cipher.new("aes-256-gcm")
+    g.encrypt; g.key = "k" * 32
+    begin
+      g.update("hello") + g.final
+      raise "GCM without a nonce was accepted"
+    rescue OpenSSL::Cipher::CipherError
+      # expected
+    end
+  end
+  true
+end
+
 check("unsupported cipher raises") do
   begin
     OpenSSL::Cipher.new("aes-256-nonsense")
@@ -873,6 +901,72 @@ check("host-produced AES-256-CBC ciphertext decrypts here (and re-encrypts ident
   e.encrypt; e.key = key; e.iv = iv
   assert_eq(ct, e.update(pt) + e.final, "re-encrypt matches host byte for byte")
   true
+end
+
+# One row per algorithm OpenSSL::Cipher advertises, all produced by the same
+# real OpenSSL 3.5.0.  Key = 0x01 repeated, IV/nonce = 0x02 repeated, AAD
+# "aad!" for the AEAD modes.  If a mode ever stops being interchangeable --
+# a different nonce convention, a different default padding, a different
+# counter width -- this is what catches it.
+CIPHER_MATRIX_MSG = "the quick brown fox jumps over the lazy dog!!"
+CIPHER_MATRIX = [
+  # [name, key bytes, iv bytes, tag (hex or nil), ciphertext hex]
+  ["aes-128-cbc",      16, 16, nil,
+   "519200be571795a44b22a180c121d72b62a1d014420d038d7055c987cd7c4b7dad06ac04ee9956a572d55a52ea8fa48f"],
+  ["aes-192-cbc",      24, 16, nil,
+   "16d6883fd08d00191e3ef686722aba8b84cbbc4a1c40c077d95a8e65650364cb15f9552441cf94774c89a105a7ec0399"],
+  ["aes-256-cbc",      32, 16, nil,
+   "698b72fd505819c421082572670a526f14b8978ccd336e1af9ab0b3d3967e4ab23ac6e11460cce65c9fdfc5325514453"],
+  ["aes-128-ctr",      16, 16, nil,
+   "63be71d308dc5cf31cc937059246ac2a45e2f54292e7f385a7f9695d958957295e6dfc8578b4d40c51f9e14ad2"],
+  ["aes-192-ctr",      24, 16, nil,
+   "9fe47210e1b23214bd52d625c80fb7f02f2c7a3dd6b78125859ad6e6a11692cfcbf67f355c98270fffe6e3dd25"],
+  ["aes-256-ctr",      32, 16, nil,
+   "16c677d355ca836bbed617c77c75059fc3c2a874f54ce41d380821be91d492026977c28b601c5b9718ba374dac"],
+  ["aes-128-gcm",      16, 12, "9ac653b20af4c7533122a6fd5ce10e6e",
+   "278c7543b75b2f1ffcc06c46dd96147b3d22311d3a871d6abb426e41e8fead9a6025cf9b5c27ea70e2f788459e"],
+  ["aes-192-gcm",      24, 12, "ff6fec15ecd8a4f22667f90e552e1aa2",
+   "5b548c87812e70e42258447ea0e470f92e810511e079dbb784c42a375d51e1d7ebb20c922b125ba20f088108ea"],
+  ["aes-256-gcm",      32, 12, "37b310c01f5beb688031c47f4664e3c0",
+   "73beac693b22a89eb8ecdeba33d0ac92c4daa9cf81c4e001aea78f8d1d89540b1f1a3e5b0c15dacf234135c8be"],
+  ["des-ede-cbc",      16,  8, nil,
+   "fd4c47ef8b573088ca0031cae36c165a26bd220b281fabab310c1696df6aeab02786cb77c8933bd26fce45f1ef16c635"],
+  ["des-ede3-cbc",     24,  8, nil,
+   "fd4c47ef8b573088ca0031cae36c165a26bd220b281fabab310c1696df6aeab02786cb77c8933bd26fce45f1ef16c635"],
+  ["chacha20-poly1305", 32, 12, "a93a2dfa8b5e209b468994e25be7b916",
+   "9274970efcd681b91a0d8b8bbcfc8a09eadc142de9df10a367a474cb90e464a8bb76d9995a747f99b2a45826a9"],
+].freeze
+
+check("every advertised cipher matches a real OpenSSL, byte for byte") do
+  advertised = OpenSSL::Cipher.ciphers
+  CIPHER_MATRIX.each do |name, key_len, iv_len, tag_hex, ct_hex|
+    unless advertised.include?(name)
+      # A Ruby with real OpenSSL may spell or omit a legacy name; only the
+      # mbedtls build is required to advertise exactly this set.
+      next unless defined?(MbedTLS)
+      raise "#{name} is in the matrix but not in OpenSSL::Cipher.ciphers"
+    end
+    key = "\x01".b * key_len
+    iv  = "\x02".b * iv_len
+    ct  = hex(ct_hex)
+
+    e = OpenSSL::Cipher.new(name)
+    e.encrypt; e.key = key; e.iv = iv
+    e.auth_data = "aad!" if e.authenticated?
+    assert_eq(ct, e.update(CIPHER_MATRIX_MSG) + e.final, "#{name} ciphertext")
+    assert_eq(hex(tag_hex), e.auth_tag, "#{name} tag") if tag_hex
+
+    d = OpenSSL::Cipher.new(name)
+    d.decrypt; d.key = key; d.iv = iv
+    d.auth_data = "aad!" if d.authenticated?
+    d.auth_tag = hex(tag_hex) if tag_hex
+    assert_eq(CIPHER_MATRIX_MSG, d.update(ct) + d.final, "#{name} plaintext")
+  end
+  if defined?(MbedTLS)
+    extra = advertised - CIPHER_MATRIX.map(&:first)
+    raise "unverified ciphers advertised: #{extra.inspect}" unless extra.empty?
+  end
+  CIPHER_MATRIX.size
 end
 
 check("host-produced PBKDF2 keys and HMACs match") do

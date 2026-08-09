@@ -159,7 +159,7 @@ operation is an MbedTLS call**; nothing is reimplemented in Ruby.
 
 | | |
 | --- | --- |
-| `OpenSSL::Cipher` | AES-128/192/256 in **GCM**, **CBC**, **CTR** and ECB, DES/3DES, ChaCha20, ChaCha20-Poly1305 (`OpenSSL::Cipher.ciphers` lists all 20). `encrypt`/`decrypt`, `key=`/`iv=`, `random_key`/`random_iv`, `key_len`/`iv_len`/`block_size`, `padding=`, `update`/`final`, `reset`, and the AEAD set `auth_data=`/`auth_tag`/`auth_tag=`/`auth_tag_len=`/`authenticated?` |
+| `OpenSSL::Cipher` | AES-128/192/256 in **GCM**, **CBC** and **CTR**, 2- and 3-key 3DES-CBC, ChaCha20-Poly1305 — 12 algorithms, and **every one is verified byte-for-byte against a real OpenSSL 3.5.0** in the test suite. `encrypt`/`decrypt`, `key=`/`iv=`, `random_key`/`random_iv`, `key_len`/`iv_len`/`block_size`, `padding=`, `update`/`final`, `reset`, and the AEAD set `auth_data=`/`auth_tag`/`auth_tag=`/`auth_tag_len=`/`authenticated?` |
 | `OpenSSL::Digest` | a real class hierarchy — `OpenSSL::Digest < Digest::Class`, with `SHA1`, `SHA224`, `SHA256`, `SHA384`, `SHA512`, `MD5` and `BLAKE2B256` subclasses, subclassable yourself |
 | `OpenSSL::HMAC` | the class *and* `.digest`/`.hexdigest`/`.base64digest` |
 | `OpenSSL::KDF` | `pbkdf2_hmac` (also `OpenSSL::PKCS5.pbkdf2_hmac` / `pbkdf2_hmac_sha1`) |
@@ -198,8 +198,16 @@ return a wrong-but-plausible answer:
   Absent entirely.
 - **`OpenSSL::KDF.hkdf` and `.scrypt`**, and `Cipher#pkcs5_keyivgen`
   (EVP_BytesToKey) — MbedTLS has none of them.
-- **Cipher modes CFB, OFB, XTS, CCM** are not compiled into this MbedTLS;
-  `OpenSSL::Cipher.new` refuses their names rather than substituting.
+- **Cipher modes CFB, OFB, XTS and CCM** are not compiled into this MbedTLS,
+  and **ECB, raw ChaCha20 and single DES are refused on purpose**: MbedTLS's
+  generic cipher layer cannot pad ECB or take more than one block at a time,
+  its raw ChaCha20 uses a different nonce convention from OpenSSL's, and
+  OpenSSL 3 itself refuses single DES. `OpenSSL::Cipher.new` raises for all
+  of them rather than substituting something that would not interoperate.
+- **An AEAD cipher used with no `iv=`** raises. OpenSSL encrypts with
+  whatever is in its context (its output differs run to run); a fixed zero
+  nonce would be worse than either, so this refuses. CBC/CTR/ECB with no
+  `iv=` do use an all-zero IV, exactly like OpenSSL.
 - **TLS server sockets, client certificates, session resumption, ALPN,
   `OpenSSL::VERSION` and the `OPENSSL_VERSION*` constants.**
 

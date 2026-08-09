@@ -350,8 +350,10 @@ cipher_start(cipher_t *c)
     }
     if (!c->key_set) rb_raise(eCryptoError, "key not set");
 
-    if (mbedtls_cipher_get_cipher_mode(&c->ctx) == MBEDTLS_MODE_CBC ||
-        mbedtls_cipher_get_cipher_mode(&c->ctx) == MBEDTLS_MODE_ECB) {
+    /* mbedtls_cipher_set_padding_mode() accepts CBC and nothing else -- the
+     * cipher layer has no padding for ECB, which is why lib/openssl.rb does
+     * not offer the ECB modes at all. */
+    if (mbedtls_cipher_get_cipher_mode(&c->ctx) == MBEDTLS_MODE_CBC) {
         if ((ret = mbedtls_cipher_set_padding_mode(&c->ctx, c->padding)) != 0) {
             crypto_raise(ret, "mbedtls_cipher_set_padding_mode");
         }
@@ -363,11 +365,25 @@ cipher_start(cipher_t *c)
     }
     if (mbedtls_cipher_get_iv_size(&c->ctx) > 0 || cipher_is_aead(c)) {
         if (!c->iv_set) {
-            /* OpenSSL runs with an all-zero IV when the caller supplied
-             * none; matching that is what keeps ciphertext produced here
-             * interchangeable with ciphertext produced there. */
-            size_t n = (size_t)mbedtls_cipher_get_iv_size(&c->ctx);
-            if (n == 0 || n > MBEDTLS_MAX_IV_LENGTH) n = 12;
+            /* With no IV set, OpenSSL encrypts CBC/CTR/ECB with an all-zero
+             * one -- verified against OpenSSL 3.5.0, byte for byte -- so we
+             * do the same and stay interchangeable.
+             *
+             * For AEAD modes OpenSSL has no such default: it runs with
+             * whatever happens to be in the EVP context, and the ciphertext
+             * differs from run to run.  There is therefore nothing to be
+             * compatible with, and quietly substituting a fixed zero nonce
+             * would be the worst possible answer -- repeating a GCM nonce
+             * under one key leaks the authentication key outright.  So we
+             * refuse. */
+            size_t n;
+            if (cipher_is_aead(c)) {
+                rb_raise(eCryptoError,
+                         "iv (nonce) must be set explicitly for authenticated "
+                         "ciphers");
+            }
+            n = (size_t)mbedtls_cipher_get_iv_size(&c->ctx);
+            if (n == 0 || n > MBEDTLS_MAX_IV_LENGTH) n = MBEDTLS_MAX_IV_LENGTH;
             memset(c->iv, 0, sizeof(c->iv));
             c->iv_len = n;
             c->iv_set = 1;

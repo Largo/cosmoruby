@@ -8,16 +8,19 @@
 # Ruby.  Anything mbedtls cannot do is *not* provided: it raises rather than
 # returning a plausible wrong answer.
 #
-# Covered:  OpenSSL::Cipher (AES-128/192/256 in GCM/CBC/CTR/ECB, 3DES,
-#           ChaCha20 and ChaCha20-Poly1305), OpenSSL::Digest (a real class
-#           hierarchy), OpenSSL::HMAC, OpenSSL::KDF.pbkdf2_hmac,
+# Covered:  OpenSSL::Cipher (AES-128/192/256 in GCM/CBC/CTR, 2- and 3-key
+#           3DES-CBC, ChaCha20-Poly1305 -- every one of them checked byte
+#           for byte against a real OpenSSL 3.5.0), OpenSSL::Digest (a real
+#           class hierarchy), OpenSSL::HMAC, OpenSSL::KDF.pbkdf2_hmac,
 #           OpenSSL::PKCS5, OpenSSL::Random, the secure-compare helpers, and
 #           the pre-existing OpenSSL::SSL / OpenSSL::X509 client surface.
 #
-# Not covered (these raise NotImplementedError):  public-key cryptography
-# (RSA/DSA/EC key generation, signing, verification, encryption), certificate
-# creation or parsing, PKCS#7/CMS, OCSP, HKDF, scrypt, and EVP_BytesToKey
-# (Cipher#pkcs5_keyivgen).
+# Not covered (these raise):  public-key cryptography (RSA/DSA/EC key
+# generation, signing, verification, encryption), certificate creation or
+# parsing, PKCS#7/CMS, OCSP, HKDF, scrypt, EVP_BytesToKey
+# (Cipher#pkcs5_keyivgen), the CFB/OFB/XTS/CCM modes (not compiled into this
+# mbedtls) and ECB / raw ChaCha20 / single DES (compiled, but not
+# interchangeable with OpenSSL -- see the Cipher::ALGORITHMS comment).
 
 require 'mbedtls'
 require 'digest'
@@ -199,10 +202,22 @@ module OpenSSL
     # mbedtls_cipher_* layer rather than any particular primitive.  Entries
     # whose mbedtls counterpart is not compiled into this build are dropped
     # at load time, so `ciphers` never advertises something that would fail.
+    #
+    # Every algorithm listed here has been checked byte for byte against a
+    # real OpenSSL 3.5.0 (cosmo_tests/test_openssl.rb, "every advertised
+    # cipher matches a real OpenSSL").  Three families mbedtls *can* do are
+    # deliberately absent because they would not be interchangeable:
+    #
+    #   ECB      the mbedtls cipher layer has no padding for ECB and its
+    #            update() accepts exactly one block, so it could never
+    #            behave like OpenSSL's aes-*-ecb
+    #   CHACHA20 (raw) mbedtls takes a 12-byte nonce with an implicit zero
+    #            counter; OpenSSL takes a 16-byte counter||nonce.  The
+    #            keystreams do not line up.  ChaCha20-Poly1305 is fine and
+    #            is offered.
+    #   DES-CBC  single 56-bit DES.  OpenSSL 3 itself refuses it without the
+    #            legacy provider, so there is nothing to be compatible with.
     ALGORITHMS = {
-      'AES-128-ECB'       => 'AES-128-ECB',
-      'AES-192-ECB'       => 'AES-192-ECB',
-      'AES-256-ECB'       => 'AES-256-ECB',
       'AES-128-CBC'       => 'AES-128-CBC',
       'AES-192-CBC'       => 'AES-192-CBC',
       'AES-256-CBC'       => 'AES-256-CBC',
@@ -212,13 +227,8 @@ module OpenSSL
       'AES-128-GCM'       => 'AES-128-GCM',
       'AES-192-GCM'       => 'AES-192-GCM',
       'AES-256-GCM'       => 'AES-256-GCM',
-      'DES-EDE3-CBC'      => 'DES-EDE3-CBC',
-      'DES-EDE3-ECB'      => 'DES-EDE3-ECB',
       'DES-EDE-CBC'       => 'DES-EDE-CBC',
-      'DES-EDE-ECB'       => 'DES-EDE-ECB',
-      'DES-CBC'           => 'DES-CBC',
-      'DES-ECB'           => 'DES-ECB',
-      'CHACHA20'          => 'CHACHA20',
+      'DES-EDE3-CBC'      => 'DES-EDE3-CBC',
       'CHACHA20-POLY1305' => 'CHACHA20-POLY1305',
     }.select { |_, mbed| MbedTLS.cipher_supported?(mbed) }.freeze
 
@@ -228,9 +238,8 @@ module OpenSSL
       'AES192'   => 'AES-192-CBC',
       'AES256'   => 'AES-256-CBC',
       'DES3'     => 'DES-EDE3-CBC',
-      'DES-EDE3' => 'DES-EDE3-ECB',
-      'DES-EDE'  => 'DES-EDE-ECB',
-      'DES'      => 'DES-CBC',
+      'DES-EDE3' => 'DES-EDE3-CBC',
+      'DES-EDE'  => 'DES-EDE-CBC',
     }.freeze
 
     def self.resolve(name)

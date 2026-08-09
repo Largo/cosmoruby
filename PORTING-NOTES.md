@@ -3548,6 +3548,41 @@ is now enabled — that is the only change outside `third_party/ruby`. CFB,
 OFB, XTS and CCM stay off, and `OpenSSL::Cipher.new` refuses their names
 rather than substituting something.
 
+### Which ciphers are offered, and why three families are not
+
+The first draft of the table advertised everything mbedtls could name: 20
+algorithms including ECB, raw ChaCha20 and single DES. Running every one
+of them side by side against real OpenSSL 3.5.0 with the same key, IV and
+message cut that to **12**, and the three that were dropped are worth
+recording, because each of them looked fine in a round-trip:
+
+- **ECB (`aes-*-ecb`, `des-*-ecb`).** Broken outright, not subtly:
+  `mbedtls_cipher_set_padding_mode()` accepts CBC and nothing else, so
+  every ECB operation died in `cipher_start`. Even with that fixed, the
+  cipher layer's ECB `update()` accepts *exactly one block*
+  (`MBEDTLS_ERR_CIPHER_FULL_BLOCK_EXPECTED` otherwise) and has no
+  padding, so it could not behave like OpenSSL's `aes-256-ecb`.
+- **Raw `chacha20`.** Round-tripped perfectly and produced *different*
+  ciphertext from OpenSSL. mbedtls' cipher layer calls
+  `mbedtls_chacha20_starts(ctx, iv, 0)` — a 12-byte nonce with an
+  implicit zero counter — while OpenSSL's `chacha20` takes a 16-byte IV
+  that is a 32-bit little-endian counter followed by the 12-byte nonce.
+  The keystreams do not line up. This is exactly the failure mode worth
+  fearing: self-consistent and wrong, invisible to any round-trip test.
+  **ChaCha20-Poly1305 is fine** (ciphertext and tag both byte-identical)
+  and is offered.
+- **Single `des-cbc` / `des-ecb`.** Works, but OpenSSL 3 refuses it
+  without the legacy provider, so there is nothing to be compatible with
+  and no way to cross-check it. Refusing it is *more* OpenSSL-like than
+  supporting it.
+
+What survived, all byte-identical to OpenSSL 3.5.0 including tags:
+`aes-{128,192,256}-{cbc,ctr,gcm}`, `des-ede-cbc`, `des-ede3-cbc`,
+`chacha20-poly1305`. `test_openssl.rb` carries that entire matrix as
+hard-coded host output *and* asserts that `OpenSSL::Cipher.ciphers`
+contains nothing outside it — so adding an algorithm without
+cross-checking it fails the suite.
+
 ### Why `getrandom()` and not `mbedtls_ctr_drbg`
 
 Because in *this* tree they are the same source with one extra layer.
@@ -3562,18 +3597,39 @@ anything weaker. On Windows cosmopolitan's `getrandom` is
 `RtlGenRandom`/`ProcessPrng`, on the BSDs `arc4random`, so the property
 holds on every platform this APE runs on.
 
-### Two deliberate OpenSSL compatibilities
+### The missing-IV question, and what OpenSSL actually does
 
-Both could be argued the other way, and both were decided in favour of
-byte-for-byte interchange with real OpenSSL, because portable ciphertext
-is the entire point:
+The first implementation raised when a cipher was used with no IV. The
+second one defaulted to all zeros "because that is what OpenSSL does".
+Both were decided by measurement in the end, and the measurement
+surprised:
 
-- **A cipher used with no explicit IV runs with an all-zero IV.** That is
-  what OpenSSL does. Raising would have been safer and was the first
-  implementation, but it would silently diverge from every gem's
-  expectations.
-- **`padding = 0` means no padding**, `padding = 1` (or any other truthy
-  value) means PKCS#7, which is OpenSSL's convention rather than a boolean.
+```
+$ for i in 1 2 3; do ruby -ropenssl -e '...aes-256-gcm, key set, no iv...'; done
+a8763bcbb1 / feb0663a8fb2c6dff01181ec4fa9ec10
+a7e7b5914c / 633a0431b21cc9500ea94a0d673dcd34
+...                                              # different every run
+```
+
+OpenSSL 3.5.0 has **no defined default IV for GCM**: it encrypts with
+whatever is left in the `EVP_CIPHER_CTX`, so the ciphertext changes from
+run to run. For CBC, CTR and ECB it *is* a deterministic all-zero IV
+(`no-iv` and `iv = "\0" * iv_len` produce identical bytes, checked).
+
+So the behaviour here splits:
+
+- **CBC / CTR / ECB with no IV → all-zero IV**, byte-for-byte identical
+  to OpenSSL. There is a real compatibility to preserve, so preserve it.
+- **GCM / ChaCha20-Poly1305 with no nonce → `CipherError`.** There is
+  nothing to be compatible with, and silently substituting a *fixed* zero
+  nonce would be the worst of the three options: repeating a GCM nonce
+  under one key recovers the GHASH authentication key and forges
+  arbitrary messages. OpenSSL's garbage nonce is at least accidentally
+  varying; a constant would not be.
+
+One other OpenSSL convention is followed rather than improved on:
+**`padding = 0` means no padding**, `padding = 1` (or any other truthy
+value) means PKCS#7 — an integer, not a boolean.
 
 Conversely, `OpenSSL::PKey` no longer returns a fake key object whose
 `public?` and `private?` both answered `true`. It raises
@@ -3683,15 +3739,19 @@ CTR mode tables, the binding and the larger `openssl.rb` are new.
 | binary | before | after | Δ |
 |---|---|---|---|
 | `o/third_party/ruby/ruby` (zipless, x86_64) | 14,776,941 | 14,797,421 | **+20,480** (+0.14 %) |
-| `o/aarch64/third_party/ruby/ruby` (zipless) | 13,423,509 | 13,445,589 | **+22,080** (+0.16 %) |
-| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,434,243 | **+24,878** (+0.11 %) |
-| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,871,314 | **+4,398** |
-| `dist/ruby.com` (**fat**) | 37,428,412 | 37,472,723 | **+44,311** (+0.12 %) |
-| `dist/irb.com` (fat) | 37,428,484 | 37,472,859 | **+44,375** |
-| `dist/miniruby.com` (fat) | 28,024,522 | 28,028,920 | **+4,398** |
+| `o/aarch64/third_party/ruby/ruby` (zipless) | 13,423,509 | 13,445,653 | **+22,144** (+0.16 %) |
+| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,434,517 | **+25,152** (+0.11 %) |
+| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,871,588 | **+4,672** |
+| `dist/ruby.com` (**fat**) | 37,428,412 | 37,473,195 | **+44,783** (+0.12 %) |
+| `dist/irb.com` (fat) | 37,428,484 | 37,473,230 | **+44,746** |
+| `dist/miniruby.com` (fat) | 28,024,522 | 28,029,194 | **+4,672** |
+
+(The "before" column is this tree at `55e0204e7`, measured rather than
+copied from the table above — link padding puts it a few dozen bytes off
+the numbers recorded for the `rails-exts` head.)
 
 For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri +2,033 KB.
-The whole OpenSSL surface is +43 KB on the fat APE.
+The whole OpenSSL surface is +44 KB on the fat APE.
 
 ### What is still not there
 
@@ -3716,9 +3776,11 @@ returning something plausible:
   `OpenSSL::Timestamp`, `OpenSSL::Netscape`** — absent.
 - **`OpenSSL::KDF.hkdf` and `.scrypt`**, and `Cipher#pkcs5_keyivgen`
   (EVP_BytesToKey) — mbedtls has none of them; all three raise.
-- **Cipher modes CFB / OFB / XTS / CCM**, and any digest outside
-  MD5 / SHA-1 / SHA-224 / SHA-256 / SHA-384 / SHA-512 / BLAKE2B256
-  (so no SHA-3, no RIPEMD-160).
+- **Cipher modes CFB / OFB / XTS / CCM** (not compiled), and **ECB, raw
+  ChaCha20 and single DES** (compiled, but refused -- see "Which ciphers
+  are offered" above).  Any digest outside MD5 / SHA-1 / SHA-224 /
+  SHA-256 / SHA-384 / SHA-512 / BLAKE2B256, so no SHA-3 and no
+  RIPEMD-160.
 - **`OpenSSL::VERSION`, `OPENSSL_VERSION`, `OPENSSL_VERSION_NUMBER`** are
   still undefined. Guessing a number would make gems take feature paths
   based on a version this is not; a `NameError` at least tells the truth.
@@ -3727,3 +3789,7 @@ returning something plausible:
 - **TLS server sockets, client certificates, session resumption, ALPN.**
 - **`OpenSSL::Cipher#update(data, buffer)`** writes into the buffer via
   `replace`, not in place, so it allocates like the no-buffer form.
+- **The GVL is held for the whole of every operation.** A
+  `pbkdf2_hmac` with a large iteration count blocks the VM for its
+  duration (the RFC 7914 80 000-iteration vector takes a few hundred ms).
+  Releasing it around the mbedtls call is a straightforward follow-up.

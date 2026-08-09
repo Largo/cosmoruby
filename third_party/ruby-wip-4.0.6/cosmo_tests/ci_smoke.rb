@@ -35,6 +35,37 @@ rescue Exception => e
   Array(e.backtrace).first(3).each { |l| puts "         #{l}" }
 end
 
+# KNOWN ISSUE (Windows only, intermittent): a blocking socket operation can
+# raise NoMethodError: undefined method 'kernel_sleep' for nil.  Evidence says
+# this is asynchronous register corruption in cosmopolitan's Windows interrupt
+# delivery, not a Ruby or port bug: in the failing artifact %rax compares
+# unequal to Qnil (4) and then reads back as 4 four instructions later, with
+# nothing writing it in between.  See PORTING-NOTES.md, "Windows: intermittent
+# nil scheduler".  It fires in roughly half of CI runs and never reproduced
+# locally in ~2100 connects; a retry succeeds.
+#
+# So: retry once, and if it recurs report WARN rather than FAIL -- but only for
+# this exact signature on Windows.  Every other socket failure stays hard, so a
+# real regression still turns the suite red.
+def known_nil_scheduler?(e)
+  e.is_a?(NoMethodError) && e.name == :kernel_sleep && e.receiver.nil?
+rescue NoMethodError
+  e.is_a?(NoMethodError) && e.message.include?("kernel_sleep")
+end
+
+def tcp_check(name, windows)
+  attempts = 0
+  begin
+    attempts += 1
+    check(name) { yield }
+  rescue Exception => e
+    raise unless windows && known_nil_scheduler?(e)
+    retry if attempts < 2
+    $warn += 1
+    puts "  [WARN] #{name} :: known Windows nil-scheduler flake (#{e.class}: #{e.message})"
+  end
+end
+
 def soft(name)
   ok = yield
   if ok
@@ -169,10 +200,10 @@ end
 # If any of these ever goes red on one OS only, that is the first thing to
 # suspect.  cosmo_tests/test_sockets.rb is the detailed suite; what follows
 # is the subset worth having in the fast CI smoke path.
-check("tcp loopback echo (localhost)") { loopback_echo("localhost") }
-check("tcp loopback echo (127.0.0.1)") { loopback_echo("127.0.0.1") }
+tcp_check("tcp loopback echo (localhost)", windows) { loopback_echo("localhost") }
+tcp_check("tcp loopback echo (127.0.0.1)", windows) { loopback_echo("127.0.0.1") }
 
-check("Socket.tcp") do
+tcp_check("Socket.tcp", windows) do
   require "socket"
   server = TCPServer.new("127.0.0.1", 0)
   port = server.addr[1]

@@ -91,7 +91,7 @@ $allText += $r.Text
 Section "socket/TCP acceptance (cosmo_tests\test_sockets.rb)"
 $r = Invoke-Ape "`"$ruby`" `"$tests\test_sockets.rb`""
 $allText += $r.Text
-if ((Status-Is $r.Code 0) -and ($r.Text -match "failures=0")) { Ok "test_sockets.rb" }
+if ((Status-Is $r.Code 0) -and ($r.Text -match "SOCKET-OK")) { Ok "test_sockets.rb" }
 else { Bad "test_sockets.rb (status $($r.Code))" }
 
 Section "sqlite3 acceptance (cosmo_tests/test_sqlite3.rb)"

@@ -131,6 +131,12 @@ $allText += $r.Text
 if ((Status-Is $r.Code 0) -and ($r.Text -match "failures=0")) { Ok "test_sqlite3.rb" }
 else { Bad "test_sqlite3.rb (status $($r.Code))" }
 
+Section "openssl acceptance (cosmo_tests/test_openssl.rb)"
+$r = Invoke-Ape "`"$ruby`" `"$tests\test_openssl.rb`""
+$allText += $r.Text
+if ((Status-Is $r.Code 0) -and ($r.Text -match "failures=0")) { Ok "test_openssl.rb" }
+else { Bad "test_openssl.rb (status $($r.Code))" }
+
 Section "nokogiri acceptance (cosmo_tests/test_nokogiri.rb)"
 $r = Invoke-Ape "`"$ruby`" `"$tests\test_nokogiri.rb`""
 $allText += $r.Text

@@ -92,6 +92,9 @@ if "$RUBY" "$TESTS/test_sockets.rb"; then ok "test_sockets.rb"; else bad "test_s
 head_ "sqlite3 acceptance (cosmo_tests/test_sqlite3.rb)"
 if "$RUBY" "$TESTS/test_sqlite3.rb"; then ok "test_sqlite3.rb"; else bad "test_sqlite3.rb"; fi
 
+head_ "openssl acceptance (cosmo_tests/test_openssl.rb)"
+if "$RUBY" "$TESTS/test_openssl.rb"; then ok "test_openssl.rb"; else bad "test_openssl.rb"; fi
+
 head_ "nokogiri acceptance (cosmo_tests/test_nokogiri.rb)"
 if "$RUBY" "$TESTS/test_nokogiri.rb"; then ok "test_nokogiri.rb"; else bad "test_nokogiri.rb"; fi
 

@@ -1955,6 +1955,14 @@ below already relied on that (`access("/zip/.cosmo_ruby_packaged", F_OK)`).
 
 ### The one real design decision: positional arguments
 
+> **Superseded on 2026-08-09** by "Two interpreter fixes for packed binaries"
+> at the end of this file. The half-measure below — Ruby still parses its own
+> *flags* first — turned out to break the most common CLI invocation there is
+> (`myapp.com --version`), so a packed binary now claims none of its command
+> line at all. The reasoning in this subsection is kept because it is the
+> reasoning the final design extends; the behaviour table two subsections down
+> is history, not current behaviour.
+
 "Run the embedded script when there is nothing else to run" and "`myapp.com foo
 bar` must give the app `ARGV == ["foo","bar"]`" cannot both be satisfied by the
 naive reading, because `foo` is *exactly* what Ruby normally treats as the
@@ -1981,7 +1989,7 @@ Consequences, all documented in the README:
 - to use a packed binary as a plain interpreter, use the escape hatch:
   `COSMORUBY_NO_ZIP_MAIN=1 myapp.com script.rb`.
 
-### Behaviour table
+### Behaviour table (superseded — see the last section of this file)
 
 Everything below was measured on the branch, not reasoned about.
 
@@ -2099,3 +2107,260 @@ without `/zip/main.rb`, and it makes every CosmoRuby release a general-purpose
 Ruby application packer for anyone with `zip`. The two things a PR should
 expect to argue about are the positional-argument decision above and the
 constant name `COSMORUBY_NO_ZIP_MAIN` (igravious may prefer `COSMO_RUBY_*`).
+
+## Two interpreter fixes for packed binaries (branch `zip-main-fixes`, 2026-08-09)
+
+Field-testing real CLI apps packed with `/zip/main.rb` (ocran PR #52) turned up
+two defects that had nothing to do with packaging as such and everything to do
+with the interpreter underneath it. Both make a packed app behave *worse* than
+a native binary, which is the one thing this packaging mode cannot afford.
+
+### Fix 1 — a packed binary must not parse its own command line
+
+**Symptom.** `myapp.com --verbose` died with
+
+```
+myapp.com: invalid option --verbose  (-h will show valid options) (RuntimeError)
+```
+
+`myapp.com run --verbose` and `myapp.com -- --verbose` worked. So every packed
+CLI whose first argument is a flag — `--version`, `--help`, `-v`, which is most
+of them — was broken, and broken with a *Ruby* error message rather than the
+app's own.
+
+**Cause.** The original hook only moved the *script path* decision. Ruby's flag
+parser (`proc_options()`) still ran first, over the whole command line, so
+anything option-shaped was Ruby's before the app ever saw it.
+
+**The argv semantics chosen: the app gets everything.** When `/zip/main.rb`
+exists, Ruby parses **none** of argv. `argv[0]` (the program name) is dropped
+and every remaining argument goes to `ARGV` verbatim — option-shaped or not,
+`--` included (it is now an ordinary argument, not a separator). `myapp.com
+--version` reaches the app; so does `myapp.com -e`, `myapp.com -`, `myapp.com
+-S`. There is no argument a packed app cannot receive and no input for which
+Ruby, rather than the app, produces the error message.
+
+Why this rather than a sentinel prefix (`myapp.com --cosmoruby:-w …` or
+similar):
+
+- The point of the mode is that the binary is indistinguishable from a natively
+  compiled program. Any reserved prefix is a namespace the app no longer owns
+  and a convention its users have to learn; it also fails the moment an app
+  legitimately wants that prefix. "All of it, always" is the only rule with no
+  exceptions to document.
+- Ruby *already has* the channel for "interpreter options without touching the
+  command line": `RUBYOPT`. It carries exactly the flags that are useful on a
+  packed binary — `-I`, `-r`, `-w`, `-W`, `-d`, `-E`, `--yjit`,
+  `--enable/--disable`, `--parser` — because `proc_options(…, envopt=1)`
+  permits them. `RUBY_YJIT_ENABLE=1` is the second, upstream-documented door.
+  Verified: `RUBYOPT="-I/tmp/inc -w --yjit" ./app.com --flag` puts `/tmp/inc`
+  on `$LOAD_PATH`, sets `$VERBOSE`, reports `+YJIT`, and still gives the app
+  `ARGV == ["--flag"]`.
+- `COSMORUBY_NO_ZIP_MAIN=1` remains the full escape hatch: it turns the packed
+  binary back into an ordinary interpreter, with `-e`, `-S`, `-x`, `-`,
+  `--version` and script paths all working as usual. That is the debugging
+  door, and it is the *only* thing that changes behaviour.
+
+**Implementation** — `third_party/ruby/ruby.c`:
+
+- `cosmo_zip_main_p()` (`ruby.c:2417`) lost its `opt`/`argc`/`argv` parameters.
+  It is now two conditions: `COSMORUBY_NO_ZIP_MAIN` unset-or-empty, and
+  `access("/zip/main.rb", F_OK) == 0`. The old `-S` / `-x` / bare-`-` checks are
+  gone because those are no longer interpreter options on a packed binary.
+- `process_options()` (`ruby.c:2504`) decides *before* calling
+  `proc_options()`:
+
+  ```c
+  const int cosmo_zip_main = cosmo_zip_main_p();
+  int i = cosmo_zip_main ? (argc > 0 && argv ? 1 : 0)
+                         : (int)proc_options(argc, argv, opt, 0);
+  ```
+
+  The `1` matters and is easy to get wrong: `proc_options()` starts with
+  `argc--, argv++` to skip the program name, so its return value is ≥ 1 in the
+  ordinary case. Returning `0` here would have left the program's own path in
+  `ARGV`.
+- The script-selection branch (`ruby.c:2592`) now tests the cached
+  `cosmo_zip_main` instead of re-deriving it, so `access()` still happens once.
+
+Everything downstream is untouched: `RUBYOPT` is processed after this point and
+therefore still applies, and `ruby_set_argv(argc, argv)` receives the full
+command line.
+
+### Fix 2 — honest exit status on Windows
+
+**Symptom.** `exit 3` from a script run by `ruby.com` surfaced as **768** in
+both `$LASTEXITCODE` and `%ERRORLEVEL%`; `exit 0` was fine. Not caused by the
+zip hook (plain `ruby.com script.rb` did it too) and present in igravious's
+4.0.0 release binary. `exit!` did not avoid it.
+
+**Cause**, located exactly: `libc/intrin/exit.c:88-105`.
+
+```c
+} else if (IsWindows()) {
+    uint32_t waitstatus;
+    waitstatus = exitcode;
+    waitstatus <<= 8;          /* <-- this */
+    ...
+    TerminateThisProcess(waitstatus);
+}
+```
+
+Cosmopolitan puts a POSIX *wait status* into the Windows process exit code so
+that a cosmopolitan parent can decode it with `WEXITSTATUS()`
+(`libc/proc/proc.c:143` and `libc/proc/execve-nt.c:250` read
+`GetExitCodeProcess()` output as a wait status directly). Native Windows
+parents — `cmd.exe`, PowerShell, `make`, CI runners — read the number as it is.
+
+**Fix** — the same move ocran's stub already makes (`src/stub.c:154`), but
+inside the interpreter, `third_party/ruby/ruby.c:2459`:
+
+```c
+void
+rb_cosmo_exit_process(int status, int flush)
+{
+    if (!IsWindows()) return;
+    if (!cosmo_main_pid || (int)getpid() != cosmo_main_pid) return;
+    if ((keep = getenv("COSMORUBY_WAIT_STATUS_EXIT")) != NULL && *keep) return;
+    if (flush) fflush(NULL);
+    TerminateThisProcess((uint32_t)(status & 0xff));
+}
+```
+
+Four deliberate details:
+
+1. **`TerminateThisProcess()`, not `ExitProcess()`.** The first attempt used
+   `ExitProcess()` and the build failed at the package step —
+   `undefined symbol 'ExitProcess' (o//third_party/ruby/ruby.o) not defined by
+   direct dependencies`, because `ExitProcess` lives in `libc/nt/kernel32.a`,
+   which `ruby.a` does not depend on. `TerminateThisProcess()` is in
+   `libc/intrin`, which it does, and it is *better*: it is the exact call
+   `_Exit()` makes one line after computing the wait status, so cosmo's
+   signal-file cleanup and vfork handling still run. Only the `<<8` is skipped.
+2. **`status & 0xff`.** POSIX and Linux narrow exit codes to eight bits, so
+   `exit 300` is 44 on Linux; masking makes Windows agree instead of reporting
+   300. It also sidesteps cosmo's `kNtStillActive` (259) special case.
+3. **The pid guard.** `rb_cosmo_note_main_pid()` (`ruby.c:2453`) records
+   `getpid()` in `rb_cosmo_main()` before anything else. A forked child has a
+   different pid, so it still reports a wait status to its cosmopolitan parent
+   — `Process.fork { exit! 3 }` + `Process.wait` keeps working. A zero
+   `cosmo_main_pid` (Ruby embedded in someone else's program) also declines.
+4. **`COSMORUBY_WAIT_STATUS_EXIT=1`** restores the old encoding. This is not
+   decoration: **ocran's launcher-stub mode needs it.** That stub is itself an
+   APE; it `fork`s, `execv`s `bin/ruby.com` and decodes the result with
+   `WEXITSTATUS()` (`src/system_utils_posix.c:526-532`), so an honest child
+   status would come back as "killed by signal 3". The stub now sets the
+   variable for the payload (ocran side, branch `feat/cosmo-zip-packaging`).
+   The ZIP packaging mode has no stub and is unaffected.
+
+Call sites, both no-ops off Windows:
+
+- `third_party/ruby/ruby_cosmo_main.h:263,268` — `rb_cosmo_main()` records the
+  pid, then diverts on the value `rb_main()` returns. `ruby_run_node()` has
+  already run `at_exit` handlers, object finalizers and Ruby's own IO flushing
+  by then; `fflush(NULL)` catches C stdio. This covers `exit N`, falling off
+  the end of the script, and uncaught exceptions (1). All three of `ruby.com`,
+  `irb.com` and `miniruby.com` go through this header.
+- `third_party/ruby/process.c:4363` — `rb_f_exit_bang()`, just before its
+  `_exit(istatus)`. `flush = 0`, because `exit!` promises to skip teardown and
+  cosmo's `_exit()` does not flush either.
+
+Deliberately **not** touched: the other `_exit()` calls in `process.c`
+(:4031, :4035, :4037, :6988). Those are fork/spawn children reporting exec
+failure to Ruby *itself*, which decodes them with `WEXITSTATUS()`; making them
+honest would break `system()`'s error reporting.
+
+### What exit statuses now do, per platform
+
+| | Linux / macOS / BSD | Windows (before) | Windows (after) |
+| --- | --- | --- | --- |
+| `exit 0` | 0 | 0 | 0 |
+| `exit 3` | 3 | 768 | **3** |
+| `exit 255` | 255 | 65280 | **255** |
+| `exit 300` | 44 | 76800 | **44** |
+| `exit! 3` | 3 | 768 | **3** |
+| uncaught exception | 1 | 256 | **1** |
+| `ruby.com` in a forked child | wait status | wait status | wait status (unchanged) |
+| `COSMORUBY_WAIT_STATUS_EXIT=1` | n/a | — | 768 (old encoding) |
+
+Linux, macOS and BSD are bit-identical to before: `rb_cosmo_exit_process()`
+returns on the first line.
+
+### Verification
+
+**Unpacked interpreter, byte-identical to `main`.** The pre-change x86-64
+`ruby.com` and the new one were run side by side on: `-e`, a script path with
+arguments, `-v`, `--version`, `-w -e`, an invalid option, `-c`, `-h`,
+`--copyright`, a stdin pipe with and without an explicit `-`, `-S gem
+--version`, `-x`, and `exit` 0/1/3/7/255. **Identical output and status in all
+of them** (modulo the binary's own path in error messages).
+
+**Linux regression suites** (fat `dist/` build): `smoke_test.sh` 15/15,
+`ci_smoke.rb` 36/36, `test_sockets.rb` 19/19, `test_sqlite3.rb` 5/5 failures=0,
+`irb.com`, `miniruby.com`, `env -i` from an empty dir, `--yjit`.
+`.github/scripts/test-cosmoruby.sh dist` — **23/23**.
+
+**Packed binary, Linux x86-64.** Every one of `""`, `foo bar`, `--verbose`,
+`-v`, `--version`, `-e puts(1)`, `--yjit`, `-- --x`, `script.rb`, `-S gem`, `-`
+reaches `ARGV` verbatim. `$0`/`__FILE__` = `/zip/main.rb`, `__dir__` = `/zip`.
+Exit 0/1/3/7/255 exact, `exit 300` → 44, uncaught exception → 1.
+`COSMORUBY_NO_ZIP_MAIN=1` restores `-e`, `--version` and script paths.
+
+**Packed binary, aarch64 under qemu-user** (fat half):
+`zipmain.com --verbose --exit=3 -- x` → `argv == ["--verbose","--exit=3","--","x"]`,
+`RUBY_PLATFORM == "aarch64-cosmo"`, status 3.
+
+**Windows 11 (Vagrant VM, x86-64)**, driven from `cmd.exe` so the status is the
+one a native parent sees:
+
+| Invocation | Result |
+| --- | --- |
+| `wapp.com --verbose` | `argv:["--verbose"]`, no interpreter error |
+| `wapp.com --version` | `argv:["--version"]` (the app's, not Ruby's banner) |
+| `wapp.com -e` | `argv:["-e"]` |
+| `wapp.com -- --exit=3` | `argv:["--","--exit=3"]`, RC=3 |
+| `wapp.com --exit=`0/1/3/7/255 | RC = 0/1/3/7/255 exactly |
+| `set RUBYOPT=-w && wapp.com --flag` | `"verbose":true`, `argv:["--flag"]` |
+| `set COSMORUBY_NO_ZIP_MAIN=1 && wapp.com h.rb` | runs `h.rb` |
+| `set COSMORUBY_WAIT_STATUS_EXIT=1 && wapp.com --exit=3` | RC=768 (opt-out works) |
+| unpacked `ruby.com` `exit` 0/1/3/7/255/300 | 0/1/3/7/255/**44** |
+| unpacked `ruby.com` `exit! 3` | 3 |
+| unpacked `ruby.com` uncaught exception | 1 |
+| unpacked `ruby.com --version`, script, `-e "exit 3"` | banner / runs / 3 |
+
+Note for whoever repeats this: the VM's PowerShell execution policy is
+`Restricted` and remains so. Driving the checks from a **`.cmd` batch file**
+(`cmd /c C:\Users\vagrant\wtest.cmd`) sidesteps the whole problem — batch files
+are not subject to the execution policy, `%ERRORLEVEL%` is exactly what a
+native parent sees, and there is no ssh→PowerShell→cmd quoting layer to fight.
+This is a better recipe than the inline-PowerShell one recorded earlier.
+
+### CI
+
+`.github/scripts/build-cosmoruby.sh` fixture `main.rb` now understands
+`--exit=N` (deliberately option-shaped) and reports `$VERBOSE`, and the build
+job self-checks that `zipmain.com --exit=3` yields `argv == ["--exit=3"]` and
+status 3 — so a regression fails on the build machine, not six times over.
+
+`test-cosmoruby.sh` and `test-cosmoruby.ps1` gained matching assertions:
+whole-command-line passthrough, "no interpreter option parsing", exact
+0/1/3/7/255 for both the packed and the unpacked binary, `exit!`, `exit 300`,
+uncaught exceptions, and `RUBYOPT` still reaching the interpreter. The
+PowerShell helper `Status-Is` no longer accepts `want * 256` — that tolerance
+was hiding the bug, and its removal is what turns the old behaviour into a CI
+failure.
+
+### Size
+
+Fat `ruby.com` 32,976,947 → 32,993,387 bytes (**+16,440**, +0.05 %); x86-64
+unpackaged `ruby` 12,720,749 → 12,724,845 (+4,096, one page).
+
+### Upstreamable?
+
+Fix 1 is fork-specific (it only means anything with the `/zip/main.rb` hook,
+which is itself unmerged upstream). Fix 2 is a genuine cosmopolitan-ecosystem
+question rather than a Ruby one: any APE that is normally launched from a
+native shell has this problem, and the honest answer is probably that
+cosmopolitan should stop encoding wait statuses into Windows exit codes and
+teach `wait4()` to recognise its own children some other way. Until then, doing
+it per-program (as ocran's stub and now `ruby.com` do) is the available fix.

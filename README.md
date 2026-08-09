@@ -101,20 +101,27 @@ The binary is unsigned, so launching it by double-clicking in Explorer may
 raise a SmartScreen prompt. Running it from a terminal, which is what you want
 anyway, does not.
 
-#### Exit codes on Windows are shifted left by 8
+#### Exit codes on Windows are the plain status (fixed)
 
 ```powershell
 PS C:\> .\ruby.com -e "exit 7"
 PS C:\> $LASTEXITCODE
-1792                      # 7 * 256
+7
 ```
 
-`%ERRORLEVEL%` under `cmd.exe` reports the same 1792. `exit 0` correctly gives
-0. This is a pre-existing quirk of how cosmopolitan APEs report status to
-Windows — igravious's Ruby 4.0.0 release binary behaves identically — so if you
-script around a bare `ruby.com` on Windows, compare `$LASTEXITCODE / 256`.
-Applications packaged with [ocran](#packaging-your-app-into-one-file) report
-their status correctly and are not affected.
+Up to and including igravious's Ruby 4.0.0 release binary this printed `1792`
+(`7 << 8`), and `%ERRORLEVEL%` under `cmd.exe` reported the same: cosmopolitan
+Libc encodes a POSIX *wait status* into the Windows process exit code so that a
+cosmopolitan parent can decode it with `WEXITSTATUS()`. Native Windows parents
+read the number as it is, so `ruby.com` now hands them the plain status, like
+every other Windows program. `exit`, `exit!`, an uncaught exception (1) and
+statuses above 255 (narrowed to eight bits, as on Linux) all agree across
+platforms.
+
+If you *are* the cosmopolitan parent — you spawn `ruby.com` from another APE
+and decode the result with `WEXITSTATUS()` — set
+`COSMORUBY_WAIT_STATUS_EXIT=1` in the child's environment to get the old
+encoding back. Nothing changes on Linux, macOS or the BSDs.
 
 ## What's inside
 
@@ -273,7 +280,7 @@ silently-thin build cannot fake an ARM pass.
 | --- | --- | --- |
 | Linux x86-64 (Debian 13, GitHub `ubuntu-latest`) | `x86_64-cosmo` | **Verified.** 36/36 `ci_smoke.rb`, 19/19 `test_sockets.rb`, sqlite3 5/5, `env -i` from an empty dir, YJIT on. |
 | Linux aarch64 (GitHub `ubuntu-24.04-arm`, real ARM hardware) | `aarch64-cosmo` | **Verified**, blocking CI job. 36/36, 19/19, sqlite3 5/5, exit status. No YJIT. |
-| Windows 11 x86-64 (Win11 Pro 26200 + GitHub `windows-latest`) | `x86_64-cosmo` | **Verified.** 38/38 `ci_smoke.rb`, 22/22 `test_sockets.rb`, sqlite3 5/5, `irb.com`, `miniruby.com`, HTTPS. Caveats: the intermittent socket flake above, native subprocesses, exit-code shift. |
+| Windows 11 x86-64 (Win11 Pro 26200 + GitHub `windows-latest`) | `x86_64-cosmo` | **Verified.** 38/38 `ci_smoke.rb`, 22/22 `test_sockets.rb`, sqlite3 5/5, `irb.com`, `miniruby.com`, HTTPS. Caveats: the intermittent socket flake above, native subprocesses. |
 | macOS x86-64 (GitHub `macos-15-intel`) | `x86_64-cosmo` | **Verified.** 36/36, 19/19, sqlite3 5/5. TCP now works (it did not in `cosmo1`). |
 | macOS aarch64 / Apple Silicon (GitHub `macos-latest`) | `aarch64-cosmo` | **Verified.** Boots the aarch64 half through the `ape-m1` loader; 36/36, 19/19, sqlite3 5/5. |
 | Windows-on-ARM (GitHub `windows-11-arm`) | `x86_64-cosmo` | **Runs, via the OS's x64 emulation.** Cosmopolitan's Windows PE half is x86-64 only, so the aarch64 half is not what executes. 38/38 anyway. |
@@ -305,12 +312,13 @@ The rules:
 | | |
 | --- | --- |
 | **Convention** | `/zip/main.rb` — the entry point is `main.rb` at the *root* of the archive |
-| **When it fires** | only when the command line names no other program. `-e`, `-S`, `-x` and a bare `-` (stdin) all win, exactly as they do today |
-| **Arguments** | Ruby's own flags are still parsed first; **everything after them goes to your app**, so `myapp.com foo` gives `ARGV == ["foo"]` rather than trying to run `foo` as a script. Use `--` if an app argument looks like a Ruby flag: `myapp.com -- --verbose` |
+| **When it fires** | whenever `/zip/main.rb` exists. A packed binary *is* an application, so it always runs it |
+| **Arguments** | **the whole command line goes to your app, untouched.** Ruby claims none of it: `myapp.com --version` gives `ARGV == ["--version"]`, `myapp.com -- -x` gives `ARGV == ["--", "-x"]`. There is no argument your CLI cannot have |
+| **Interpreter options** | via `RUBYOPT` (`RUBYOPT="-I lib -w --yjit" ./myapp.com …`) or `RUBY_YJIT_ENABLE=1`, since the command line belongs to the app |
 | **`$0` / `__FILE__`** | `/zip/main.rb`, so `__dir__` is `/zip` |
 | **Multi-file apps** | `require_relative` works throughout the archive (`require_relative "lib/thing"`). Plain `require "thing"` does **not**: `/zip` is not on `$LOAD_PATH` — add `$LOAD_PATH.unshift(__dir__)` at the top of `main.rb` if you want it |
 | **Escape hatch** | `COSMORUBY_NO_ZIP_MAIN=1` disables the hook, turning a packed binary back into an ordinary interpreter for debugging: `COSMORUBY_NO_ZIP_MAIN=1 ./myapp.com -e 'p $LOAD_PATH'` |
-| **Exit status** | your app's, propagated normally (shifted left by 8 on Windows, like everything else — see above) |
+| **Exit status** | your app's, exactly, on every platform — including Windows |
 
 A `ruby.com` with no `/zip/main.rb` behaves exactly as it always has, so this
 costs existing users nothing. `irb.com` starts itself via `-e` and is therefore

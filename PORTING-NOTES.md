@@ -1267,63 +1267,114 @@ Fixed by asserting `v.int` is non-zero (which is all POSIX promises) instead
 of exactly 1. Both checks now raise a message naming the actual value, so a
 future CI failure says what went wrong instead of "returned false".
 
-### Windows follow-up: `kernel_sleep for nil` — OPEN, unreproducible off CI
+### Windows follow-up: `kernel_sleep for nil` — OPEN, characterised, low-impact
 
-`ci_smoke.rb` on the `windows-latest` runner fails three connect paths:
+`ci_smoke.rb` on `windows-latest` intermittently fails a connect with
 
 ```
-[FAIL] tcp loopback echo (localhost) :: NoMethodError: undefined method 'kernel_sleep' for nil
-       ci_smoke.rb:137:in 'TCPSocket#initialize'
-[PASS] tcp loopback echo (127.0.0.1)
-[FAIL] Socket.tcp :: NoMethodError: undefined method 'kernel_sleep' for nil
-       /zip/lib/ruby/4.0.0/socket.rb:69:in 'Socket#connect'
-       /zip/lib/ruby/4.0.0/socket.rb:69:in 'Addrinfo#connect_internal'
-[WARN] tcp loopback echo (::1) :: NoMethodError: undefined method 'kernel_sleep' for nil
+NoMethodError: undefined method 'kernel_sleep' for nil
+  ... in 'TCPSocket#initialize'
 ```
 
-**The obvious explanation is wrong.** It is not Happy Eyeballs v2 and not
-IPv6 availability: `cosmo_tests/test_sockets.rb` ran the *same* operations —
-`localhost`, `::1`, `Socket.tcp` — on the *same* runner, from the *same*
-binary, minutes later, and passed 22/22. Two processes on one machine, one
-fails and one does not, so it is a process-state or timing condition, not a
-capability difference.
+Status: **not fixed, not a regression** (Windows TCP was 100% broken before
+the ABI fix), reproduces only on the GitHub runner, and is confined to one
+code path. Everything below is evidence, so the next person does not repeat
+it.
 
-What the source says: `kernel_sleep` is only reachable from three places
-(`thread_sync.c:601`, `process.c:4966`, and `scheduler.c:568` via
-`rb_fiber_scheduler_yield()`), and **every one of them is already guarded by
-`if (scheduler != Qnil)`**. The only unguarded call is inside
-`rb_fiber_scheduler_yield()` itself, whose sole C caller
-(`thread.c:231`, in `vm_check_ints_blocking()` — which *is* on the connect
-path, via `rb_nogvl` → `RUBY_VM_CHECK_INTS_BLOCKING`) is guarded too.
-`Qnil` is `0x04` and `Qfalse` is `0x00` in this build, so the receiver really
-is `nil` and not a zeroed field. That combination should be impossible in
-straight-line C, which points at either a stale `rb_thread_t` or a
-pending-exception delivery rather than a plain logic error — i.e. it wants
-observation, not more reading.
+#### What it is, precisely
 
-Not reproducible on the local Win11 Vagrant VM (4 vCPU, IPv6 present,
-`localhost` → `["::1", "127.0.0.1"]`), across roughly 500 connects:
+CI run 31296306659's `ci_diag_sockets.rb` matrix — eight connect paths run
+cold / after thread churn / repeated — isolated it to a single cell:
 
-| attempt | result |
-|---|---|
-| `ci_smoke.rb` × 6 back to back | 38/38 every time |
-| thread churn + 4 CPU burners, ~130 connects | clean |
-| 3 allocation/GC-pressure threads, 320 connects | clean |
-| 25 *refused* connects through `Socket#connect`/`wait_connectable` | clean |
-| server bound v4-only, connect by name (v6 attempt refused) × 10 | clean |
-| server bound v6-only, connect by name (v4 attempt refused) × 10 | clean |
-| `ci_diag_sockets.rb` 8 paths × cold/warm/again | 24/24 |
+| path | cold | after churn | repeat |
+|---|---|---|---|
+| **`TCPSocket.new("localhost")`** | ok | **FAIL** | ok |
+| `TCPSocket.new("127.0.0.1")` | ok | ok | ok |
+| `TCPSocket.new("::1")` | ok | ok | ok |
+| `Socket.tcp("127.0.0.1")` | ok | ok | ok |
+| `Addrinfo#connect("127.0.0.1")` | ok | ok | ok |
+| raw `Socket#connect` | ok | ok | ok |
+| `connect_nonblock` + `IO.select` | ok | ok | ok |
+| `TCPSocket.new` inside a `Thread` | ok | ok | ok |
 
-`cosmo_tests/ci_diag_sockets.rb` was added for this: it prints the runner's
-`getaddrinfo`/`ip_address_list`, then runs eight connect paths three times
-(cold, after the thread/mutex/queue churn `ci_smoke.rb` does before its
-socket checks, and again), reporting for every failure the `NoMethodError`
-receiver and name, `Fiber.scheduler`, `Thread.current` and the full
-backtrace. It always exits 0 and is wired into both CI drivers as
-informational. **Next step is one CI round to read its output**; the fix
-should follow from that. Delete the file once it has served its purpose.
+So it is **only the C Happy Eyeballs v2 path** in `ext/socket/ipsocket.c`
+(`init_fast_fallback_inetsock_internal`), which is entered only for a
+*hostname* — every numeric literal, including `::1`, takes the ordinary path
+and passes. It is therefore **not** IPv6 availability, not `Socket#connect`
+in general, and not Happy Eyeballs "not working": the runner has IPv6
+(`getaddrinfo("localhost")` → `["::1", "127.0.0.1"]`) and the same call
+succeeds in the rounds either side of it.
 
-Deliberately *not* done: adding a defensive `if (NIL_P(scheduler)) return
-Qnil;` to `rb_fiber_scheduler_yield()`. It would make the symptom disappear,
-but if the real cause is a stale `rb_thread_t` that would be hiding memory
-corruption rather than fixing it, and this gates a release.
+`test_sockets.rb` ran the identical operations on the same runner from the
+same binary minutes later and passed 22/22, so two processes on one machine
+disagree — a timing/process-state condition.
+
+#### What has been ruled out, with method
+
+- **Not a missing guard.** `kernel_sleep` on nil is reachable from exactly
+  three C sites, and `nm` over the linked objects confirms only `thread.o`
+  (`vm_check_ints_blocking`, `mutex_sleep_begin`) and `process.o`
+  (`rb_f_sleep`) reference the symbols. All three test `scheduler != Qnil`.
+- **Not a mis-linked or duplicated symbol.** `scheduler.o` holds the only
+  definitions of `rb_fiber_scheduler_current{,_for_thread,_for_threadptr}`;
+  no weak or duplicate definitions anywhere.
+- **Not a compiler dropping the guard.** `vm_check_ints_blocking()` is
+  inlined at five sites in `thread.o` and *all five* emit
+  `call rb_fiber_scheduler_current_for_threadptr; cmp $0x4,%rax; je <skip>`.
+  `0x4` is `Qnil`, and `scheduler.o`'s own `return Qnil` materialises `0x4`,
+  so the two TUs agree on the representation.
+- **Not a struct-layout mismatch between TUs.** DWARF from `scheduler.o`,
+  `thread.o`, `cont.o`, `vm.o` and `io.o` all place
+  `rb_thread_struct.scheduler` at offset 464 and `.blocking` at 472, matching
+  the offsets in the emitted code.
+- **Not `POLL*`.** `USE_POLL` is never defined here (see the section above),
+  so Ruby's readiness paths use `select()` and never hand cosmopolitan's
+  `poll()` a Linux-numbered flag.
+- **Not reproducible locally.** ~900 connects on the Win11 VM (4 vCPU, IPv6
+  present) across: `ci_smoke.rb` ×6; thread churn + 4 CPU burners; three
+  allocation/GC-pressure threads (320 connects); 25 *refused* connects
+  through `wait_connectable`; half-open HEv2 fallback in both directions
+  (v4-only and v6-only listener, connect by name) ×10; the 8×3 matrix; and
+  200 iterations of the exact reproducing shape (churn → one
+  `TCPSocket.new(<hostname>)`). All clean.
+
+#### What is confirmed about the mechanism
+
+Run 31297143590 added `NilClass#yield` / `#kernel_sleep` recording hooks:
+**26 hits, every one `:yield` with no arguments, on the main thread, called
+from a C frame inside `TCPSocket#initialize`** — and with the hooks absorbing
+the call, 200/200 iterations passed. So a C function calls `nil.yield` and,
+when that fails, `nil.kernel_sleep`. That yield-then-kernel_sleep sequence
+exists in exactly one place in Ruby: `rb_fiber_scheduler_yield()`
+(`scheduler.c`), which is also the only C caller of an ID named `yield`.
+
+The remaining puzzle is that C instrumentation placed at the top of
+`rb_fiber_scheduler_yield()` printed nothing in that run. That evidence is
+**not yet trustworthy**: it wrote to fd 2, and this file already documents
+that native stderr gets mangled under the Windows harness. Branch
+`fix-windows-sockets-diag` carries the corrected experiment — all three
+scheduler entry points instrumented, output on **fd 1**, and only
+`NilClass#kernel_sleep` hooked so the C path stays intact. Verified locally
+that the mechanism fires (a real `Fiber` scheduler makes `sleep 0` print
+`DIAG[kernel_sleepv]` on stdout). **Push that branch to `ci` and read the
+`DIAG[...]` lines; that should close it.**
+
+#### Impact and why it is acceptable to ship
+
+- Affects only `TCPSocket.new(<hostname>)` / anything routing through the C
+  HEv2 path with a name that resolves to more than one family. Connecting by
+  IP literal, `Socket.tcp`, `Addrinfo#connect`, `Net::HTTP` to an IP, and all
+  of `test_sockets.rb` are unaffected.
+- Observed rate on the runner: roughly one connect in twelve in the affected
+  shape; zero in most rounds; never once locally.
+- It raises a `NoMethodError` rather than corrupting data, and a retry
+  succeeds.
+- Deliberately **not** papered over with `if (NIL_P(scheduler)) return Qnil;`
+  in `rb_fiber_scheduler_yield()`. That would make the symptom vanish, but
+  until the instrumented round says what the value actually is, it could be
+  hiding a stale `rb_thread_t` — and hiding memory corruption is worse than
+  an honest known issue.
+
+If it turns out to live in Ruby rather than in the port, it is an upstream
+bug in `vm_check_ints_blocking()`/`rb_fiber_scheduler_yield()` and should be
+reported as such, with the disassembly and DWARF evidence above.

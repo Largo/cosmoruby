@@ -617,6 +617,189 @@ check("unsupported cipher raises") do
 end
 
 # ══════════════════════════════════════════════════════════════════════════
+# 4b. Object lifecycle -- a Cipher used twice, and a tag read twice
+# ══════════════════════════════════════════════════════════════════════════
+
+check("auth_tag is stable and truncates by prefix") do
+  # mbedtls_gcm_finish() mutates the context, so a naive binding returns a
+  # *different* 16 bytes on the second call -- silently unusable.
+  c = OpenSSL::Cipher.new("aes-256-gcm")
+  c.encrypt; c.key = "k" * 32; c.iv = "i" * 12
+  c.update("hello"); c.final
+  t1 = c.auth_tag
+  assert_eq(t1, c.auth_tag, "second read")
+  assert_eq(t1, c.auth_tag, "third read")
+  # GCM tag truncation is defined as the leading bytes (SP 800-38D 5.2.1.2)
+  assert_eq(t1[0, 8], c.auth_tag(8), "truncated tag is a prefix")
+  assert_eq(t1[0, 12], c.auth_tag(12), "truncated tag is a prefix")
+  true
+end
+
+check("re-initialising a Cipher drops the previous message's AAD") do
+  key = "k" * 32
+  reused = OpenSSL::Cipher.new("aes-256-gcm")
+  reused.encrypt; reused.key = key; reused.iv = "i" * 12
+  reused.auth_data = "header-one"
+  reused.update("first"); reused.final; reused.auth_tag
+
+  reused.encrypt                      # no auth_data this time
+  reused.key = key
+  reused.iv = "j" * 12
+  got_ct = reused.update("second") + reused.final
+  got_tag = reused.auth_tag
+
+  fresh = OpenSSL::Cipher.new("aes-256-gcm")
+  fresh.encrypt; fresh.key = key; fresh.iv = "j" * 12
+  want_ct = fresh.update("second") + fresh.final
+  assert_eq(want_ct, got_ct, "ciphertext")
+  assert_eq(fresh.auth_tag, got_tag, "tag (stale AAD would change it)")
+  true
+end
+
+check("#reset rewinds to the key/iv that were set") do
+  key = "k" * 32
+  iv  = "i" * 16
+  c = OpenSSL::Cipher.new("aes-256-cbc")
+  c.encrypt; c.key = key; c.iv = iv
+  once = c.update("hello world, this is longer than a block") + c.final
+  c.reset
+  twice = c.update("hello world, this is longer than a block") + c.final
+  # CBC mutates the IV as it goes, so this only holds if the original IV is
+  # replayed rather than the running one.
+  assert_eq(once, twice, "CBC re-encrypt after reset")
+  true
+end
+
+check("update accepts an output buffer, empty input and padding = 1") do
+  key = "k" * 32
+  buf = +"previous contents"
+  c = OpenSSL::Cipher.new("aes-256-ctr")
+  c.encrypt; c.key = key; c.iv = "i" * 16
+  ret = c.update("hello", buf)
+  assert_eq(5, buf.bytesize, "buffer was filled")
+  assert_eq(buf, ret, "update returns the buffer")
+
+  e = OpenSSL::Cipher.new("aes-256-cbc")
+  e.encrypt; e.key = key; e.iv = "i" * 16
+  assert_eq("", e.update(""), "empty update emits nothing")
+  padded = e.update("x") + e.final
+  assert_eq(16, padded.bytesize, "padding = default is on")
+
+  p1 = OpenSSL::Cipher.new("aes-256-cbc")
+  p1.encrypt; p1.key = key; p1.iv = "i" * 16; p1.padding = 1
+  assert_eq(padded, p1.update("x") + p1.final, "padding = 1 means PKCS#7")
+  true
+end
+
+check("update before encrypt/decrypt raises") do
+  c = OpenSSL::Cipher.new("aes-256-cbc")
+  begin
+    c.update("data")
+    raise "update was accepted before encrypt/decrypt"
+  rescue OpenSSL::Cipher::CipherError => e2
+    e2.class
+  end
+end
+
+if defined?(MbedTLS)
+  # The remaining lifecycle rules are stricter than OpenSSL's, on purpose,
+  # so they are only asserted against this implementation.
+  check("stricter-than-OpenSSL lifecycle rules") do
+    key = "k" * 32
+
+    # #reset rewinds a GCM cipher completely, additional data included.
+    # (Real OpenSSL refuses auth_data= after reset, so this half of the
+    # reset test cannot be shared.)
+    g = OpenSSL::Cipher.new("aes-256-gcm")
+    g.encrypt; g.key = key; g.iv = "i" * 12; g.auth_data = "ad"
+    g1 = g.update("payload") + g.final
+    t1 = g.auth_tag
+    g.reset
+    g.auth_data = "ad"
+    assert_eq(g1, g.update("payload") + g.final, "GCM re-encrypt after reset")
+    assert_eq(t1, g.auth_tag, "GCM tag after reset")
+
+    # padding= also takes true/false, which OpenSSL (Integer only) does not.
+    q = OpenSSL::Cipher.new("aes-256-cbc")
+    q.encrypt; q.key = key; q.iv = "i" * 16; q.padding = true
+    r = OpenSSL::Cipher.new("aes-256-cbc")
+    r.encrypt; r.key = key; r.iv = "i" * 16; r.padding = 1
+    assert_eq(r.update("x") + r.final, q.update("x") + q.final,
+              "padding = true means PKCS#7")
+
+    # OpenSSL lets #update after #final return "" from a dead context; here
+    # it raises, because for GCM the tag has already been computed off the
+    # context and any further output would be nonsense.
+    a = OpenSSL::Cipher.new("aes-256-cbc")
+    a.encrypt; a.key = key; a.iv = "i" * 16
+    a.update("x"); a.final
+    begin
+      a.update("y")
+      raise "update after final was accepted"
+    rescue OpenSSL::Cipher::CipherError
+    end
+
+    # Changing the padding mid-message would replay from the original IV.
+    b = OpenSSL::Cipher.new("aes-256-cbc")
+    b.encrypt; b.key = key; b.iv = "i" * 16
+    b.update("0123456789abcdef")
+    begin
+      b.padding = 0
+      raise "padding change mid-message was accepted"
+    rescue OpenSSL::Cipher::CipherError
+    end
+
+    # An explicit auth_tag_len= is enforced on decrypt.  OpenSSL ignores it
+    # and will happily verify against a four-byte tag the attacker chose.
+    e = OpenSSL::Cipher.new("aes-256-gcm")
+    e.encrypt; e.key = key; e.iv = "i" * 12
+    ct = e.update("secret") + e.final
+    d = OpenSSL::Cipher.new("aes-256-gcm")
+    d.decrypt; d.key = key; d.iv = "i" * 12
+    d.auth_tag_len = 16
+    d.auth_tag = e.auth_tag[0, 8]
+    begin
+      d.update(ct) + d.final
+      raise "a truncated tag passed despite auth_tag_len = 16"
+    rescue OpenSSL::Cipher::CipherError
+    end
+
+    # iv_len= is enforced rather than merely recorded.
+    f = OpenSSL::Cipher.new("aes-256-gcm")
+    f.iv_len = 8
+    assert_eq(8, f.iv_len, "iv_len reports what was set")
+    begin
+      f.iv = "n" * 12
+      raise "a 12-byte nonce passed despite iv_len = 8"
+    rescue ArgumentError
+    end
+    f.encrypt; f.key = key; f.iv = "n" * 8
+    f.update("x"); f.final
+    assert_eq(8, f.iv_len, "iv_len is not dragged around by mbedtls state")
+
+    # The password forms of encrypt/decrypt are EVP_BytesToKey, which is not
+    # implemented; treating the password as a raw key would be worse.
+    %i[encrypt decrypt].each do |op|
+      begin
+        OpenSSL::Cipher.new("aes-256-cbc").public_send(op, "a password")
+        raise "#{op}(password) was accepted"
+      rescue NotImplementedError
+      end
+    end
+
+    # PBKDF2 output length is a uint32 in mbedtls; truncating it would hand
+    # back a buffer whose tail was never written.
+    begin
+      OpenSSL::KDF.pbkdf2_hmac("p", salt: "s", iterations: 1,
+                               length: 2**32, hash: "SHA1")
+      raise "a 2**32-byte derived key was accepted"
+    rescue ArgumentError, OpenSSL::KDF::KDFError
+    end
+    true
+  end
+end
+
+# ══════════════════════════════════════════════════════════════════════════
 # 5. HMAC -- RFC 4231 and RFC 2202
 # ══════════════════════════════════════════════════════════════════════════
 

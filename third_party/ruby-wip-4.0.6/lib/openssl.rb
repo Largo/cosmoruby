@@ -52,7 +52,7 @@ module OpenSSL
       'SHA384'     => 'SHA384',
       'SHA512'     => 'SHA512',
       'BLAKE2B256' => 'BLAKE2B256',
-    }.freeze
+    }.select { |_, mbed| MbedTLS.digest_supported?(mbed) }.freeze
 
     def self.normalize(name)
       key = name.to_s.upcase.delete('-_ ')
@@ -94,7 +94,11 @@ module OpenSSL
 
     def initialize(name, data = nil)
       @name = self.class.digest_name(name)
-      @md = MbedTLS::Digest.new(@name)
+      begin
+        @md = MbedTLS::Digest.new(@name)
+      rescue MbedTLS::CryptoError => e
+        raise DigestError, e.message
+      end
       update(data) if data
     end
 
@@ -260,9 +264,13 @@ module OpenSSL
       @mbed_name = self.class.resolve(name)
       @c = MbedTLS::Cipher.new(@mbed_name)
       @mode = @c.mode
+      @auth_tag_len_set = false
+      # @c.iv_len reports the length of the IV most recently handed to
+      # mbedtls once the cipher has run, so the algorithm's own default has
+      # to be remembered here.
+      @default_iv_len = @c.iv_len
       @iv_len = nil
       @state = nil
-      @auth_tag = nil
       @auth_tag_len = 16
       @expected_tag = nil
       @finalized = false
@@ -290,7 +298,7 @@ module OpenSSL
     end
 
     def iv_len
-      @iv_len || @c.iv_len
+      @iv_len || @default_iv_len
     end
 
     # GCM/ChaCha20-Poly1305 take a variable nonce.  mbedtls caps it at
@@ -298,7 +306,7 @@ module OpenSSL
     # being silently truncated.
     def iv_len=(len)
       unless authenticated?
-        raise CipherError, "#{name} has a fixed iv length of #{@c.iv_len}"
+        raise CipherError, "#{name} has a fixed iv length of #{@default_iv_len}"
       end
       raise CipherError, 'iv length must be 1..16' if len < 1 || len > 16
       @iv_len = len
@@ -314,44 +322,59 @@ module OpenSSL
       AEAD_MODES.include?(@mode)
     end
 
-    def encrypt(key = nil, iv = nil)
+    # NOTE: OpenSSL's one- and two-argument forms, Cipher#encrypt(pass, iv),
+    # do not set the key -- they *derive* key and IV from a password with
+    # EVP_BytesToKey.  That KDF is not implemented here (see
+    # #pkcs5_keyivgen), and treating the argument as a raw key instead would
+    # produce ciphertext nobody else can read, silently.  So they raise.
+    def encrypt(*args)
+      raise NotImplementedError, PASSWORD_FORM unless args.empty?
       @c.operation = MbedTLS::Cipher::ENCRYPT
       @state = :encrypt
       reset_auth_state
-      self.key = key if key
-      self.iv = iv if iv
       self
     end
 
-    def decrypt(key = nil, iv = nil)
+    def decrypt(*args)
+      raise NotImplementedError, PASSWORD_FORM unless args.empty?
       @c.operation = MbedTLS::Cipher::DECRYPT
       @state = :decrypt
       reset_auth_state
-      self.key = key if key
-      self.iv = iv if iv
       self
     end
+
+    PASSWORD_FORM =
+      'OpenSSL::Cipher#encrypt/#decrypt with a password derive the key with ' \
+      'EVP_BytesToKey, which the mbedtls-backed OpenSSL layer does not ' \
+      'implement; set #key= and #iv= yourself, deriving them with ' \
+      'OpenSSL::KDF.pbkdf2_hmac'
 
     def key=(key)
       key = key.to_str
       unless key.bytesize == key_len
         raise ArgumentError, "key must be #{key_len} bytes"
       end
-      @c.key = key
+      guard { @c.key = key }
       @finalized = false
       key
     end
 
     def iv=(iv)
       iv = iv.to_str
-      if authenticated?
+      if @iv_len
+        # iv_len= was set explicitly; enforce it rather than quietly using
+        # a nonce of a different length than the caller asked for.
+        unless iv.bytesize == @iv_len
+          raise ArgumentError, "iv must be #{@iv_len} bytes"
+        end
+      elsif authenticated?
         if iv.bytesize < 1 || iv.bytesize > 16
           raise ArgumentError, 'iv must be 1..16 bytes'
         end
-      elsif iv.bytesize != @c.iv_len
-        raise ArgumentError, "iv must be #{@c.iv_len} bytes"
+      elsif iv.bytesize != @default_iv_len
+        raise ArgumentError, "iv must be #{@default_iv_len} bytes"
       end
-      @c.iv = iv
+      guard { @c.iv = iv }
       @finalized = false
       iv
     end
@@ -371,7 +394,7 @@ module OpenSSL
     # OpenSSL takes any truthy/non-zero value as "pad", 0/false as "don't".
     def padding=(pad)
       on = !(pad == 0 || pad == false || pad.nil?)
-      @c.padding = on
+      guard { @c.padding = on }
       pad
     end
 
@@ -380,8 +403,10 @@ module OpenSSL
       data
     end
 
+    # mbedtls' GCM refuses a tag shorter than four bytes, so neither do we.
     def auth_tag_len=(len)
-      raise CipherError, 'tag length must be 1..16' if len < 1 || len > 16
+      raise CipherError, 'tag length must be 4..16' if len < 4 || len > 16
+      @auth_tag_len_set = true
       @auth_tag_len = len
     end
 
@@ -423,13 +448,21 @@ module OpenSSL
         unless @expected_tag
           raise CipherError, 'authentication tag not set (auth_tag=)'
         end
+        # If the caller declared a tag length, hold them to it: accepting a
+        # shorter tag than was asked for would quietly weaken forgery
+        # resistance by 8 bits per missing byte.
+        if @auth_tag_len_set && @expected_tag.bytesize != @auth_tag_len
+          raise CipherError,
+                "authentication tag must be #{@auth_tag_len} bytes, " \
+                "got #{@expected_tag.bytesize}"
+        end
         guard { @c.check_tag(@expected_tag) }
       end
       out
     end
 
     def reset
-      @c.reset
+      guard { @c.reset }
       reset_auth_state
       self
     end
@@ -460,7 +493,6 @@ module OpenSSL
     private
 
     def reset_auth_state
-      @auth_tag = nil
       @expected_tag = nil
       @finalized = false
     end
@@ -476,10 +508,14 @@ module OpenSSL
   # HMAC
   # ══════════════════════════════════════════════════════════════════════
   class HMAC
+    class HMACError < OpenSSLError; end
+
     # NOTE the argument order: key first, digest second (OpenSSL's).
     def initialize(key, digest)
       @name = Digest.digest_name(digest)
       @h = MbedTLS::HMAC.new(@name, key.to_str)
+    rescue MbedTLS::CryptoError => e
+      raise HMACError, e.message
     end
 
     def initialize_copy(other)
@@ -525,6 +561,8 @@ module OpenSSL
 
     def self.digest(digest, key, data)
       MbedTLS.hmac(Digest.digest_name(digest), key.to_str, data.to_str)
+    rescue MbedTLS::CryptoError => e
+      raise HMACError, e.message
     end
 
     def self.hexdigest(digest, key, data)

@@ -3636,6 +3636,70 @@ Conversely, `OpenSSL::PKey` no longer returns a fake key object whose
 `NotImplementedError`. Nothing in the port could ever use it, and a fake
 that answers questions is worse than an absence that does not.
 
+### What an adversarial review of the binding turned up
+
+The first version passed every known-answer vector and the whole
+host-cross-check matrix, and was still wrong in four ways. All four are
+the same shape: **state that survives longer than the message it belongs
+to**, which no single-message test can see.
+
+1. **`auth_tag` was not idempotent.** `mbedtls_cipher_write_tag()` runs
+   `mbedtls_gcm_finish()`, which XORs the length block into `ctx->buf`
+   and re-runs `gcm_mult()` *in place*. Asking twice therefore returned
+   two different 16-byte strings, with no error:
+
+   ```
+   6e13c3c8b73499a85903b09e7c86a4db
+   747e016f4b8a92f1b2d54dcbf4a53b73
+   4eb87375b25e20f4310b194f591a8bce
+   ```
+
+   Real OpenSSL caches the tag in the EVP context and returns the same
+   bytes every time. `tag = c.auth_tag` after any earlier `c.auth_tag`
+   (a debug log line is enough) produced an undecryptable message with
+   nothing raising anywhere. Now the tag is computed once, at full
+   length, and cached in the cipher struct; a shorter tag is its leading
+   prefix, which is exactly how GCM truncation is defined
+   (SP 800-38D 5.2.1.2). `check_tag` gets the same treatment from the
+   other side: it may run once per message and raises on a second call
+   rather than comparing against a mutated context.
+2. **AAD outlived the message.** `EVP_CipherInit` drops the additional
+   data; `cipher.encrypt` did not. A `Cipher` reused for a second message
+   silently authenticated it with the *first* message's AAD, producing a
+   ciphertext and tag no correct peer would accept.
+3. **`padding=` mid-message silently replayed from the original IV.** It
+   cleared the `started` flag, so the next `update` re-ran
+   `cipher_start()` — new `setkey`, the original IV restored,
+   `unprocessed_len` dropped. Output was simply wrong. It now raises once
+   data has been fed in.
+4. **`pbkdf2_hmac` truncated its length to `uint32_t`.** `length: 2**32`
+   allocated 4 GiB, mbedtls wrote zero bytes into it, and the whole
+   allocation came back as "derived key material". Bounded now.
+
+Three smaller ones went with them: `cipher_is_aead()` included CCM, for
+which mbedtls' generic layer falls through to `return 0` — had CCM ever
+been compiled in, `check_tag` would have accepted *any* tag; an explicit
+`auth_tag_len=` was recorded but never enforced on the decrypt side, so
+an attacker who controlled the envelope could truncate the tag to four
+bytes; and `@c.iv_len` reports the length of the IV most recently handed
+to mbedtls rather than the algorithm's, so after one 8-byte-nonce GCM
+operation `random_iv` would have started generating 8-byte nonces
+forever.
+
+Also removed: `Cipher#encrypt(password)`. ruby/openssl's one-argument
+form *derives* the key with `EVP_BytesToKey`; the binding was installing
+the password as a raw key, which for a password that happened to be
+`key_len` bytes produced completely different ciphertext with no error at
+all. It now raises `NotImplementedError`, consistent with
+`#pkcs5_keyivgen`.
+
+The lesson for the test suite: every one of these needed a *second*
+message or a *second* call, and the suite had neither — every check
+built a fresh `OpenSSL::Cipher`. There is now a lifecycle section that
+reuses objects, reads the tag three times, resets and re-encrypts, and
+asserts the stricter-than-OpenSSL rules separately (guarded on
+`defined?(MbedTLS)`, since the file also has to pass on real OpenSSL).
+
 ### Correctness evidence
 
 `third_party/ruby/cosmo_tests/test_openssl.rb` (36 checks). It is built
@@ -3757,19 +3821,19 @@ CTR mode tables, the binding and the larger `openssl.rb` are new.
 | binary | before | after | Δ |
 |---|---|---|---|
 | `o/third_party/ruby/ruby` (zipless, x86_64) | 14,776,941 | 14,797,421 | **+20,480** (+0.14 %) |
-| `o/aarch64/third_party/ruby/ruby` (zipless) | 13,423,509 | 13,445,653 | **+22,144** (+0.16 %) |
-| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,434,609 | **+25,244** (+0.11 %) |
-| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,871,680 | **+4,764** |
-| `dist/ruby.com` (**fat**) | 37,428,412 | 37,473,288 | **+44,876** (+0.12 %) |
-| `dist/irb.com` (fat) | 37,428,484 | 37,473,275 | **+44,791** |
-| `dist/miniruby.com` (fat) | 28,024,522 | 28,029,286 | **+4,764** |
+| `o/aarch64/third_party/ruby/ruby` (zipless) | 13,423,509 | 13,445,845 | **+22,336** (+0.17 %) |
+| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,435,218 | **+25,853** (+0.11 %) |
+| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,872,289 | **+5,373** |
+| `dist/ruby.com` (**fat**) | 37,428,412 | 37,474,107 | **+45,695** (+0.12 %) |
+| `dist/irb.com` (fat) | 37,428,484 | 37,474,073 | **+45,589** |
+| `dist/miniruby.com` (fat) | 28,024,522 | 28,029,895 | **+5,373** |
 
 (The "before" column is this tree at `55e0204e7`, measured rather than
 copied from the table above — link padding puts it a few dozen bytes off
 the numbers recorded for the `rails-exts` head.)
 
 For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri +2,033 KB.
-The whole OpenSSL surface is +44 KB on the fat APE.
+The whole OpenSSL surface is +45 KB on the fat APE.
 
 ### What is still not there
 

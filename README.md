@@ -206,8 +206,16 @@ return a wrong-but-plausible answer:
   of them rather than substituting something that would not interoperate.
 - **An AEAD cipher used with no `iv=`** raises. OpenSSL encrypts with
   whatever is in its context (its output differs run to run); a fixed zero
-  nonce would be worse than either, so this refuses. CBC/CTR/ECB with no
-  `iv=` do use an all-zero IV, exactly like OpenSSL.
+  nonce would be worse than either, so this refuses. CBC/CTR with no `iv=`
+  do use an all-zero IV, exactly like OpenSSL.
+- **`Cipher#encrypt(password)` / `#decrypt(password)`** raise. OpenSSL's
+  one-argument form derives the key with `EVP_BytesToKey`, which is not
+  implemented; set `key=` yourself from `OpenSSL::KDF.pbkdf2_hmac`.
+- A few lifecycle rules are **stricter** than OpenSSL's, because the looser
+  behaviour would produce a wrong answer rather than an error: `update`
+  after `final` raises, `padding=` after data has been fed in raises, an
+  explicit `auth_tag_len=` is enforced when decrypting, and an explicit
+  `iv_len=` is enforced by `iv=`.
 - **TLS server sockets, client certificates, session resumption, ALPN,
   `OpenSSL::VERSION` and the `OPENSSL_VERSION*` constants.**
 

@@ -85,6 +85,16 @@ typedef struct {
     int key_set;
     int iv_set;
     int started;
+    int finished;               /* #final has run; no more input accepted */
+    /* mbedtls_gcm_finish() and mbedtls_chachapoly_finish() mutate the
+     * context, so asking mbedtls for the tag twice yields two *different*
+     * answers.  OpenSSL returns the same bytes every time, so the tag is
+     * computed once, at full length, and cached; a shorter tag is the
+     * leading prefix of it, which is exactly how GCM truncation is
+     * defined (SP 800-38D section 5.2.1.2). */
+    unsigned char tag[16];
+    int tag_ready;              /* encrypt side: `tag` holds the real tag */
+    int tag_checked;            /* decrypt side: check_tag already consumed */
     int padding;                /* MBEDTLS_PADDING_PKCS7 or _NONE */
     unsigned char key[64];
     size_t key_len;
@@ -149,12 +159,42 @@ cipher_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * GCM and ChaCha20-Poly1305 only, deliberately.  mbedtls' generic layer
+ * implements update_ad/write_tag/check_tag for exactly these two and falls
+ * through to `return 0` for anything else -- so a mode added to this list
+ * without a matching branch in cipher.c would accept *any* tag on decrypt
+ * and hand back an uninitialised buffer as the tag on encrypt.  CCM is a
+ * mode of that kind and is not compiled in this build anyway.
+ */
 static int
 cipher_is_aead(cipher_t *c)
 {
     mbedtls_cipher_mode_t m = mbedtls_cipher_get_cipher_mode(&c->ctx);
-    return m == MBEDTLS_MODE_GCM || m == MBEDTLS_MODE_CHACHAPOLY ||
-           m == MBEDTLS_MODE_CCM;
+    return m == MBEDTLS_MODE_GCM || m == MBEDTLS_MODE_CHACHAPOLY;
+}
+
+/* Everything that invalidates an in-progress message. */
+static void
+cipher_rewind(cipher_t *c)
+{
+    c->started = 0;
+    c->finished = 0;
+    c->pending_len = 0;
+    c->tag_ready = 0;
+    c->tag_checked = 0;
+    crypto_wipe(c->tag, sizeof(c->tag));
+}
+
+static void
+cipher_drop_aad(cipher_t *c)
+{
+    if (c->aad) {
+        crypto_wipe(c->aad, c->aad_len);
+        xfree(c->aad);
+        c->aad = 0;
+    }
+    c->aad_len = 0;
 }
 
 /*
@@ -243,8 +283,11 @@ cipher_set_operation(VALUE self, VALUE op)
         rb_raise(eCryptoError, "bad operation");
     }
     c->operation = want;
-    c->started = 0;
-    c->pending_len = 0;
+    /* EVP_CipherInit drops the additional data, so a Cipher reused for a
+     * second message does not silently authenticate it with the previous
+     * message's AAD. */
+    cipher_drop_aad(c);
+    cipher_rewind(c);
     return self;
 }
 
@@ -264,8 +307,7 @@ cipher_set_key(VALUE self, VALUE key)
     memcpy(c->key, RSTRING_PTR(key), len);
     c->key_len = len;
     c->key_set = 1;
-    c->started = 0;
-    c->pending_len = 0;
+    cipher_rewind(c);
     return key;
 }
 
@@ -294,8 +336,7 @@ cipher_set_iv(VALUE self, VALUE iv)
     memcpy(c->iv, RSTRING_PTR(iv), len);
     c->iv_len = len;
     c->iv_set = 1;
-    c->started = 0;
-    c->pending_len = 0;
+    cipher_rewind(c);
     return iv;
 }
 
@@ -303,8 +344,14 @@ static VALUE
 cipher_set_padding(VALUE self, VALUE on)
 {
     cipher_t *c = get_cipher(self);
+    /* The padding mode is handed to mbedtls at #start, so changing it once
+     * data has been fed in would mean replaying the message from the
+     * original IV -- silently wrong ciphertext.  Refuse instead. */
+    if (c->started) {
+        rb_raise(eCryptoError, "padding cannot be changed once the cipher "
+                               "has processed data");
+    }
     c->padding = RTEST(on) ? MBEDTLS_PADDING_PKCS7 : MBEDTLS_PADDING_NONE;
-    c->started = 0;
     return on;
 }
 
@@ -323,12 +370,7 @@ cipher_set_aad(VALUE self, VALUE aad)
     }
     StringValue(aad);
     len = (size_t)RSTRING_LEN(aad);
-    if (c->aad) {
-        crypto_wipe(c->aad, c->aad_len);
-        xfree(c->aad);
-        c->aad = 0;
-        c->aad_len = 0;
-    }
+    cipher_drop_aad(c);
     if (len) {
         c->aad = (unsigned char *)xmalloc(len);
         memcpy(c->aad, RSTRING_PTR(aad), len);
@@ -404,6 +446,9 @@ cipher_start(cipher_t *c)
         }
     }
     c->pending_len = 0;
+    c->finished = 0;
+    c->tag_ready = 0;
+    c->tag_checked = 0;
     c->started = 1;
 }
 
@@ -417,9 +462,7 @@ cipher_start_m(VALUE self)
 static VALUE
 cipher_reset(VALUE self)
 {
-    cipher_t *c = get_cipher(self);
-    c->started = 0;
-    c->pending_len = 0;
+    cipher_rewind(get_cipher(self));
     return self;
 }
 
@@ -434,6 +477,9 @@ cipher_update(VALUE self, VALUE data)
 
     StringValue(data);
     cipher_start(c);
+    if (c->finished) {
+        rb_raise(eCryptoError, "cipher has already been finalized");
+    }
     ilen = (size_t)RSTRING_LEN(data);
 
     /* NOTE: RSTRING_PTR(data) is only read *after* every allocation below,
@@ -507,6 +553,7 @@ cipher_final(VALUE self)
                                 (unsigned char *)RSTRING_PTR(out) + tail,
                                 &olen);
     if (ret != 0) crypto_raise(ret, "mbedtls_cipher_finish");
+    c->finished = 1;
     rb_str_set_len(out, (long)(tail + olen));
     return out;
 }
@@ -524,11 +571,15 @@ cipher_write_tag(VALUE self, VALUE lenv)
         rb_raise(eCryptoError, "cipher is not authenticated");
     }
     if (len < 1 || len > 16) rb_raise(eCryptoError, "bad tag length");
-    out = rb_str_new(0, len);
-    ret = mbedtls_cipher_write_tag(&c->ctx,
-                                   (unsigned char *)RSTRING_PTR(out),
-                                   (size_t)len);
-    if (ret != 0) crypto_raise(ret, "mbedtls_cipher_write_tag");
+    if (!c->tag_ready) {
+        /* Always at full length: mbedtls_gcm_finish() mutates the context,
+         * so this may happen only once per message.  A shorter tag is the
+         * leading prefix, which is how GCM truncation is defined. */
+        ret = mbedtls_cipher_write_tag(&c->ctx, c->tag, sizeof(c->tag));
+        if (ret != 0) crypto_raise(ret, "mbedtls_cipher_write_tag");
+        c->tag_ready = 1;
+    }
+    out = rb_str_new((const char *)c->tag, len);
     return out;
 }
 
@@ -542,6 +593,15 @@ cipher_check_tag(VALUE self, VALUE tag)
     if (!cipher_is_aead(c)) {
         rb_raise(eCryptoError, "cipher is not authenticated");
     }
+    /* mbedtls_gcm_finish() runs inside check_tag and mutates the context,
+     * so a second check would compare against a different value and fail
+     * for the wrong reason.  One message, one check. */
+    if (c->tag_checked) {
+        rb_raise(eCryptoError,
+                 "authentication tag has already been checked for this "
+                 "message");
+    }
+    c->tag_checked = 1;
     StringValue(tag);
     ret = mbedtls_cipher_check_tag(&c->ctx,
                                    (const unsigned char *)RSTRING_PTR(tag),
@@ -909,15 +969,23 @@ crypto_pbkdf2_hmac(VALUE self, VALUE name, VALUE pass, VALUE salt,
     if (n < 1) rb_raise(rb_eArgError, "iterations must be positive");
     if (outlen < 0) rb_raise(rb_eArgError, "length must not be negative");
     if (n > 0xffffffffUL) rb_raise(rb_eArgError, "iterations too large");
+    /* mbedtls takes the output length as a uint32_t.  Silently truncating
+     * would return a buffer whose tail was never written -- uninitialised
+     * memory presented as key material. */
+    if ((unsigned long)outlen > 0xffffffffUL) {
+        rb_raise(rb_eArgError, "length too large");
+    }
     StringValue(pass);
     StringValue(salt);
 
+    /* Allocate first: rb_str_new() can raise, and doing so between
+     * mbedtls_md_setup() and mbedtls_md_free() would leak the context. */
+    out = rb_str_new(0, outlen);
     mbedtls_md_init(&ctx);
     if ((ret = mbedtls_md_setup(&ctx, info, 1)) != 0) {
         mbedtls_md_free(&ctx);
         crypto_raise(ret, "mbedtls_md_setup");
     }
-    out = rb_str_new(0, outlen);
     ret = mbedtls_pkcs5_pbkdf2_hmac(&ctx,
                                     RSTRING_PTR(pass), (size_t)RSTRING_LEN(pass),
                                     RSTRING_PTR(salt), (size_t)RSTRING_LEN(salt),

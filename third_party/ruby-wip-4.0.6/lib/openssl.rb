@@ -1,100 +1,628 @@
 # frozen_string_literal: true
-# OpenSSL compatibility shim for Cosmopolitan Ruby
-# Uses MbedTLS under the hood
+#
+# OpenSSL compatibility layer for Cosmopolitan Ruby, implemented on mbedtls.
+#
+# Everything cryptographic here is a call into third_party/mbedtls by way of
+# ext/mbedtls (MbedTLS::Cipher, MbedTLS::Digest, MbedTLS::HMAC,
+# MbedTLS.pbkdf2_hmac, MbedTLS.random_bytes).  No algorithm is implemented in
+# Ruby.  Anything mbedtls cannot do is *not* provided: it raises rather than
+# returning a plausible wrong answer.
+#
+# Covered:  OpenSSL::Cipher (AES-128/192/256 in GCM/CBC/CTR/ECB, 3DES,
+#           ChaCha20 and ChaCha20-Poly1305), OpenSSL::Digest (a real class
+#           hierarchy), OpenSSL::HMAC, OpenSSL::KDF.pbkdf2_hmac,
+#           OpenSSL::PKCS5, OpenSSL::Random, the secure-compare helpers, and
+#           the pre-existing OpenSSL::SSL / OpenSSL::X509 client surface.
+#
+# Not covered (these raise NotImplementedError):  public-key cryptography
+# (RSA/DSA/EC key generation, signing, verification, encryption), certificate
+# creation or parsing, PKCS#7/CMS, OCSP, HKDF, scrypt, and EVP_BytesToKey
+# (Cipher#pkcs5_keyivgen).
 
 require 'mbedtls'
+require 'digest'
 require 'socket'
 
 module OpenSSL
   class OpenSSLError < StandardError; end
 
-  # Message digest (hash) functions wrapper
-  module Digest
+  # ══════════════════════════════════════════════════════════════════════
+  # Message digests
+  # ══════════════════════════════════════════════════════════════════════
+  #
+  # A real class hierarchy, not a bag of aliases: OpenSSL::Digest is
+  # subclassable and OpenSSL::Digest::SHA256 < OpenSSL::Digest, which is what
+  # ActiveSupport::KeyGenerator.hash_digest_class= insists on.  The digest
+  # state itself is an mbedtls_md_context_t.
+  class Digest < ::Digest::Class
     class DigestError < OpenSSLError; end
 
-    def self.new(name)
-      # Factory method - return Ruby's native Digest wrapped
-      case name.to_s.upcase.gsub('-', '')
-      when 'SHA1'
-        require 'digest/sha1'
-        ::Digest::SHA1.new
-      when 'SHA256', 'SHA2256'
-        require 'digest/sha2'
-        ::Digest::SHA256.new
-      when 'SHA384', 'SHA2384'
-        require 'digest/sha2'
-        ::Digest::SHA384.new
-      when 'SHA512', 'SHA2512'
-        require 'digest/sha2'
-        ::Digest::SHA512.new
-      when 'MD5'
-        require 'digest/md5'
-        ::Digest::MD5.new
+    # Normalised OpenSSL spelling => mbedtls md name.  mbedtls' md.c in this
+    # tree knows exactly these; a new one is a line here plus a #define in
+    # third_party/mbedtls/config.h.
+    ALGORITHMS = {
+      'MD5'        => 'MD5',
+      'SHA'        => 'SHA1',
+      'SHA1'       => 'SHA1',
+      'SHA224'     => 'SHA224',
+      'SHA256'     => 'SHA256',
+      'SHA384'     => 'SHA384',
+      'SHA512'     => 'SHA512',
+      'BLAKE2B256' => 'BLAKE2B256',
+    }.freeze
+
+    def self.normalize(name)
+      key = name.to_s.upcase.delete('-_ ')
+      key = "SHA#{$1}" if key =~ /\ASHA2(\d{3})\z/ # SHA2-256 => SHA256
+      ALGORITHMS[key] or
+        raise DigestError, "unsupported digest algorithm (#{name})"
+    end
+
+    # Accepts a name, a symbol, an OpenSSL::Digest instance, a ::Digest
+    # instance or a digest class -- the same shapes ruby/openssl accepts.
+    def self.digest_name(obj)
+      case obj
+      when Digest              then normalize(obj.name)
+      when ::String, ::Symbol  then normalize(obj)
+      when ::Digest::Instance  then normalize(obj.class.to_s.split('::').last)
+      when ::Class
+        unless obj <= ::Digest::Class
+          raise TypeError, "unsupported digest: #{obj}"
+        end
+        normalize(obj.to_s.split('::').last)
       else
-        raise DigestError, "Unsupported digest algorithm: #{name}"
+        raise TypeError, "unsupported digest: #{obj.class}"
       end
     end
 
-    # Lazy-loaded constant aliases for compatibility
-    def self.const_missing(name)
-      case name
-      when :SHA1
-        require 'digest/sha1'
-        const_set(:SHA1, ::Digest::SHA1)
-      when :SHA256
-        require 'digest/sha2'
-        const_set(:SHA256, ::Digest::SHA256)
-      when :SHA384
-        require 'digest/sha2'
-        const_set(:SHA384, ::Digest::SHA384)
-      when :SHA512
-        require 'digest/sha2'
-        const_set(:SHA512, ::Digest::SHA512)
-      when :MD5
-        require 'digest/md5'
-        const_set(:MD5, ::Digest::MD5)
-      else
-        super
+    # OpenSSL::Digest.digest("SHA256", data) -- note the argument order is
+    # the reverse of Digest::Class.digest(data, *params).
+    def self.digest(name, data)
+      Digest.new(name).digest(data)
+    end
+
+    def self.hexdigest(name, data)
+      Digest.new(name).hexdigest(data)
+    end
+
+    def self.base64digest(name, data)
+      Digest.new(name).base64digest(data)
+    end
+
+    def initialize(name, data = nil)
+      @name = self.class.digest_name(name)
+      @md = MbedTLS::Digest.new(@name)
+      update(data) if data
+    end
+
+    def initialize_copy(other)
+      super
+      @md = other.instance_variable_get(:@md).dup
+      self
+    end
+
+    def update(data)
+      @md.update(data)
+      self
+    end
+    alias << update
+
+    def reset
+      @md.reset
+      self
+    end
+
+    def finish
+      @md.finish
+    end
+
+    def digest_length
+      @md.digest_length
+    end
+
+    def block_length
+      @md.block_length
+    end
+
+    attr_reader :name
+
+    ALGORITHMS.each_key do |const|
+      next if const == 'SHA' # not a class in ruby/openssl either
+      klass = Class.new(self) do
+        define_method(:initialize) { |data = nil| super(const, data) }
       end
+      klass.singleton_class.class_eval do
+        define_method(:digest)       { |data| Digest.digest(const, data) }
+        define_method(:hexdigest)    { |data| Digest.hexdigest(const, data) }
+        define_method(:base64digest) { |data| Digest.base64digest(const, data) }
+      end
+      const_set(const, klass)
     end
   end
 
-  # Public key cryptography (stub implementation)
+  # ══════════════════════════════════════════════════════════════════════
+  # Random
+  # ══════════════════════════════════════════════════════════════════════
+  module Random
+    class RandomError < OpenSSLError; end
+
+    # Straight from the operating system CSPRNG (see MbedTLS.random_bytes).
+    def self.random_bytes(len)
+      MbedTLS.random_bytes(len)
+    end
+
+    class << self
+      alias bytes random_bytes
+      alias pseudo_bytes random_bytes
+    end
+
+    # The kernel CSPRNG owns its own entropy pool; there is nothing for a
+    # caller to add.  Returns its argument the way OpenSSL::Random.seed does.
+    def self.seed(str)
+      str
+    end
+
+    def self.random_add(str, entropy = nil)
+      self
+    end
+
+    def self.status?
+      true
+    end
+  end
+
+  def self.fixed_length_secure_compare(a, b)
+    a = a.to_str
+    b = b.to_str
+    if a.bytesize != b.bytesize
+      raise ArgumentError, 'inputs must be of equal length'
+    end
+    MbedTLS.constant_time_equal?(a, b)
+  end
+
+  # Length-independent: hash first, then compare in constant time, then
+  # confirm.  Same construction as ruby/openssl.
+  def self.secure_compare(a, b)
+    hashed_a = Digest::SHA256.digest(a)
+    hashed_b = Digest::SHA256.digest(b)
+    fixed_length_secure_compare(hashed_a, hashed_b) && a == b
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Symmetric ciphers
+  # ══════════════════════════════════════════════════════════════════════
+  class Cipher
+    class CipherError < OpenSSLError; end
+
+    # OpenSSL name (upcased, canonical) => mbedtls name.  Adding an
+    # algorithm is one entry, because the binding drives the generic
+    # mbedtls_cipher_* layer rather than any particular primitive.  Entries
+    # whose mbedtls counterpart is not compiled into this build are dropped
+    # at load time, so `ciphers` never advertises something that would fail.
+    ALGORITHMS = {
+      'AES-128-ECB'       => 'AES-128-ECB',
+      'AES-192-ECB'       => 'AES-192-ECB',
+      'AES-256-ECB'       => 'AES-256-ECB',
+      'AES-128-CBC'       => 'AES-128-CBC',
+      'AES-192-CBC'       => 'AES-192-CBC',
+      'AES-256-CBC'       => 'AES-256-CBC',
+      'AES-128-CTR'       => 'AES-128-CTR',
+      'AES-192-CTR'       => 'AES-192-CTR',
+      'AES-256-CTR'       => 'AES-256-CTR',
+      'AES-128-GCM'       => 'AES-128-GCM',
+      'AES-192-GCM'       => 'AES-192-GCM',
+      'AES-256-GCM'       => 'AES-256-GCM',
+      'DES-EDE3-CBC'      => 'DES-EDE3-CBC',
+      'DES-EDE3-ECB'      => 'DES-EDE3-ECB',
+      'DES-EDE-CBC'       => 'DES-EDE-CBC',
+      'DES-EDE-ECB'       => 'DES-EDE-ECB',
+      'DES-CBC'           => 'DES-CBC',
+      'DES-ECB'           => 'DES-ECB',
+      'CHACHA20'          => 'CHACHA20',
+      'CHACHA20-POLY1305' => 'CHACHA20-POLY1305',
+    }.select { |_, mbed| MbedTLS.cipher_supported?(mbed) }.freeze
+
+    # Historical OpenSSL short names.
+    ALIASES = {
+      'AES128'   => 'AES-128-CBC',
+      'AES192'   => 'AES-192-CBC',
+      'AES256'   => 'AES-256-CBC',
+      'DES3'     => 'DES-EDE3-CBC',
+      'DES-EDE3' => 'DES-EDE3-ECB',
+      'DES-EDE'  => 'DES-EDE-ECB',
+      'DES'      => 'DES-CBC',
+    }.freeze
+
+    def self.resolve(name)
+      key = name.to_s.upcase
+      key = ALIASES[key] || key
+      ALGORITHMS[key] or
+        raise CipherError, "unsupported cipher algorithm (#{name})"
+    end
+
+    def self.ciphers
+      ALGORITHMS.keys.map(&:downcase)
+    end
+
+    AEAD_MODES = %i[gcm ccm chachapoly].freeze
+    BLOCK_MODES = %i[cbc ecb].freeze
+
+    def initialize(name)
+      @mbed_name = self.class.resolve(name)
+      @c = MbedTLS::Cipher.new(@mbed_name)
+      @mode = @c.mode
+      @iv_len = nil
+      @state = nil
+      @auth_tag = nil
+      @auth_tag_len = 16
+      @expected_tag = nil
+      @finalized = false
+    end
+
+    def name
+      @mbed_name
+    end
+
+    def mode
+      @mode
+    end
+
+    def key_len
+      @c.key_len
+    end
+
+    # Every cipher this build exposes has a fixed key length; OpenSSL only
+    # honours key_len= for variable-key ciphers, and there are none here.
+    def key_len=(len)
+      unless len == key_len
+        raise CipherError, "#{name} has a fixed key length of #{key_len}"
+      end
+      len
+    end
+
+    def iv_len
+      @iv_len || @c.iv_len
+    end
+
+    # GCM/ChaCha20-Poly1305 take a variable nonce.  mbedtls caps it at
+    # MBEDTLS_MAX_IV_LENGTH (16), so longer nonces are refused instead of
+    # being silently truncated.
+    def iv_len=(len)
+      unless authenticated?
+        raise CipherError, "#{name} has a fixed iv length of #{@c.iv_len}"
+      end
+      raise CipherError, 'iv length must be 1..16' if len < 1 || len > 16
+      @iv_len = len
+    end
+
+    # OpenSSL reports 1 for stream and AEAD modes, and the real block size
+    # only for the block modes.
+    def block_size
+      BLOCK_MODES.include?(@mode) ? @c.block_size : 1
+    end
+
+    def authenticated?
+      AEAD_MODES.include?(@mode)
+    end
+
+    def encrypt(key = nil, iv = nil)
+      @c.operation = MbedTLS::Cipher::ENCRYPT
+      @state = :encrypt
+      reset_auth_state
+      self.key = key if key
+      self.iv = iv if iv
+      self
+    end
+
+    def decrypt(key = nil, iv = nil)
+      @c.operation = MbedTLS::Cipher::DECRYPT
+      @state = :decrypt
+      reset_auth_state
+      self.key = key if key
+      self.iv = iv if iv
+      self
+    end
+
+    def key=(key)
+      key = key.to_str
+      unless key.bytesize == key_len
+        raise ArgumentError, "key must be #{key_len} bytes"
+      end
+      @c.key = key
+      @finalized = false
+      key
+    end
+
+    def iv=(iv)
+      iv = iv.to_str
+      if authenticated?
+        if iv.bytesize < 1 || iv.bytesize > 16
+          raise ArgumentError, 'iv must be 1..16 bytes'
+        end
+      elsif iv.bytesize != @c.iv_len
+        raise ArgumentError, "iv must be #{@c.iv_len} bytes"
+      end
+      @c.iv = iv
+      @finalized = false
+      iv
+    end
+
+    def random_key
+      k = Random.random_bytes(key_len)
+      self.key = k
+      k
+    end
+
+    def random_iv
+      v = Random.random_bytes(iv_len)
+      self.iv = v
+      v
+    end
+
+    # OpenSSL takes any truthy/non-zero value as "pad", 0/false as "don't".
+    def padding=(pad)
+      on = !(pad == 0 || pad == false || pad.nil?)
+      @c.padding = on
+      pad
+    end
+
+    def auth_data=(data)
+      guard { @c.auth_data = data.to_str }
+      data
+    end
+
+    def auth_tag_len=(len)
+      raise CipherError, 'tag length must be 1..16' if len < 1 || len > 16
+      @auth_tag_len = len
+    end
+
+    def auth_tag(len = nil)
+      unless authenticated?
+        raise CipherError, "#{name} is not an authenticated cipher"
+      end
+      unless @state == :encrypt
+        raise CipherError, 'authentication tag is only produced when encrypting'
+      end
+      unless @finalized
+        raise CipherError, 'call #final before reading the authentication tag'
+      end
+      len ||= @auth_tag_len
+      guard { @c.write_tag(len) }
+    end
+
+    def auth_tag=(tag)
+      unless authenticated?
+        raise CipherError, "#{name} is not an authenticated cipher"
+      end
+      @expected_tag = tag.to_str
+    end
+
+    def update(data, buffer = nil)
+      out = guard { @c.update(data.to_str) }
+      if buffer
+        buffer.replace(out)
+        buffer
+      else
+        out
+      end
+    end
+
+    def final
+      out = guard { @c.final }
+      @finalized = true
+      if authenticated? && @state == :decrypt
+        unless @expected_tag
+          raise CipherError, 'authentication tag not set (auth_tag=)'
+        end
+        guard { @c.check_tag(@expected_tag) }
+      end
+      out
+    end
+
+    def reset
+      @c.reset
+      reset_auth_state
+      self
+    end
+
+    # EVP_BytesToKey.  Deliberately absent rather than approximated: it is a
+    # legacy OpenSSL-specific KDF and nothing in this port needs it.
+    def pkcs5_keyivgen(*)
+      raise NotImplementedError,
+            'OpenSSL::Cipher#pkcs5_keyivgen (EVP_BytesToKey) is not ' \
+            'implemented in the mbedtls-backed OpenSSL layer; use ' \
+            'OpenSSL::KDF.pbkdf2_hmac'
+    end
+
+    # Legacy convenience classes (OpenSSL::Cipher::AES256.new("GCM"), ...).
+    class AES < Cipher
+      def initialize(bits, mode = 'CBC')
+        super("AES-#{bits}-#{mode}")
+      end
+    end
+
+    %w[128 192 256].each do |bits|
+      klass = Class.new(Cipher) do
+        define_method(:initialize) { |mode = 'CBC'| super("AES-#{bits}-#{mode}") }
+      end
+      const_set("AES#{bits}", klass)
+    end
+
+    private
+
+    def reset_auth_state
+      @auth_tag = nil
+      @expected_tag = nil
+      @finalized = false
+    end
+
+    def guard
+      yield
+    rescue MbedTLS::CryptoError => e
+      raise CipherError, e.message
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # HMAC
+  # ══════════════════════════════════════════════════════════════════════
+  class HMAC
+    # NOTE the argument order: key first, digest second (OpenSSL's).
+    def initialize(key, digest)
+      @name = Digest.digest_name(digest)
+      @h = MbedTLS::HMAC.new(@name, key.to_str)
+    end
+
+    def initialize_copy(other)
+      super
+      @h = other.instance_variable_get(:@h).dup
+      self
+    end
+
+    def update(data)
+      @h.update(data.to_str)
+      self
+    end
+    alias << update
+
+    def digest
+      @h.digest
+    end
+
+    def hexdigest
+      digest.unpack1('H*')
+    end
+    alias to_s hexdigest
+    alias inspect hexdigest
+
+    def base64digest
+      [digest].pack('m0')
+    end
+
+    def reset
+      @h.reset
+      self
+    end
+
+    def ==(other)
+      case other
+      when HMAC  then OpenSSL.fixed_length_secure_compare(digest, other.digest)
+      when String
+        other.bytesize == digest.bytesize &&
+          OpenSSL.fixed_length_secure_compare(digest, other)
+      else false
+      end
+    end
+
+    def self.digest(digest, key, data)
+      MbedTLS.hmac(Digest.digest_name(digest), key.to_str, data.to_str)
+    end
+
+    def self.hexdigest(digest, key, data)
+      self.digest(digest, key, data).unpack1('H*')
+    end
+
+    def self.base64digest(digest, key, data)
+      [self.digest(digest, key, data)].pack('m0')
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Key derivation
+  # ══════════════════════════════════════════════════════════════════════
+  module KDF
+    class KDFError < OpenSSLError; end
+
+    def self.pbkdf2_hmac(pass, salt:, iterations:, length:, hash:)
+      unless iterations.is_a?(Integer) && iterations > 0
+        raise KDFError, 'iterations must be a positive integer'
+      end
+      unless length.is_a?(Integer) && length >= 0
+        raise KDFError, 'length must be a non-negative integer'
+      end
+      MbedTLS.pbkdf2_hmac(Digest.digest_name(hash), pass.to_str, salt.to_str,
+                          iterations, length)
+    rescue MbedTLS::CryptoError => e
+      raise KDFError, e.message
+    end
+
+    def self.hkdf(*)
+      raise NotImplementedError,
+            'OpenSSL::KDF.hkdf is not implemented (mbedtls in this tree has ' \
+            'no HKDF); use OpenSSL::KDF.pbkdf2_hmac'
+    end
+
+    def self.scrypt(*)
+      raise NotImplementedError,
+            'OpenSSL::KDF.scrypt is not implemented (mbedtls has no scrypt)'
+    end
+  end
+
+  module PKCS5
+    class PKCS5Error < OpenSSLError; end
+
+    def self.pbkdf2_hmac(pass, salt, iter, keylen, digest)
+      KDF.pbkdf2_hmac(pass, salt: salt, iterations: iter, length: keylen,
+                            hash: digest)
+    end
+
+    def self.pbkdf2_hmac_sha1(pass, salt, iter, keylen)
+      pbkdf2_hmac(pass, salt, iter, keylen, 'SHA1')
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Public key cryptography -- NOT implemented
+  # ══════════════════════════════════════════════════════════════════════
+  #
+  # mbedtls does have RSA/EC, but none of it is bound here.  The classes
+  # exist so that `defined?(OpenSSL::PKey::RSA)` and rescue clauses keep
+  # working; every operation raises rather than returning a fake key, which
+  # is what the previous shim did.
   module PKey
     class PKeyError < OpenSSLError; end
 
-    class RSA
-      def initialize(data = nil, password = nil)
-        @data = data
-        # Not actually implementing RSA key operations
-        # This is just for RubyGems compatibility
+    UNIMPLEMENTED = 'public key cryptography is not implemented in the ' \
+                    'mbedtls-backed OpenSSL layer of CosmoRuby'
+
+    def self.read(*)
+      raise NotImplementedError, UNIMPLEMENTED
+    end
+
+    class PKey
+      def initialize(*)
+        raise NotImplementedError, UNIMPLEMENTED
       end
 
-      def public?
-        true
-      end
-
-      def private?
-        true
+      def self.generate(*)
+        raise NotImplementedError, UNIMPLEMENTED
       end
     end
 
-    class DSA
-      def initialize(data = nil)
-        @data = data
-      end
-    end
+    class RSA < PKey; end
+    class DSA < PKey; end
+    class DH  < PKey; end
 
-    class EC
-      def initialize(data = nil)
-        @data = data
+    class EC < PKey
+      class Point
+        def initialize(*)
+          raise NotImplementedError, UNIMPLEMENTED
+        end
       end
     end
   end
 
-  # X.509 certificate management (stub implementation)
+  # ══════════════════════════════════════════════════════════════════════
+  # X.509 -- client-side compatibility only
+  # ══════════════════════════════════════════════════════════════════════
+  #
+  # Certificate verification really happens inside the mbedtls handshake
+  # against cosmopolitan's built-in root store (GetSslRoots()).  These
+  # objects exist so Net::HTTP and RubyGems can configure a store; they do
+  # not parse or build certificates.
   module X509
     class StoreError < OpenSSLError; end
+    class CertificateError < OpenSSLError; end
 
     class Store
       attr_accessor :verify_callback
@@ -144,8 +672,7 @@ module OpenSSL
       end
 
       def verify(cert, chain = nil)
-        # Would verify a certificate
-        # For now, verification is done during SSL handshake
+        # Verification is performed by mbedtls during the TLS handshake.
         true
       end
     end

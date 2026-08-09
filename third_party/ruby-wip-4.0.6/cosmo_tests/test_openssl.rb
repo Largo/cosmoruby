@@ -597,6 +597,16 @@ check("a cipher with no explicit IV behaves like OpenSSL (CBC/CTR) or refuses (G
   true
 end
 
+check("cipher naming: case, aliases and the legacy AES subclasses") do
+  assert_eq("AES-256-GCM", OpenSSL::Cipher.new("aes-256-gcm").name, "lowercase")
+  assert_eq("AES-256-GCM", OpenSSL::Cipher.new("AES-256-GCM").name, "uppercase")
+  assert_eq("AES-256-CBC", OpenSSL::Cipher.new("AES256").name, "AES256 alias")
+  assert_eq("AES-256-GCM", OpenSSL::Cipher::AES256.new("GCM").name, "AES256 class")
+  assert_eq("AES-128-CBC", OpenSSL::Cipher::AES.new(128, "CBC").name, "AES class")
+  assert_eq("DES-EDE3-CBC", OpenSSL::Cipher.new("des3").name, "des3 alias")
+  true
+end
+
 check("unsupported cipher raises") do
   begin
     OpenSSL::Cipher.new("aes-256-nonsense")

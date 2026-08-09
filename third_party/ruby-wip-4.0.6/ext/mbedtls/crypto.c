@@ -434,8 +434,11 @@ cipher_update(VALUE self, VALUE data)
 
     StringValue(data);
     cipher_start(c);
-    in = (const unsigned char *)RSTRING_PTR(data);
     ilen = (size_t)RSTRING_LEN(data);
+
+    /* NOTE: RSTRING_PTR(data) is only read *after* every allocation below,
+     * because rb_str_new()/xmalloc() can run the GC and a compacting GC may
+     * relocate an embedded string's bytes. */
 
     if (cipher_is_aead(c)) {
         size_t total = c->pending_len + ilen;
@@ -444,25 +447,28 @@ cipher_update(VALUE self, VALUE data)
         unsigned char *tmp;
 
         if (take == 0) {
-            if (ilen) memcpy(c->pending + c->pending_len, in, ilen);
+            if (ilen) {
+                memcpy(c->pending + c->pending_len, RSTRING_PTR(data), ilen);
+            }
             c->pending_len = total;
             RB_GC_GUARD(data);
             return rb_str_new(0, 0);
         }
         from_input = take - c->pending_len;
         tmp = (unsigned char *)xmalloc(take);
+        out = rb_str_new(0, (long)take);
+        in = (const unsigned char *)RSTRING_PTR(data);
         memcpy(tmp, c->pending, c->pending_len);
         memcpy(tmp + c->pending_len, in, from_input);
-        out = rb_str_new(0, (long)take);
+        c->pending_len = total - take;
+        if (c->pending_len) {
+            memcpy(c->pending, in + from_input, c->pending_len);
+        }
         ret = mbedtls_cipher_update(&c->ctx, tmp, take,
                                     (unsigned char *)RSTRING_PTR(out), &olen);
         crypto_wipe(tmp, take);
         xfree(tmp);
         if (ret != 0) crypto_raise(ret, "mbedtls_cipher_update");
-        c->pending_len = total - take;
-        if (c->pending_len) {
-            memcpy(c->pending, in + from_input, c->pending_len);
-        }
         rb_str_set_len(out, (long)olen);
         RB_GC_GUARD(data);
         return out;
@@ -471,6 +477,7 @@ cipher_update(VALUE self, VALUE data)
     /* CBC keeps at most one block back internally; CTR/stream emit 1:1. */
     out = rb_str_new(0, (long)(ilen + mbedtls_cipher_get_block_size(&c->ctx)
                                + MBEDTLS_MAX_BLOCK_LENGTH));
+    in = (const unsigned char *)RSTRING_PTR(data);
     ret = mbedtls_cipher_update(&c->ctx, in, ilen,
                                 (unsigned char *)RSTRING_PTR(out), &olen);
     if (ret != 0) crypto_raise(ret, "mbedtls_cipher_update");

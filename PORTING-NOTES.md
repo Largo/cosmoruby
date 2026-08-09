@@ -3712,6 +3712,24 @@ ruby.com        encrypt_and_sign  ->  host ruby 3.3.8 decrypt       OK (gcm, cbc
 qemu-aarch64 half, host messages  ->  decrypt                       OK (gcm, cbc)
 ```
 
+OCRAN's Rails test generates an `openssl_gap.rb` and preloads it
+(`ocran/rails/test/rails_app_generator.rb`, `write_openssl_gap`). It is
+now **unnecessary**: every branch in it is guarded (`unless
+respond_to?(:fixed_length_secure_compare)`, `unless
+const_defined?(:Digest, false) && ... .is_a?(Class)`, and a
+`OpenSSL::Cipher.new("aes-256-gcm")` probe), and against this `ruby.com`
+all of them skip. Loading it anyway changes nothing --
+
+```
+$ ruby.com -r openssl_gap.rb -e 'require "rails"; ...'
+rails 8.1.3.1 with the ocran shim still preloaded
+cipher still functional: "still real"
+Digest class: OpenSSL::Digest          # not the shim's
+```
+
+-- so it can simply be deleted on the ocran side whenever that repo is
+next touched; nothing here depends on the order.
+
 `ActiveSupport::EncryptedConfiguration` also works, which was the
 deployment blocker called out in the previous section: a
 `config/credentials.yml.enc` can now be **written and read** inside the
@@ -3740,11 +3758,11 @@ CTR mode tables, the binding and the larger `openssl.rb` are new.
 |---|---|---|---|
 | `o/third_party/ruby/ruby` (zipless, x86_64) | 14,776,941 | 14,797,421 | **+20,480** (+0.14 %) |
 | `o/aarch64/third_party/ruby/ruby` (zipless) | 13,423,509 | 13,445,653 | **+22,144** (+0.16 %) |
-| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,434,517 | **+25,152** (+0.11 %) |
-| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,871,588 | **+4,672** |
-| `dist/ruby.com` (**fat**) | 37,428,412 | 37,473,195 | **+44,783** (+0.12 %) |
-| `dist/irb.com` (fat) | 37,428,484 | 37,473,230 | **+44,746** |
-| `dist/miniruby.com` (fat) | 28,024,522 | 28,029,194 | **+4,672** |
+| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,434,609 | **+25,244** (+0.11 %) |
+| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,871,680 | **+4,764** |
+| `dist/ruby.com` (**fat**) | 37,428,412 | 37,473,288 | **+44,876** (+0.12 %) |
+| `dist/irb.com` (fat) | 37,428,484 | 37,473,275 | **+44,791** |
+| `dist/miniruby.com` (fat) | 28,024,522 | 28,029,286 | **+4,764** |
 
 (The "before" column is this tree at `55e0204e7`, measured rather than
 copied from the table above — link padding puts it a few dozen bytes off

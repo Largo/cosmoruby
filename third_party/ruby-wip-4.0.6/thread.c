@@ -204,11 +204,6 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
  * returns true if this thread was spuriously interrupted, false otherwise
  * (e.g. hit by Thread#run or ran a Ruby-level Signal.trap handler)
  */
-#ifdef COSMO_DIAG_SCHEDULER
-void cosmo_diag_scheduler_report(const char *, unsigned long, unsigned long,
-                                 unsigned long);
-#endif
-
 #define RUBY_VM_CHECK_INTS_BLOCKING(ec) vm_check_ints_blocking(ec)
 static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
@@ -232,12 +227,6 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
     // When a signal is received, we yield to the scheduler as soon as possible:
     if (result || RUBY_VM_INTERRUPTED(ec)) {
         VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
-#ifdef COSMO_DIAG_SCHEDULER
-        if (scheduler != Qnil)
-            cosmo_diag_scheduler_report("check_ints", (unsigned long)th,
-                                        (unsigned long)th->blocking,
-                                        (unsigned long)scheduler);
-#endif
         if (scheduler != Qnil) {
             rb_fiber_scheduler_yield(scheduler);
         }

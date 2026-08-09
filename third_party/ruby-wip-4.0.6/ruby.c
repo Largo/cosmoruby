@@ -2394,29 +2394,28 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
  *
  *     cp ruby.com myapp.com && zip myapp.com main.rb lib/foo.rb
  *
- * When such a binary is run and the command line does not already name a
- * program to run, /zip/main.rb becomes the program and every remaining
- * argument is handed to it in ARGV.  This is the moral equivalent of
- * cosmopolitan's /zip/.args convention holding "/zip/main.rb" followed by the
- * "..." argv-splice token, which Ruby does not implement.
+ * When such a binary is run, /zip/main.rb IS the program: the binary is an
+ * application, not an interpreter that happens to contain one.  Ruby therefore
+ * claims NONE of the command line for itself -- every argument, option-shaped
+ * or not, reaches the application in ARGV, exactly as a natively compiled
+ * program would receive it.  This is the moral equivalent of cosmopolitan's
+ * /zip/.args convention holding "/zip/main.rb" followed by the "..."
+ * argv-splice token, which Ruby does not implement.
  *
- * Setting COSMORUBY_NO_ZIP_MAIN to a non-empty value suppresses the hook, so a
- * packed binary can still be used as a plain interpreter for debugging.
+ * Interpreter options are still reachable on a packed binary, through the
+ * channel Ruby already provides for exactly this purpose: RUBYOPT (-I, -r, -w,
+ * -W, -d, -E, --yjit, --enable/--disable, ...), plus RUBY_YJIT_ENABLE.
+ *
+ * Setting COSMORUBY_NO_ZIP_MAIN to a non-empty value suppresses the hook
+ * entirely, so a packed binary can still be used as a plain interpreter (-e,
+ * -S, -x, --version, a script path, ...) for debugging.
  */
 #define COSMO_ZIP_MAIN "/zip/main.rb"
 
 static int
-cosmo_zip_main_p(const ruby_cmdline_options_t *opt, int argc, char **argv)
+cosmo_zip_main_p(void)
 {
     const char *disable;
-
-    /* -S and -x explicitly name a program; -e is checked by the caller. */
-    if (opt->do_search || opt->xflag)
-        return FALSE;
-
-    /* An explicit "-" means "read the program from stdin". */
-    if (argc > 0 && argv[0] && argv[0][0] == '-' && !argv[0][1])
-        return FALSE;
 
     if ((disable = getenv("COSMORUBY_NO_ZIP_MAIN")) != NULL && *disable)
         return FALSE;
@@ -2425,6 +2424,7 @@ cosmo_zip_main_p(const ruby_cmdline_options_t *opt, int argc, char **argv)
      * the central directory, which not every zip writer fills in. */
     return access(COSMO_ZIP_MAIN, F_OK) == 0;
 }
+
 #endif
 
 static VALUE
@@ -2446,7 +2446,18 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     const char *s;
     char fbuf[MAXPATHLEN];
+#ifdef __COSMOPOLITAN__
+    /* Decide this BEFORE proc_options(): a binary carrying /zip/main.rb is an
+     * application, so Ruby must not interpret any of argv as its own options.
+     * Only argv[0] (the program name) is consumed; everything else becomes
+     * ARGV.  RUBYOPT is still honoured further down, which is how interpreter
+     * options remain reachable on a packed binary. */
+    const int cosmo_zip_main = cosmo_zip_main_p();
+    int i = cosmo_zip_main ? (argc > 0 && argv ? 1 : 0)
+                           : (int)proc_options(argc, argv, opt, 0);
+#else
     int i = (int)proc_options(argc, argv, opt, 0);
+#endif
     unsigned int dump = opt->dump & dump_exit_bits;
     const rb_box_t *box = rb_root_box();
     const long loaded_before_enc = RARRAY_LEN(box->loaded_features);
@@ -2529,10 +2540,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     if (!opt->e_script) {
 #ifdef __COSMOPOLITAN__
-        if (cosmo_zip_main_p(opt, argc, argv)) {
-            /* Self-executing APE: /zip/main.rb is the program, and every
-             * remaining argument belongs to it rather than being read as a
-             * script path.  Behaves exactly as if the user had typed
+        if (cosmo_zip_main) {
+            /* Self-executing APE: /zip/main.rb is the program, and the whole
+             * command line belongs to it rather than being read as options and
+             * a script path.  Behaves exactly as if the user had typed
              * `ruby /zip/main.rb <args...>`. */
             opt->script = COSMO_ZIP_MAIN;
         }

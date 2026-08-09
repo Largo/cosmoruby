@@ -1267,114 +1267,124 @@ Fixed by asserting `v.int` is non-zero (which is all POSIX promises) instead
 of exactly 1. Both checks now raise a message naming the actual value, so a
 future CI failure says what went wrong instead of "returned false".
 
-### Windows follow-up: `kernel_sleep for nil` — OPEN, characterised, low-impact
+### Windows follow-up: `kernel_sleep for nil` — OPEN, and it is *not* a Ruby bug
 
-`ci_smoke.rb` on `windows-latest` intermittently fails a connect with
+Intermittently on `windows-latest`, a socket call fails with
 
 ```
 NoMethodError: undefined method 'kernel_sleep' for nil
-  ... in 'TCPSocket#initialize'
 ```
 
-Status: **not fixed, not a regression** (Windows TCP was 100% broken before
-the ABI fix), reproduces only on the GitHub runner, and is confined to one
-code path. Everything below is evidence, so the next person does not repeat
-it.
+Status: **not fixed; shipped as a known issue.** Six CI rounds and a large
+local campaign have moved this from "mysterious Ruby socket bug" to a
+precisely bounded, Windows-only transient that is almost certainly in
+cosmopolitan's interrupt delivery, not in Ruby and not in the port's socket
+code. Both of the obvious theories are now *refuted*, so read this before
+forming a new one.
 
-#### What it is, precisely
+#### Refuted theory 1: "Happy Eyeballs / hostname resolution"
 
-CI run 31296306659's `ci_diag_sockets.rb` matrix — eight connect paths run
-cold / after thread churn / repeated — isolated it to a single cell:
+Run 31296306659's 8-path × 3-round matrix isolated the failure to
+`TCPSocket.new("localhost")` only, which made the C HEv2 path in
+`ext/socket/ipsocket.c` look guilty. Run 31297783346 then failed
+**`tcp loopback echo (127.0.0.1)`** — a numeric literal that never enters
+HEv2 — and `::1` as well. The trigger is timing, not name resolution. The
+earlier "only hostnames" observation was sampling noise.
 
-| path | cold | after churn | repeat |
-|---|---|---|---|
-| **`TCPSocket.new("localhost")`** | ok | **FAIL** | ok |
-| `TCPSocket.new("127.0.0.1")` | ok | ok | ok |
-| `TCPSocket.new("::1")` | ok | ok | ok |
-| `Socket.tcp("127.0.0.1")` | ok | ok | ok |
-| `Addrinfo#connect("127.0.0.1")` | ok | ok | ok |
-| raw `Socket#connect` | ok | ok | ok |
-| `connect_nonblock` + `IO.select` | ok | ok | ok |
-| `TCPSocket.new` inside a `Thread` | ok | ok | ok |
+#### Refuted theory 2: "a missing or mis-compiled `scheduler != Qnil` guard"
 
-So it is **only the C Happy Eyeballs v2 path** in `ext/socket/ipsocket.c`
-(`init_fast_fallback_inetsock_internal`), which is entered only for a
-*hostname* — every numeric literal, including `::1`, takes the ordinary path
-and passes. It is therefore **not** IPv6 availability, not `Socket#connect`
-in general, and not Happy Eyeballs "not working": the runner has IPv6
-(`getaddrinfo("localhost")` → `["::1", "127.0.0.1"]`) and the same call
-succeeds in the rounds either side of it.
+`kernel_sleep`-on-nil is reachable from three C sites, all guarded, and
+instrumentation confirmed the reached one is `vm_check_ints_blocking()`
+(`thread.c`) → `rb_fiber_scheduler_yield()` → `rb_fiber_scheduler_kernel_sleep()`,
+in that order, 21 times in one run. The guard is *present and correct in the
+binary that produced those lines* — verified by disassembling the downloaded
+CI artifact, not a local rebuild:
 
-`test_sockets.rb` ran the identical operations on the same runner from the
-same binary minutes later and passed 22/22, so two processes on one machine
-disagree — a timing/process-state condition.
+```
+; rb_fiber_scheduler_current_for_threadptr
+458ff22  mov  $0x4,%eax               ; return Qnil ...
+458ff27  mov  0x1d8(%rdi),%edx        ; ... when th->blocking != 0
+458ff2f  jne  458ff38
+458ff31  mov  0x1d0(%rdi),%rax        ; else return th->scheduler
+458ff38  ret
 
-#### What has been ruled out, with method
+; vm_check_ints_blocking (all inlined copies identical)
+45d906a  call 458ff20
+45d906f  mov  %rax,%rbx
+45d9072  cmp  $0x4,%rax               ; 0x4 is Qnil
+45d9076  je   45d9020                 ; nil -> skip the yield
+45d907f  mov  %rax,%rcx               ; else report/yield with that same rax
+```
 
-- **Not a missing guard.** `kernel_sleep` on nil is reachable from exactly
-  three C sites, and `nm` over the linked objects confirms only `thread.o`
-  (`vm_check_ints_blocking`, `mutex_sleep_begin`) and `process.o`
-  (`rb_f_sleep`) reference the symbols. All three test `scheduler != Qnil`.
-- **Not a mis-linked or duplicated symbol.** `scheduler.o` holds the only
-  definitions of `rb_fiber_scheduler_current{,_for_thread,_for_threadptr}`;
-  no weak or duplicate definitions anywhere.
-- **Not a compiler dropping the guard.** `vm_check_ints_blocking()` is
-  inlined at five sites in `thread.o` and *all five* emit
-  `call rb_fiber_scheduler_current_for_threadptr; cmp $0x4,%rax; je <skip>`.
-  `0x4` is `Qnil`, and `scheduler.o`'s own `return Qnil` materialises `0x4`,
-  so the two TUs agree on the representation.
-- **Not a struct-layout mismatch between TUs.** DWARF from `scheduler.o`,
-  `thread.o`, `cont.o`, `vm.o` and `io.o` all place
-  `rb_thread_struct.scheduler` at offset 464 and `.blocking` at 472, matching
-  the offsets in the emitted code.
-- **Not `POLL*`.** `USE_POLL` is never defined here (see the section above),
-  so Ruby's readiness paths use `select()` and never hand cosmopolitan's
-  `poll()` a Linux-numbered flag.
-- **Not reproducible locally.** ~900 connects on the Win11 VM (4 vCPU, IPv6
-  present) across: `ci_smoke.rb` ×6; thread churn + 4 CPU burners; three
-  allocation/GC-pressure threads (320 connects); 25 *refused* connects
-  through `wait_connectable`; half-open HEv2 fallback in both directions
-  (v4-only and v6-only listener, connect by name) ×10; the 8×3 matrix; and
-  200 iterations of the exact reproducing shape (churn → one
-  `TCPSocket.new(<hostname>)`). All clean.
+Every DIAG line reads:
 
-#### What is confirmed about the mechanism
+```
+DIAG[check_ints] th=0x6ffd... blocking=1 scheduler=0x4 Qnil=0x4 nilp=1
+```
 
-Run 31297143590 added `NilClass#yield` / `#kernel_sleep` recording hooks:
-**26 hits, every one `:yield` with no arguments, on the main thread, called
-from a C frame inside `TCPSocket#initialize`** — and with the hooks absorbing
-the call, 200/200 iterations passed. So a C function calls `nil.yield` and,
-when that fails, `nil.kernel_sleep`. That yield-then-kernel_sleep sequence
-exists in exactly one place in Ruby: `rb_fiber_scheduler_yield()`
-(`scheduler.c`), which is also the only C caller of an ID named `yield`.
+`blocking=1` is the arm that returns the literal `4`, and `scheduler=0x4` is
+the value passed on to the report — from `%rax`, the very register the `cmp`
+had just tested. So **`%rax` compared unequal to 4 and read back as 4 four
+instructions later, with nothing in between writing it.**
 
-The remaining puzzle is that C instrumentation placed at the top of
-`rb_fiber_scheduler_yield()` printed nothing in that run. That evidence is
-**not yet trustworthy**: it wrote to fd 2, and this file already documents
-that native stderr gets mangled under the Windows harness. Branch
-`fix-windows-sockets-diag` carries the corrected experiment — all three
-scheduler entry points instrumented, output on **fd 1**, and only
-`NilClass#kernel_sleep` hooked so the C path stays intact. Verified locally
-that the mechanism fires (a real `Fiber` scheduler makes `sleep 0` print
-`DIAG[kernel_sleepv]` on stdout). **Push that branch to `ci` and read the
-`DIAG[...]` lines; that should close it.**
+That is not something C or the compiler can do. It is an asynchronous event
+corrupting a register (or the branch outcome) inside a handful of
+instructions — and `vm_check_ints_blocking()` is, by construction, the code
+that runs *immediately after* an interrupt was delivered during a blocking
+region. Ruby's timer thread interrupting a socket wait is exactly the
+trigger.
 
-#### Impact and why it is acceptable to ship
+Ruled out along the way, each with method rather than assertion: no weak or
+duplicate scheduler symbols (`nm`); all inlined guard copies correct
+(disassembly); every TU agrees `rb_thread_struct.scheduler` is at offset 464
+and `.blocking` at 472 (DWARF); `USE_POLL` is never defined here so no
+POLL-constant mismatch is involved; and both TUs materialise `Qnil` as `0x4`.
 
-- Affects only `TCPSocket.new(<hostname>)` / anything routing through the C
-  HEv2 path with a name that resolves to more than one family. Connecting by
-  IP literal, `Socket.tcp`, `Addrinfo#connect`, `Net::HTTP` to an IP, and all
-  of `test_sockets.rb` are unaffected.
-- Observed rate on the runner: roughly one connect in twelve in the affected
-  shape; zero in most rounds; never once locally.
-- It raises a `NoMethodError` rather than corrupting data, and a retry
+#### Frequency, and why it stayed open
+
+| CI run | Windows outcome |
+|---|---|
+| 31296306659 | failed (1 of 24 matrix cells) |
+| 31296710825 | fired, absorbed by the Ruby probe (26 events) |
+| 31297143590 | fired, absorbed (26 events) |
+| 31297783346 | failed, 21 DIAG lines — the evidence above |
+| 31298311761 | **clean**, 0 events |
+| 31298502920 | **clean**, 0 events, 1200-iteration stress loop |
+
+It fires in roughly half of runs and never locally: ~2100 connects on the
+Win11 VM across eight strategies (thread churn, CPU burners, GC pressure,
+refused connects, half-open HEv2 fallback both ways, the 8×3 matrix, 200 and
+1200-iteration churn loops) produced zero events.
+
+Branch `fix-windows-sockets-diag` carries instrumentation that will settle
+the last question in one line the next time it fires. A `volatile` local
+spills the returned value to the stack *before* the comparison (verified in
+the emitted code: `mov %rax,-0x28(%rbp)` ahead of `cmp $0x4,%rax`) and it is
+printed next to the late read and to thread.c's own `Qnil`:
+
+- `snap != 4 && scheduler == 4` → the register changed under us;
+- `snap == 4 && scheduler == 4` → the branch was entered without the compare;
+- `qnil_caller != 4` → a `Qnil` mismatch after all.
+
+Two rounds with that instrumentation have come back clean. **Push that branch
+to `ci` and re-read whenever it next fires.**
+
+#### Impact, and the decision to ship
+
+- Any blocking socket operation on Windows can hit it, not just hostname
+  connects. It is *not* limited to Happy Eyeballs.
+- It raises `NoMethodError` rather than corrupting data, and a retry
   succeeds.
+- Frequency on the runner: 21 events in the worst observed run, 0 in half of
+  them, 0 in ~2100 local connects.
+- Windows TCP was **100% broken** before the ABI fix in this branch, so this
+  is a large net improvement, not a regression.
 - Deliberately **not** papered over with `if (NIL_P(scheduler)) return Qnil;`
-  in `rb_fiber_scheduler_yield()`. That would make the symptom vanish, but
-  until the instrumented round says what the value actually is, it could be
-  hiding a stale `rb_thread_t` — and hiding memory corruption is worse than
-  an honest known issue.
+  in `rb_fiber_scheduler_yield()`. Given the evidence points at a register
+  being corrupted rather than at a logic error, that guard would silence one
+  symptom of something that can equally corrupt any other register at any
+  other point. Hiding that is worse than documenting it.
 
-If it turns out to live in Ruby rather than in the port, it is an upstream
-bug in `vm_check_ints_blocking()`/`rb_fiber_scheduler_yield()` and should be
-reported as such, with the disassembly and DWARF evidence above.
+If the next firing confirms the register hypothesis, this is a **cosmopolitan
+Windows bug** in signal/interrupt delivery and belongs upstream with the
+disassembly above — not a Ruby bug and not a port bug.

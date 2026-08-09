@@ -2339,6 +2339,23 @@ one a native parent sees:
 | unpacked `ruby.com` uncaught exception | 1 |
 | unpacked `ruby.com --version`, script, `-e "exit 3"` | banner / runs / 3 |
 
+Re-run against the final fat `dist/` build: `ci_smoke.rb` 38/38,
+`test_sockets.rb` 22/22, `test_sqlite3.rb` failures=0, `irb.com`,
+`miniruby.com`, `ci_exit7.rb` → 7.
+
+ocran end to end, both modes, same VM (demo CLI packed with the new
+interpreter):
+
+| Build | `--verbose` | `--version` | `--exit=3` | `--exit=7` |
+| --- | --- | --- | --- | --- |
+| ZIP packaging (`--cosmo-ruby` alone) | reaches the app | the app's, not Ruby's | 3 | 7 |
+| launcher stub, with `COSMORUBY_WAIT_STATUS_EXIT=1` | reaches the app | — | 3 | 7 |
+| launcher stub, **without** it | reaches the app | — | **131** | **135** |
+
+That last row is the evidence for the env-var guard: 128 + 3 and 128 + 7, i.e.
+the stub's `WIFSIGNALED()` branch, because an honest child status looks exactly
+like death by that signal to a cosmopolitan parent.
+
 Note for whoever repeats this: the VM's PowerShell execution policy is
 `Restricted` and remains so. Driving the checks from a **`.cmd` batch file**
 (`cmd /c C:\Users\vagrant\wtest.cmd`) sidesteps the whole problem — batch files
@@ -2361,10 +2378,41 @@ PowerShell helper `Status-Is` no longer accepts `want * 256` — that tolerance
 was hiding the bug, and its removal is what turns the old behaviour into a CI
 failure.
 
+### CI results
+
+Both fixes, six platforms, green on the real matrix (fat artifact built once on
+Linux, the same file tested everywhere):
+
+- <https://github.com/Largo/cosmoruby/actions/runs/31309095257> — the two
+  interpreter fixes. 23/23 on linux-x86_64, linux-arm64, macos-x86_64,
+  macos-arm64; 22/22 on windows-x86_64 and windows-arm64.
+- <https://github.com/Largo/cosmoruby/actions/runs/31309611950> — plus the irb
+  guard. Same counts, and the build job logs `irb.com ignores an appended
+  main.rb`.
+
+The Windows jobs are the interesting ones, since that is where the exit-status
+bug lived. From the `windows-x86_64` log:
+
+```
+[PASS] exit status: 7
+----- exact exit statuses (0, 1, 3, 7, 255, >255, exit!, uncaught exception) -----
+[PASS] exit statuses are exact (incl. exit!, >255, exceptions)
+[PASS] zip main takes the whole command line (leading flags reach the app)
+[PASS] zip main: no interpreter option parsing
+[PASS] zip main exit statuses 0/1/3/7/255 are exact
+[PASS] RUBYOPT still reaches the interpreter
+```
+
+`windows-arm64` (x64 emulation) reports the same. Note the run cannot be
+started with `gh workflow run` — the token has no Actions:write — so the branch
+is listed in the `push` trigger of `cosmoruby-ci.yml` instead, as `fat-ape` and
+`zip-main` were.
+
 ### Size
 
-Fat `ruby.com` 32,976,947 → 32,993,387 bytes (**+16,440**, +0.05 %); x86-64
-unpackaged `ruby` 12,720,749 → 12,724,845 (+4,096, one page).
+Fat `ruby.com` 32,976,947 → 32,993,290 bytes (**+16,343**, +0.05 %); x86-64
+unpackaged `ruby` 12,720,749 → 12,724,845 (+4,096, exactly one page);
+x86-64 `ruby.com` 21,224,287 → 21,228,383.
 
 ### Upstreamable?
 

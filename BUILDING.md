@@ -134,6 +134,11 @@ dist/ruby.com third_party/ruby/cosmo_tests/test_sockets.rb
 dist/ruby.com third_party/ruby/cosmo_tests/test_nokogiri.rb
 # expect: RESULT: pass=36 fail=0
 
+dist/ruby.com third_party/ruby/cosmo_tests/test_openssl.rb
+# expect: RESULT: failures=0   (36 checks: NIST/RFC known-answer vectors for
+#         AES-GCM/CBC/CTR, HMAC, PBKDF2, plus real-OpenSSL cross-checks and
+#         the negative cases)
+
 mkdir /tmp/empty && cd /tmp/empty
 env -i /path/to/dist/ruby.com \
        /path/to/third_party/ruby/cosmo_tests/test_sqlite3.rb

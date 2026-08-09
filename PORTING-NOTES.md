@@ -3459,9 +3459,16 @@ mbedtls has AES, GCM, MD and PKCS5 — and rewriting the shim on top. It is
 a bounded job, but it is an openssl job, not a gem-vendoring job, so it
 was deliberately left out of this branch.
 
+> **Done on branch `openssl-cipher`** — see "The OpenSSL cipher/HMAC/KDF
+> surface" at the end of this file. All four gaps above are closed, the
+> probe shim is gone, and `require "rails"` works against a stock
+> `ruby.com`. Public-key crypto and certificate handling are still
+> missing; that section says exactly what.
+
 ### What is left before OCRAN can package a Rails app as an APE
 
-- **the OpenSSL shim work above.** This is the only functional blocker.
+- ~~**the OpenSSL shim work above.** This is the only functional
+  blocker.~~ Done on `openssl-cipher`; see the last section of this file.
 - **ocran has still not been run end to end** against this `ruby.com`
   (the same caveat the nokogiri section ends on). All six gems now appear
   in `Gem::Specification` as default gems, which is what the
@@ -3480,3 +3487,243 @@ was deliberately left out of this branch.
   pipe-based wakeup both go through cosmopolitan's `poll-nt.c`. It passes
   in CI; if it ever does not, `NIO4R_PURE=true` is the escape hatch and
   puma will still work.
+
+## The OpenSSL cipher/HMAC/KDF surface (branch `openssl-cipher`, 2026-08-09)
+
+The previous section ended with "fixing this means giving `ext/mbedtls` a
+cipher/HMAC/PBKDF2 surface — mbedtls has AES, GCM, MD and PKCS5 — and
+rewriting the shim on top". This is that work. The `openssl_gap_probe.rb`
+preload is gone: `require "rails"` now works against a stock `ruby.com`.
+
+### What was bound, and where the seams are
+
+`third_party/ruby/ext/mbedtls/crypto.c` (new, ~800 lines) binds the
+**generic** mbedtls layers, not individual primitives, so that adding an
+algorithm is a table entry in `lib/openssl.rb` rather than new C:
+
+| Ruby | mbedtls |
+|---|---|
+| `MbedTLS::Cipher` | `mbedtls_cipher_setup/setkey/set_iv/set_padding_mode/reset/update_ad/update/finish/write_tag/check_tag` |
+| `MbedTLS::Digest` | `mbedtls_md_setup/starts/update/finish/clone` |
+| `MbedTLS::HMAC` | `mbedtls_md_hmac_starts/update/finish/reset` |
+| `MbedTLS.pbkdf2_hmac` | `mbedtls_pkcs5_pbkdf2_hmac` |
+| `MbedTLS.digest` / `.hmac` | `mbedtls_md` / `mbedtls_md_hmac` (one-shot) |
+| `MbedTLS.random_bytes` | `getrandom(2)` — see below |
+| `MbedTLS.constant_time_equal?` | cosmopolitan's `timingsafe_bcmp` |
+
+`lib/openssl.rb` grew from 413 to ~880 lines and contains **no
+cryptography** — only name normalisation, argument checking and error
+mapping. Nothing in the Ruby layer touches a byte of key material except
+to hand it to mbedtls.
+
+Four things in this vendored mbedtls (a 2.x fork) needed care and are the
+places a future change is most likely to break:
+
+1. **`mbedtls_cipher_update_ad()` is what calls `mbedtls_gcm_starts()`.**
+   Not `set_iv`, not `reset`. So it has to be called even when there is no
+   additional data at all, or GCM is simply never initialised and the
+   first `update` walks off an unstarted context. `cipher_start()` does
+   this unconditionally for every AEAD mode.
+2. **`mbedtls_gcm_update()` only tolerates a length that is not a
+   multiple of 16 on the final call** (`gcm.h:333`), while
+   `OpenSSL::Cipher#update` takes any length. The binding therefore stages
+   sub-block input in a 16-byte `pending` buffer and flushes it at
+   `#final`. `test_openssl.rb` drives `update` at 1, 3, 7, 16, 17, 31 and
+   59 bytes and requires the result to equal the one-shot NIST answer,
+   which is what pins this.
+3. **`mbedtls_md_clone()` copies only the hash half of a context.** The
+   HMAC half — the `2 * block_size` ipad/opad scratch that
+   `mbedtls_md_setup(..., hmac=1)` allocates — is a separate
+   `ctx->hmac_ctx` pointer and has to be `memcpy`d alongside. Without it a
+   cloned HMAC context cannot `finish`. This is what makes
+   `OpenSSL::HMAC#digest` non-destructive, i.e. what makes
+   `h.hexdigest; h << "more"; h.hexdigest` behave like ruby/openssl's.
+4. **CBC mutates `ctx->iv` in place.** So the binding keeps its own copy
+   of the key and IV and re-applies them in `cipher_start()`; that is what
+   makes `Cipher#reset` and re-use of a cipher object work at all.
+
+`MBEDTLS_CIPHER_MODE_CTR` was commented out in
+`third_party/mbedtls/config.h` (no TLS ciphersuite uses counter mode) and
+is now enabled — that is the only change outside `third_party/ruby`. CFB,
+OFB, XTS and CCM stay off, and `OpenSSL::Cipher.new` refuses their names
+rather than substituting something.
+
+### Why `getrandom()` and not `mbedtls_ctr_drbg`
+
+Because in *this* tree they are the same source with one extra layer.
+mbedtls' entropy accumulator has exactly one source here —
+`mbedtls_hardware_poll()` in `third_party/mbedtls/rando.c` — and its whole
+body is `getrandom(p, n, 0)`. Seeding a `ctr_drbg` from it would add
+fork-unsafe userspace state, a reseed policy and a seeding failure mode
+on top of the kernel CSPRNG without adding a bit of entropy.
+`MbedTLS.random_bytes` therefore calls `getrandom()` directly, loops on
+short reads, and **raises** if the kernel refuses; there is no fallback to
+anything weaker. On Windows cosmopolitan's `getrandom` is
+`RtlGenRandom`/`ProcessPrng`, on the BSDs `arc4random`, so the property
+holds on every platform this APE runs on.
+
+### Two deliberate OpenSSL compatibilities
+
+Both could be argued the other way, and both were decided in favour of
+byte-for-byte interchange with real OpenSSL, because portable ciphertext
+is the entire point:
+
+- **A cipher used with no explicit IV runs with an all-zero IV.** That is
+  what OpenSSL does. Raising would have been safer and was the first
+  implementation, but it would silently diverge from every gem's
+  expectations.
+- **`padding = 0` means no padding**, `padding = 1` (or any other truthy
+  value) means PKCS#7, which is OpenSSL's convention rather than a boolean.
+
+Conversely, `OpenSSL::PKey` no longer returns a fake key object whose
+`public?` and `private?` both answered `true`. It raises
+`NotImplementedError`. Nothing in the port could ever use it, and a fake
+that answers questions is worse than an absence that does not.
+
+### Correctness evidence
+
+`third_party/ruby/cosmo_tests/test_openssl.rb` (36 checks). It is built
+from **published vectors**, because a round-trip only proves the code
+agrees with itself:
+
+| source | what |
+|---|---|
+| NIST GCM spec | AES-GCM cases 2, 3, 4, 7, 8, 13, 14, 15, 16 — AES-128/192/256, empty/16-byte/60-byte/64-byte plaintext, with and without AAD |
+| NIST SP 800-38A F.2 | CBC-AES128 / 192 / 256 |
+| NIST SP 800-38A F.5 | CTR-AES128 / 256 |
+| RFC 4231 | HMAC cases 1, 2, 3, 4, 6, 7 × SHA-1/224/256/384/512 — 28 known answers |
+| RFC 6070 | PBKDF2-HMAC-SHA1, all five vectors including the embedded-NUL one |
+| RFC 7914 §11 | PBKDF2-HMAC-SHA256, including the 80 000-iteration vector |
+| FIPS 180-2 / RFC 1321 | SHA-1/224/256/384/512 and MD5 samples |
+
+plus a block of ciphertexts, tags, derived keys and HMACs generated by a
+**real OpenSSL 3.5.0** (host ruby 3.3.8) which the APE must both decrypt
+*and* reproduce byte for byte.
+
+Negative cases are treated as first-class, because the failure mode that
+matters is "returns plausible plaintext":
+
+- all **sixteen** single-bit corruptions of a GCM tag must raise,
+- tampered ciphertext, tampered AAD and a wrong key must raise,
+- wrong key length and wrong IV length must raise `ArgumentError`
+  (which is what OpenSSL raises, not `CipherError`),
+- truncated CBC ciphertext at 1/5/15/17/n-1 bytes must raise,
+- corrupt PKCS#7 padding must raise,
+- every unimplemented operation must raise `NotImplementedError`.
+
+The file runs unchanged on a Ruby with genuine OpenSSL — that is how the
+vectors were validated before being trusted, and two of them were wrong
+on the first attempt and were caught exactly that way. Both CI drivers
+(`test-cosmoruby.sh`, `test-cosmoruby.ps1`) run it on all six platforms.
+
+#### Regenerating the openssl cross-check fixtures
+
+```sh
+ruby -ropenssl -e '
+key=["000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"].pack("H*")
+ivg=["0f0e0d0c0b0a090807060504"].pack("H*")
+ivc=["0f0e0d0c0b0a09080706050403020100"].pack("H*")
+pt="Rails-style message, encrypted by a real OpenSSL."
+e=OpenSSL::Cipher.new("aes-256-gcm"); e.encrypt; e.key=key; e.iv=ivg; e.auth_data="header-v1"
+puts "HOST_GCM_CT=#{(e.update(pt)+e.final).unpack1("H*")}"
+puts "HOST_GCM_TAG=#{e.auth_tag.unpack1("H*")}"
+c=OpenSSL::Cipher.new("aes-256-cbc"); c.encrypt; c.key=key; c.iv=ivc
+puts "HOST_CBC_CT=#{(c.update(pt)+c.final).unpack1("H*")}"
+puts "HOST_PBKDF2=#{OpenSSL::KDF.pbkdf2_hmac("correct horse battery staple", salt: "cosmoruby", iterations: 20000, length: 48, hash: "SHA256").unpack1("H*")}"
+puts "HOST_HMAC=#{OpenSSL::HMAC.hexdigest("SHA512","cosmo-key","cosmo-message")}"'
+```
+
+### Rails, for real this time
+
+```
+$ ruby.com -e 'require "rails"; puts Rails::VERSION::STRING'     # no -r shim
+8.1.3.1
+```
+
+`ActiveSupport::MessageEncryptor` round-trips under both `aes-256-gcm` and
+`aes-256-cbc`, rejects a single flipped character in the envelope, and
+`ActiveSupport::KeyGenerator.hash_digest_class = OpenSSL::Digest::SHA256`
+is accepted (it explicitly rejects anything that is not
+`< OpenSSL::Digest`, which is why the digest hierarchy had to be real
+classes and not the old module of aliases).
+
+Wire compatibility is bidirectional and was checked in both directions
+with the *same* key derivation on both sides:
+
+```
+host ruby 3.3.8 encrypt_and_sign  ->  ruby.com decrypt_and_verify   OK (gcm, cbc)
+ruby.com        encrypt_and_sign  ->  host ruby 3.3.8 decrypt       OK (gcm, cbc)
+qemu-aarch64 half, host messages  ->  decrypt                       OK (gcm, cbc)
+```
+
+`ActiveSupport::EncryptedConfiguration` also works, which was the
+deployment blocker called out in the previous section: a
+`config/credentials.yml.enc` can now be **written and read** inside the
+APE, and the demo Rails app boots and serves with the file present —
+before this branch that was a hard boot failure no matter what else
+worked.
+
+```
+$ cd rails-boot/demo && PORT=3201 ruby.com server.rb     # credentials.yml.enc present
+OCRAN-RAILS-READY port=3201
+$ curl -s localhost:3201/status
+{"ok":true,"rails":"8.1.3.1","env":"production","ruby":"4.0.6",
+ "platform":"x86_64-cosmo","adapter":"SQLite","sqlite_version":"3.40.0",...}
+```
+
+`require "rails"` also succeeds on the aarch64 half under
+`qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com`, and
+`test_openssl.rb` is 36/36 there too.
+
+### Size cost
+
+Almost nothing, because mbedtls was already linked in for TLS — only the
+CTR mode tables, the binding and the larger `openssl.rb` are new.
+
+| binary | before | after | Δ |
+|---|---|---|---|
+| `o/third_party/ruby/ruby` (zipless, x86_64) | 14,776,941 | 14,797,421 | **+20,480** (+0.14 %) |
+| `o/aarch64/third_party/ruby/ruby` (zipless) | 13,423,509 | 13,445,589 | **+22,080** (+0.16 %) |
+| `o/third_party/ruby/ruby.com` (x86_64 + /zip) | 23,409,365 | 23,434,243 | **+24,878** (+0.11 %) |
+| `o/third_party/ruby/miniruby.com` | 18,866,916 | 18,871,314 | **+4,398** |
+| `dist/ruby.com` (**fat**) | 37,428,412 | 37,472,723 | **+44,311** (+0.12 %) |
+| `dist/irb.com` (fat) | 37,428,484 | 37,472,859 | **+44,375** |
+| `dist/miniruby.com` (fat) | 28,024,522 | 28,028,920 | **+4,398** |
+
+For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri +2,033 KB.
+The whole OpenSSL surface is +43 KB on the fat APE.
+
+### What is still not there
+
+Deliberately, and loudly — every one of these raises rather than
+returning something plausible:
+
+- **Public-key cryptography.** `OpenSSL::PKey::RSA`/`DSA`/`EC`/`DH` are
+  names with `NotImplementedError` bodies. mbedtls *does* have RSA and EC
+  in this tree (`MBEDTLS_RSA_C`, `MBEDTLS_ECP_C`, `MBEDTLS_PK_C`), so
+  binding them is a bounded follow-up — it was left out because the
+  surface is much larger (PEM/DER parsing, `OpenSSL::BN`, padding modes,
+  `sign`/`verify`/`public_encrypt`) and none of it is on the Rails path.
+  Consequences: no signed-gem verification, no JWT RS256/ES256.
+- **Certificates.** `OpenSSL::X509::Certificate`, `Name` and `Store`
+  remain configuration stubs that do not parse, build or verify anything.
+  Peer verification happens inside the mbedtls handshake against
+  cosmopolitan's built-in root store, so `Store#add_file`/`add_cert`
+  really are no-ops and a custom CA cannot be added at runtime. This is
+  unchanged from before this branch, and it is the biggest remaining lie
+  in the file.
+- **PKCS#7/CMS, OCSP, `OpenSSL::ASN1`, `OpenSSL::BN`, `OpenSSL::Engine`,
+  `OpenSSL::Timestamp`, `OpenSSL::Netscape`** — absent.
+- **`OpenSSL::KDF.hkdf` and `.scrypt`**, and `Cipher#pkcs5_keyivgen`
+  (EVP_BytesToKey) — mbedtls has none of them; all three raise.
+- **Cipher modes CFB / OFB / XTS / CCM**, and any digest outside
+  MD5 / SHA-1 / SHA-224 / SHA-256 / SHA-384 / SHA-512 / BLAKE2B256
+  (so no SHA-3, no RIPEMD-160).
+- **`OpenSSL::VERSION`, `OPENSSL_VERSION`, `OPENSSL_VERSION_NUMBER`** are
+  still undefined. Guessing a number would make gems take feature paths
+  based on a version this is not; a `NameError` at least tells the truth.
+  If a real gem turns out to need them, define them then, with a comment
+  explaining which lie was chosen.
+- **TLS server sockets, client certificates, session resumption, ALPN.**
+- **`OpenSSL::Cipher#update(data, buffer)`** writes into the buffer via
+  `replace`, not in place, so it allocates like the no-buffer form.

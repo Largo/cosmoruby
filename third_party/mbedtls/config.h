@@ -40,9 +40,12 @@
 #define MBEDTLS_GCM_C
 #ifndef TINY
 #define MBEDTLS_CIPHER_MODE_CBC
+/* CTR is not used by any TLS ciphersuite; it is enabled because Ruby's
+   OpenSSL::Cipher surface (third_party/ruby/ext/mbedtls/crypto.c) offers
+   aes-{128,192,256}-ctr, which gems do use. */
+#define MBEDTLS_CIPHER_MODE_CTR
 /*#define MBEDTLS_CCM_C*/
 /*#define MBEDTLS_CIPHER_MODE_CFB*/
-/*#define MBEDTLS_CIPHER_MODE_CTR*/
 /*#define MBEDTLS_CIPHER_MODE_OFB*/
 /*#define MBEDTLS_CIPHER_MODE_XTS*/
 #endif

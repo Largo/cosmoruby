@@ -10,6 +10,11 @@ executable*. There is no installer, no `PATH` surgery, no runtime, no DLLs, no
 `.so` files and no stdlib directory to ship alongside it. You download roughly
 20 MB, mark it executable, and run it.
 
+It is also an application packer. Because an APE is a valid ZIP archive,
+`cp ruby.com myapp.com && zip myapp.com main.rb` produces a self-contained
+`myapp.com` that runs your app — see
+[Packaging your app into one file](#packaging-your-app-into-one-file).
+
 This repository is a fork of [igravious/cosmoruby](https://github.com/igravious/cosmoruby),
 which is itself a fork of [jart/cosmopolitan](https://github.com/jart/cosmopolitan)
 with Ruby vendored into `third_party/` and built by cosmopolitan's own build
@@ -278,6 +283,51 @@ silently-thin build cannot fake an ARM pass.
 If you run it somewhere untested, please open an issue either way.
 
 ## Packaging your app into one file
+
+### The zero-tool way: `zip` your app onto `ruby.com`
+
+An APE is also a valid ZIP archive, and this Ruby reads its own archive as
+`/zip`. So the smallest possible way to ship a Ruby application as one
+self-contained binary is to append it with a stock `zip`:
+
+```sh
+cp ruby.com myapp.com
+zip myapp.com main.rb lib/thing.rb   # any layout you like, entry point at the root
+./myapp.com hello world              # -> runs main.rb with ARGV == ["hello", "world"]
+```
+
+No compiler, no launcher stub, no unpacking to a temp directory at run time:
+the script is read straight out of the binary. `myapp.com` is still a normal
+APE, so the same file runs on Linux, macOS, Windows and the BSDs.
+
+The rules:
+
+| | |
+| --- | --- |
+| **Convention** | `/zip/main.rb` — the entry point is `main.rb` at the *root* of the archive |
+| **When it fires** | only when the command line names no other program. `-e`, `-S`, `-x` and a bare `-` (stdin) all win, exactly as they do today |
+| **Arguments** | Ruby's own flags are still parsed first; **everything after them goes to your app**, so `myapp.com foo` gives `ARGV == ["foo"]` rather than trying to run `foo` as a script. Use `--` if an app argument looks like a Ruby flag: `myapp.com -- --verbose` |
+| **`$0` / `__FILE__`** | `/zip/main.rb`, so `__dir__` is `/zip` |
+| **Multi-file apps** | `require_relative` works throughout the archive (`require_relative "lib/thing"`). Plain `require "thing"` does **not**: `/zip` is not on `$LOAD_PATH` — add `$LOAD_PATH.unshift(__dir__)` at the top of `main.rb` if you want it |
+| **Escape hatch** | `COSMORUBY_NO_ZIP_MAIN=1` disables the hook, turning a packed binary back into an ordinary interpreter for debugging: `COSMORUBY_NO_ZIP_MAIN=1 ./myapp.com -e 'p $LOAD_PATH'` |
+| **Exit status** | your app's, propagated normally (shifted left by 8 on Windows, like everything else — see above) |
+
+A `ruby.com` with no `/zip/main.rb` behaves exactly as it always has, so this
+costs existing users nothing. `irb.com` starts itself via `-e` and is therefore
+never affected by an appended `main.rb`; `miniruby.com` supports the convention
+just like `ruby.com`.
+
+Caveats worth knowing:
+
+- The archive is **read-only**. Your app cannot write to `/zip`; use a real
+  directory for state.
+- Native extensions cannot be added this way — there is no `dlopen` in an APE.
+  You get exactly the C extensions that were linked in (see *What's inside*).
+- Anyone can `unzip` your binary. This is packaging, not obfuscation.
+- On Windows, cosmopolitan rewrites path-shaped arguments (`C:\a\b` arrives as
+  `/C/a/b`). That is pre-existing APE behaviour, not specific to this feature.
+
+### The full way: ocran
 
 [Largo/ocran](https://github.com/Largo/ocran) can bundle *your* Ruby
 application together with this interpreter into a single portable `.com`:

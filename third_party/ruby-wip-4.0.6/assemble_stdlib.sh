@@ -67,6 +67,14 @@ cp -r "$RUBY_SRC"/ext/nokogiri/lib/xsd           cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/ripper/lib/ripper*         cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/strscan/lib/strscan*       cosmo-ruby/lib/ruby/4.0.0/
 cp -r "$RUBY_SRC"/ext/io/console/lib/console*    cosmo-ruby/lib/ruby/4.0.0/
+# io-console's pure-Ruby half lives at ext/io/console/lib/console/size.rb and
+# Ruby installs it as io/console/size.rb -- the ext directory name IS the
+# namespace. Only the console/size.rb spelling was being installed, so
+# `require "io/console/size"` failed, which is what actionpack's routing
+# inspector does: it broke a Rails boot. The line above is kept as well; it
+# costs about a kilobyte and something may have come to rely on it.
+mkdir -p cosmo-ruby/lib/ruby/4.0.0/io
+cp -r "$RUBY_SRC"/ext/io/console/lib/console     cosmo-ruby/lib/ruby/4.0.0/io/
 cp    "$RUBY_SRC"/ext/coverage/lib/coverage.rb    cosmo-ruby/lib/ruby/4.0.0/
 cp    "$RUBY_SRC"/ext/pty/lib/expect.rb           cosmo-ruby/lib/ruby/4.0.0/
 mkdir -p cosmo-ruby/lib/ruby/4.0.0/forwardable

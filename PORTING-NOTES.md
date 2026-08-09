@@ -1871,3 +1871,503 @@ instrumentation (the `volatile` stack-spill snapshot, described above) on
 `windows-latest` specifically — it now has a >99 % chance of firing within one
 200-iteration loop, so a single CI round should settle whether the register
 changed under the compare or the branch was entered without it.
+
+## libxml2 + libxslt as cosmopolitan third_party libraries (branch `xml-libs`, 2026-08-09)
+
+Why: OCRAN can package Rails natively but not as an APE, and the wall is
+**nokogiri**, which needs libxml2 and libxslt. Cosmopolitan vendors
+neither (verified: `third_party/` has zlib, sqlite3, libyaml, mbedtls,
+pcre, … and nothing XML). Everything else Rails needs is either already
+linked in (sqlite3) or an ordinary C extension. See
+https://github.com/Largo/ocran/pull/53.
+
+Outcome, in one line: **both libraries build clean as cosmopolitan
+static libraries with zero source patches, and the nokogiri stretch goal
+also landed — `require "nokogiri"` works, 36/36 checks pass.**
+
+### Versions and provenance
+
+| What | Version | URL | sha256 |
+|---|---|---|---|
+| libxml2 | 2.13.9 | https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.9.tar.xz | `a2c9ae7b770da34860050c309f903221c67830c86e4a7e760692b803df95143a` |
+| libxslt | 1.1.43 | https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.43.tar.xz | `5a3d6b383ca5afc235b171118e90f5ff6aa27e9fea3303065231a6d403f0183a` |
+| nokogiri | 1.19.4 | https://rubygems.org/downloads/nokogiri-1.19.4.gem | `50c951611c92bca05c51411aef45f1cbc50f2821c4802758c5c6d34696533ab5` |
+
+**Why 2.13.9 and not 2.14.x** (2.14.6 is current): nokogiri 1.19.4's
+`dependencies.yml` pins exactly libxml2 2.13.9 + libxslt 1.1.43, with the
+matching sha256s. Those are the versions nokogiri is tested against and
+the ones its precompiled platform gems ship. Matching them removes a
+whole class of "works with the bundled build, not with yours" bugs, and
+it is the difference between `have_func("xmlCtxtGetOptions")` being a
+guess and being a known answer (2.14 API → not present → nokogiri's
+`libxml2_polyfill.c` supplies it, exactly as on a 2.13 system). Upgrading
+to 2.14 later is a re-run of the configure recipe below plus a source
+drop; nothing in the cosmo layer is version-specific.
+
+nokogiri's own `patches/libxml2/*.patch` (6 of them: script-macro removal,
+SSI entity handling, wildcard namespaces, config.guess refresh,
+`__libc_single_threaded` removal, an XPath hash-table change) are **not**
+applied. Five are cosmetic/build-system or hardening tweaks for nokogiri's
+packaging; `0011-rip-out-libxml2-s-libc_single_threaded-support.patch` is
+glibc-specific and irrelevant under cosmopolitan. If a nokogiri test ever
+turns out to depend on `0009-allow-wildcard-namespaces`, that is the one to
+revisit.
+
+### Layout
+
+```
+third_party/libxml2/
+    *.c                       38 library sources (see below)
+    libxml.h  timsort.h       private top-level headers
+    include/libxml/*.h        public API, incl. the generated xmlversion.h
+    include/private/*.h       internals
+    config.h                  generated, then trimmed (3 cosmo edits)
+    BUILD.mk  README.cosmo  COPYING
+third_party/libxslt/
+    libxslt/*.{c,h}           incl. the generated xsltconfig.h
+    libexslt/*.{c,h}          incl. the generated exsltconfig.h
+    config.h                  generated, then trimmed (3 cosmo edits)
+    test/xmlxslt_test.c       the end-to-end check for BOTH packages
+    BUILD.mk  README.cosmo  COPYING
+```
+
+Artifacts, exactly as the task asked:
+
+```
+o/$(MODE)/third_party/libxml2/libxml2.a
+o/$(MODE)/third_party/libxslt/libxslt.a      (libxslt + libexslt in one archive)
+```
+
+Both are declared like `third_party/zlib` and `third_party/sqlite3`:
+`PKGS +=`, `_A`/`_A_FILES`/`_A_HDRS`/`_A_SRCS`/`_A_OBJS`, a `.pkg` check,
+`_A_DIRECTDEPS`, private `CFLAGS`, and the trailing
+`_LIBS/_SRCS/_HDRS/_CHECKS/_OBJS` boilerplate. They are included from the
+top-level `Makefile` next to `third_party/sqlite3`, i.e. **above**
+`-include local-includes.mk`, for the immediate-expansion reason already
+documented in the sqlite3 recipe (§4 "Include-order gotcha"). libxslt must
+come after libxml2 because `THIRD_PARTY_LIBXSLT_A_DIRECTDEPS` names
+`THIRD_PARTY_LIBXML2`.
+
+Only library sources are vendored. Dropped entirely: `python/`, `fuzz/`,
+`example/`, `doc/`, `os400/`, `test/`, `result/`, `xstc/`, `xsltproc/`,
+the autotools/cmake/meson plumbing, and the `xmllint`/`xmlcatalog`/
+`runtest`/`testapi` drivers. Sources belonging to disabled features are
+not vendored at all, which is the honest way to make a feature switch
+irreversible-by-accident: **nanohttp.c, nanoftp.c, xmlmodule.c, xzlib.c,
+debugXML.c, schematron.c are not in the tree.**
+
+### The feature set, and why
+
+Cosmopolitan never runs `./configure`, so `config.h`,
+`include/libxml/xmlversion.h`, `libxslt/xsltconfig.h` and
+`libexslt/exsltconfig.h` are committed. They were produced by running the
+*real* configure on this Debian 13 amd64 box:
+
+```sh
+../libxml2-2.13.9/configure \
+  --disable-shared --enable-static --disable-dependency-tracking \
+  --without-python --without-readline --without-history --without-modules \
+  --without-http --without-ftp --without-icu --without-lzma \
+  --without-thread-alloc --without-tls --without-xptr-locs --without-debug \
+  --without-schematron \
+  --with-c14n --with-catalog --with-html --with-iconv --with-iso8859x \
+  --with-output --with-pattern --with-push --with-reader --with-regexps \
+  --with-sax1 --with-schemas --with-threads --with-tree \
+  --with-valid --with-writer --with-xinclude --with-xpath --with-xptr \
+  --with-legacy --with-zlib
+
+PKG_CONFIG_PATH=<libxml2 install>/lib/pkgconfig ../libxslt-1.1.43/configure \
+  --disable-shared --enable-static --disable-dependency-tracking \
+  --without-python --without-crypto --without-plugins \
+  --without-debug --without-debugger --without-profiler
+```
+
+Resulting matrix (`awk '/^#if [01]$/{v=$2} /_ENABLED/{print $2,v}'`):
+
+| ON | OFF |
+|---|---|
+| THREAD, TREE, OUTPUT, PUSH, READER, PATTERN, WRITER, SAX1, VALID, HTML, LEGACY, C14N, CATALOG, XPATH, XPTR, XINCLUDE, ICONV, ISO8859X, UNICODE, REGEXP, AUTOMATA, SCHEMAS, ZLIB | THREAD_ALLOC, FTP, HTTP, XPTR_LOCS, ICU, DEBUG, SCHEMATRON, MODULES, LZMA |
+
+and for libxslt: `WITH_XSLT_DEBUG=0`, `WITH_DEBUGGER=0`, `WITH_PROFILER=0`,
+`WITH_MODULES=0`, `EXSLT_CRYPTO_ENABLED=0`.
+
+Rationale, item by item:
+
+- **MODULES off** — `xmlmodule.c` is `dlopen`. There is no dlopen in an APE
+  and there never will be. Same for libxslt's `--without-plugins`. This is
+  the single most important switch here.
+- **HTTP and FTP off** — a document parser that will silently open a socket
+  because a DTD had a URL in it does not belong in a self-contained binary.
+  (They are already off by default in 2.13; the flags are passed explicitly
+  so an upgrade cannot flip them back silently.) The C test asserts
+  `#ifndef LIBXML_HTTP_ENABLED`, and nokogiri's `VERSION_INFO` reports
+  `"http_enabled" => false`.
+- **ICU off** — a huge external dependency cosmopolitan does not have; the
+  iconv path covers the same ground.
+- **LZMA off** — no liblzma in cosmopolitan, and nokogiri never asks for it.
+- **python / readline / history off** — bindings and the interactive
+  `xmllint` shell; neither is built.
+- **DEBUG off** — `debugXML.c` is `xmlDebugDumpDocument` and the xmllint
+  shell. nokogiri passes `--with-debug` in its own build, but a grep of
+  every `.c`/`.h` in `ext/nokogiri` finds **zero** `xmlDebug*`/`xmlShell*`
+  references, and libxslt's uses are all behind `#ifdef
+  LIBXML_DEBUG_ENABLED`. Verified by building: nothing needs it.
+- **SCHEMATRON off** — nokogiri exposes `XML::Schema` (XSD) and
+  `XML::RelaxNG` only; there is no `XML::Schematron`. Verified by grep and
+  by the build.
+- **THREAD_ALLOC / TLS off** — `--with-thread-alloc` is per-thread malloc
+  hooks (off upstream too), and `--with-tls` would put
+  `XML_THREAD_LOCAL` (C11 `_Thread_local`) on libxml2's globals.
+  Cosmopolitan's TLS works, but the port already has to route every object
+  through `build/bootstrap/tlscc`, and libxml2's non-TLS path (pthread key
+  based) is the long-standing default. Not worth the risk for no gain.
+- **XPTR_LOCS off** — XPointer ranges/points, off upstream since 2.10 and
+  unused by XInclude's common paths.
+- **SAX1 + LEGACY on** — nokogiri's build passes `--with-legacy` by
+  default (`config_with_xml2_legacy?`), and `SAX.c` only exists when both
+  are on.
+- **C14N on** — `xml_document.c` calls `xmlC14NExecute`
+  (`Document#canonicalize`).
+- **XINCLUDE on** — `xml_node.c` calls `xmlXIncludeProcessTreeFlags`.
+- **CATALOG on** — upstream default and libxslt uses it; it only touches
+  `XML_CATALOG_FILES` / `/etc/xml/catalog`, which simply do not exist
+  inside an APE, so it is inert but harmless.
+- **SCHEMAS/REGEXP/AUTOMATA/PATTERN/READER/PUSH/WRITER on** — nokogiri has
+  `xml_schema.c`, `xml_relax_ng.c`, `xml_reader.c` and the SAX push
+  parser; PATTERN is what `xmlreader` needs for `PreservePattern`.
+
+**zlib**: linked against cosmopolitan's own `third_party/zlib` +
+`third_party/zlib/gz` via `-Ithird_party/zlib` and the two packages in
+`_A_DIRECTDEPS`. No second copy of zlib is vendored.
+
+### iconv — the sticking point that wasn't
+
+The task flagged iconv as a likely problem. It is not one.
+**Cosmopolitan has iconv**: `third_party/musl/iconv.c` (musl's
+implementation), declared in `libc/stdio/iconv.h` and reachable as
+`<iconv.h>` through `libc/isystem/iconv.h`, with the standard
+`iconv_open`/`iconv`/`iconv_close` and glibc-compatible `char **`
+signatures. It lives in the `THIRD_PARTY_MUSL` package, which is
+therefore a `_A_DIRECTDEPS` entry.
+
+So `--with-iconv` was enabled, and it demonstrably works: the C test
+decodes a `windows-1251` document (a charset libxml2 has **no** built-in
+handler for, so it can only come from iconv) to the right UTF-8 bytes, on
+both x86_64 and aarch64. musl's charmap table covers the ISO-8859-x
+family, the windows-125x family, KOI8, GB18030, Big5, Shift-JIS, EUC-JP,
+EUC-KR and the UTF/UCS variants, and its name lookup normalises case and
+dashes, so `windows-1251`, `WINDOWS1251` and `cp1251` all resolve.
+
+`--with-iso8859x` is *also* on, so the Latin-1..-16 family is handled by
+libxml2's built-in tables without going through iconv at all — that is
+the fast path and it is what the "ISO-8859-1 input is decoded to UTF-8"
+assertion exercises.
+
+What you do **not** get: anything outside musl's table (e.g. the more
+obscure IBM code pages, or `//TRANSLIT`). libxml2 degrades the way it
+does on any system with a thin iconv — `xmlReadMemory` returns NULL with
+an "unsupported encoding" error rather than crashing.
+
+### Cosmopolitan-specific patches: six one-liners, all in generated files
+
+**No `.c` or `.h` file of libxml2, libxslt or libexslt was modified.**
+This is worth stating plainly because it was the main risk going in.
+The entire cosmo delta is in the two generated `config.h` files, and every
+edit is marked with a `cosmo:` comment so it can be re-applied mechanically
+on an upgrade:
+
+| File | Edit | Why |
+|---|---|---|
+| `third_party/libxml2/config.h` | `HAVE_DLFCN_H` → undef | No dlopen in an APE. Unused once MODULES is off, but leaving it defined invites a future `#ifdef` to do the wrong thing. |
+| `third_party/libxml2/config.h` | `HAVE_FTIME` → undef | Cosmopolitan has no `ftime()`. |
+| `third_party/libxml2/config.h` | `HAVE_SYS_TIMEB_H` → undef | Cosmopolitan has no `<sys/timeb.h>`. `gettimeofday` is used instead. |
+| `third_party/libxslt/config.h` | same three | same three reasons |
+
+Everything else configure detected on Debian is also true under
+cosmopolitan and was left alone: `HAVE_MMAP`/`HAVE_MUNMAP`,
+`HAVE_GETENTROPY` + `HAVE_SYS_RANDOM_H` (cosmo has
+`libc/calls/getentropy.c`), `HAVE_GLOB_H`, `HAVE_PTHREAD_H`,
+`HAVE_ATTRIBUTE_DESTRUCTOR` (cosmopolitan runs `.fini_array`, see
+`libc/runtime/exit.c`), `HAVE_STRXFRM_L` for libxslt's `xsltlocale.c`
+(`libc/str/locale.h:59`). `HAVE_ZLIB_H` is *not* defined by configure even
+with `--with-zlib` — that macro is vestigial in 2.13; the real switch is
+`LIBXML_ZLIB_ENABLED` in `xmlversion.h`.
+
+### Things that were expected to hurt and did not
+
+Worth recording, because the next person will budget time for them:
+
+- **No `-Wno-` suppressions are needed.** Cosmopolitan compiles with
+  `-Wall -Werror`; libxml2 and libxslt are warning-clean under it. (This
+  was verified deliberately: a first pass carried six `-Wno-*` flags,
+  they were then removed and a from-scratch rebuild of both packages
+  produced zero warnings. The committed `BUILD.mk`s carry none.)
+- **No stack `QUOTA` overrides are needed** either, despite `xpath.c`,
+  `xmlschemas.c` and `parser.c` being exactly the kind of enormous
+  functions that usually trip `fixupobj`. Also verified by removing them
+  and rebuilding.
+- **No `stdatomic`, no TLS, no `dlopen`, no `#ifdef` platform block**
+  needed touching. libxml2's threading is plain pthreads, which
+  cosmopolitan implements.
+- **The `.pkg` symbol check passed on the first honest attempt.** The only
+  hiccup was naming a package that does not exist: there is no `LIBC_TIME`
+  in cosmopolitan, and `localtime_r`/`gmtime_r` come from
+  `THIRD_PARTY_TZ` (which is how `third_party/sqlite3/BUILD.mk` gets
+  them). Symptom is a bare ``-d.pkg`` in the `package.ape` command line
+  and `.pkg: open failed with ENOENT`.
+
+Final `_A_DIRECTDEPS` for libxml2: `LIBC_CALLS LIBC_FMT LIBC_INTRIN
+LIBC_MEM LIBC_NEXGEN32E LIBC_RUNTIME LIBC_STDIO LIBC_STR LIBC_SYSV
+LIBC_SYSV_CALLS LIBC_THREAD LIBC_TINYMATH THIRD_PARTY_COMPILER_RT
+THIRD_PARTY_MUSL THIRD_PARTY_TZ THIRD_PARTY_ZLIB THIRD_PARTY_ZLIB_GZ`.
+libxslt is the same minus the two zlib packages and `LIBC_SYSV_CALLS`,
+plus `THIRD_PARTY_LIBXML2`.
+
+Header `.ok` checks (`$(HDRS:%=o/$(MODE)/%.ok)`) are deliberately **not**
+in `_A_CHECKS` for either package: libxml2's public headers only compile
+after `-Ithird_party/libxml2/include`, which the generic `o/%.h.ok`
+pattern rule does not carry, and `include/private/*.h` are documented
+"include libxml.h first" internals. `$(_A).pkg` is the check that matters
+and it is present.
+
+### The C test — `third_party/libxslt/test/xmlxslt_test.c`
+
+```sh
+make -j8 o//third_party/libxslt/test/xmlxslt_test
+o/third_party/libxslt/test/xmlxslt_test          # 41 passed, 0 failed
+```
+
+It lives under libxslt because it links **both** archives (libxslt already
+depends on libxml2, so the reverse would be an include-order inversion).
+It is a plain cosmocc APE built by the normal `APELINK` rule and it is
+part of the `.PHONY: o/$(MODE)/third_party/libxslt` target, so
+`make o//third_party/libxslt` builds it.
+
+41 assertions: in-memory `xmlReadMemory`; tree walk (element/attribute/
+namespace access); XPath with predicates, a registered namespace prefix,
+`sum()` and `normalize-space()`; `xmlDocDumpMemory` and
+`xmlDocDumpMemoryEnc("ISO-8859-1")`; ISO-8859-1 decoding (built-in) and
+windows-1251 decoding (iconv); the push parser fed in 7-byte chunks;
+`xmlTextReader` streaming; `xmlTextWriter` escaping; tag-soup HTML via
+`htmlReadMemory` (implied `</li>`, unquoted attributes, `htmlNodeDump`);
+`xmlXIncludeProcessFlags` against a real file; DTD-validating parse;
+RelaxNG accept **and** reject; XSD accept **and** reject; `xmlC14NDocDumpMemory`;
+`xsltParseStylesheetDoc` + `xsltApplyStylesheet` with a string param,
+`count()` and `xsl:sort`; EXSLT `str:tokenize` and `math:max` after
+`exsltRegisterAll()`; and six compile-time assertions that HTTP, FTP,
+libxml2 modules and libxslt plugins are **off** while iconv and zlib are
+**on**.
+
+Results:
+
+| Arch | libxml2.a | libxslt.a | test |
+|---|---|---|---|
+| x86_64 | 8,215,908 B | 2,203,780 B | **41 passed, 0 failed** |
+| aarch64 | 8,632,108 B | 2,300,388 B | **41 passed, 0 failed** (under `qemu-aarch64`) |
+
+The aarch64 build is `make m=aarch64 o/aarch64/third_party/{libxml2,libxslt}`
+and needed no arch-specific anything.
+
+### Regression check on the rest of the tree
+
+With the two packages present but **not** linked into ruby (the state of
+commit `de77cd892`), `o/third_party/ruby/ruby` rebuilt to **12,720,749
+bytes** and `ruby.com` to **21,224,287** — byte-for-byte the sizes
+BUILDING.md records for `main`. So the libraries cost the interpreter
+nothing until something asks for them.
+
+- `cosmo_tests/smoke_test.sh` — 15/15 pass
+- `cosmo_tests/ci_smoke.rb ci-arg-1 ci-arg-2` — 36/36 pass
+- `cosmo_tests/test_sockets.rb` — 19/19 pass
+- `cosmo_tests/test_sqlite3.rb` — failures=0
+- `irb.com`, `miniruby.com` — boot fine
+
+CI: `xml-libs` added to the push triggers in
+`.github/workflows/cosmoruby-ci.yml` (the same one-word change `fat-ape`
+made). Run **31325091492** — https://github.com/Largo/cosmoruby/actions/runs/31325091492
+— **green on all six platforms** (linux-x86_64, linux-arm64,
+windows-x86_64, windows-arm64, macos-x86_64, macos-arm64) for the
+libraries-only commit.
+
+## nokogiri as a statically linked extension (the stretch goal — it works)
+
+`require "nokogiri"` works in `ruby.com`. Everything below followed the
+existing "Recipe: adding a native-extension gem to CosmoRuby" section
+without needing to extend it, which is a good sign for that recipe.
+
+### What was vendored
+
+`third_party/ruby/ext/nokogiri/` gets, unmodified:
+
+- `ext/nokogiri/*.{c,h}` — 40 C files;
+- `gumbo-parser/src/*` → `gumbo/` — 20 C files, nokogiri's bundled HTML5
+  parser. **Yes, gumbo comes along**: `gumbo.c` calls
+  `gumbo_parse_with_options`, `Nokogiri::HTML5` is not optional, and
+  `libgumbo` is a self-contained C90 library with no external
+  dependencies (checked: no dlopen, no pthreads, no fork). It costs about
+  300 KB and it is the only sane answer — omitting it would mean patching
+  nokogiri, which is exactly what this port is trying to avoid;
+- `lib/**` minus `lib/nokogiri/jruby` (JRuby only);
+- `extconf.rb` for reference only.
+
+`ports/` — the bundled libxml2/libxslt/zlib/libiconv tarballs — is **not**
+vendored, the same discipline sqlite3 followed with its bundled
+amalgamation.
+
+### The extconf.rb transcription
+
+`extconf.rb` never runs. Its three `have_func` probes plus the Ruby one
+become, in `ext/nokogiri/BUILD.mk`:
+
+```
+-DHAVE_XMLCTXTSETOPTIONS        # libxml2 >= 2.13 -> yes
+-DHAVE_XMLSWITCHENCODINGNAME    # libxml2 >= 2.13 -> yes
+-DHAVE_RB_CATEGORY_WARNING=1    # ruby >= 3.0 -> yes; guard is `#if`, not
+                                # `#ifdef`, so it needs a VALUE
+```
+
+and, deliberately, **no** `-DHAVE_XMLCTXTGETOPTIONS`: that is a libxml2
+2.14 API, we are on 2.13.9, and nokogiri's own `libxml2_polyfill.c`
+implements it under `#ifndef HAVE_XMLCTXTGETOPTIONS`. Getting this wrong
+in either direction produces a link error or a silently wrong parse-option
+readback.
+
+`NOKOGIRI_PACKAGED_LIBRARIES` is **not** defined. It is what upstream sets
+when the mini_portile2-built copies are used, and it makes nokogiri
+publish `Nokogiri::LIBXML2_PATCHES` / `LIBXSLT_PATCHES`. We apply no
+patches, so leaving it undefined makes `VERSION_INFO` report
+`"source" => "system"` and the patch lists `nil`, which is the truth.
+
+### Wiring (the same six files as sqlite3, plus a gemspec)
+
+| File | Change |
+|---|---|
+| `ext/nokogiri/BUILD.mk` | new; `PKGS += THIRD_PARTY_RUBY_EXT_NOKOGIRI`, sources = `ext/nokogiri/*.c` + `gumbo/*.c`, the `-I`/`-D` set above |
+| `ruby.deps.mk` | `include third_party/ruby/ext/nokogiri/BUILD.mk`; `THIRD_PARTY_RUBY_EXT_NOKOGIRI` in `RUBY_ALL_EXTENSIONS`; `THIRD_PARTY_LIBXML2` and `THIRD_PARTY_LIBXSLT` added to `THIRD_PARTY_RUBY_A_DIRECTDEPS` |
+| `ext/extinit.c` | `init(Init_nokogiri, "nokogiri/nokogiri");` — the feature path `lib/nokogiri/extension.rb` falls back to |
+| `assemble_stdlib.sh` | copy `ext/nokogiri/lib/nokogiri*` and `lib/xsd`; a `nokogiri/nokogiri nokogiri` line in **both** heredocs; plus the racc runtime (below) |
+| `ruby.plugins.mk` | matching `RUBY_PLUGIN_FEATURES` entry and both mode branches |
+| `BUILD.mk` | `nokogiri` added to the `ruby_missing` extension list |
+| `ext/nokogiri/nokogiri.gemspec` | hand-written; **no `extensions`**, **no `mini_portile2`** — same reasoning as sqlite3's |
+
+`lib/nokogiri/extension.rb` first tries `require_relative "4.0/nokogiri"`
+(the precompiled-gem layout), rescues the `LoadError`, and then does
+`require "nokogiri/nokogiri"` — which `extinit.c` has pre-registered. No
+patch required.
+
+### The one genuinely new problem: racc
+
+`lib/nokogiri/css/parser.rb` is a generated racc parser and does
+`require "racc/parser.rb"` at load time. Ruby ships racc, but as a
+**bundled gem**, and this port does not install its gemspec (racc declares
+a C extension, `ext/racc/cparse`, that nothing here compiles). Result
+before the fix:
+
+```
+$ ruby.com -e 'require "racc/parser"'
+LoadError: cannot load such file -- racc/parser
+$ ruby.com -e 'p Gem::Specification.map(&:name).grep(/racc/)'
+[]
+```
+
+even though `/zip/lib/ruby/gems/4.0.0/gems/racc-1.8.1/lib/racc/parser.rb`
+is right there in the zip — RubyGems just never activates it.
+
+Fix, three lines in `assemble_stdlib.sh`: copy `racc/parser.rb` and
+`racc/info.rb` into `/zip/lib/ruby/4.0.0/racc/`, i.e. onto the plain load
+path where no gem activation is needed. Nothing else from racc is
+required and **no racc C code is compiled** — `racc/parser.rb` already
+falls back to its pure-Ruby engine when `racc/cparse` is absent
+(`rescue LoadError` around the `require 'racc/cparse'`). This is
+deliberately the minimum: a real "racc gem in CosmoRuby" job (default
+gemspec, `cparse` as a linked extension for speed) is still separate work.
+
+### Results
+
+Zero patches to nokogiri's or gumbo's C sources. All 60 objects compile
+clean under `-Wall -Werror`.
+
+```
+$ ruby.com -e 'require "nokogiri"; p Nokogiri::VERSION_INFO'
+{"warnings"=>[],
+ "nokogiri"=>{"version"=>"1.19.4", ...},
+ "ruby"=>{"version"=>"4.0.6", "platform"=>"x86_64-cosmo", ...},
+ "libxml"=>{"source"=>"system", "memory_management"=>"ruby",
+            "iconv_enabled"=>true, "zlib_enabled"=>true,
+            "http_enabled"=>false, "compiled"=>"2.13.9", "loaded"=>"2.13.9"},
+ "libxslt"=>{"source"=>"system", "datetime_enabled"=>true,
+             "compiled"=>"1.1.43", "loaded"=>"1.1.43"}}
+```
+
+`third_party/ruby/cosmo_tests/test_nokogiri.rb` — **36 passed, 0 failed**:
+XML parse with namespaces; XPath with predicates, namespace binding and
+`sum()`; **CSS** selectors (descendant, attribute, `:first-child`,
+`at_css`); node mutation + reserialization; `XML::Builder`;
+`DocumentFragment`; HTML4 tag-soup parsing and serialization;
+**HTML5 via gumbo** (document and fragment, including implied `<tbody>`);
+`SAX::Parser`; `XML::Reader`; XSD and RelaxNG validation (accept *and*
+reject); DTD error reporting; **XSLT** with `quote_params` and `xsl:sort`;
+XInclude; `canonicalize`; ISO-8859-1 and windows-1251 decoding;
+serialization to ISO-8859-1; `EncodingHandler`; strict-mode
+`SyntaxError`; and `Gem::Specification.find_all_by_name("nokogiri")` →
+`[["1.19.4", true]]` (registered as a **default gem**, which is what makes
+ocran's payload-provides-gem detection fire, exactly as it does for
+sqlite3).
+
+The test is wired into `.github/scripts/test-cosmoruby.{sh,ps1}`, so it
+runs on all six CI platforms next to `test_sqlite3.rb`.
+
+No regressions with nokogiri linked in: `smoke_test.sh` 15/15,
+`ci_smoke.rb` 36/36, `test_sockets.rb` 19/19, `test_sqlite3.rb`
+failures=0, `irb.com` and `miniruby.com` boot.
+
+### Size impact
+
+| Binary | before (`main`) | with libxml2+libxslt+nokogiri | delta |
+|---|---|---|---|
+| `ruby` (zipless, x86_64) | 12,720,749 | 14,621,293 | **+1,900,544 (+14.9 %)** |
+| `ruby.com` (with /zip stdlib) | 21,224,287 | 23,257,488 | **+2,033,201 (+9.6 %)** |
+| `irb.com` | 21,224,287 | 23,257,488 | +2,033,201 |
+| `miniruby.com` | 18,738,030 | 18,870,687 | +132,657 (stdlib zip only — the ext is not in miniruby) |
+| `ruby` (zipless, aarch64) | — | 13,279,253 | — |
+| `dist/ruby.com` (**fat**, x86_64+aarch64) | 32,976,823 | 37,114,781 | +4,137,958 (+12.5 %) |
+
+The fat APE was produced with
+`FAT=1 JOBS=8 bash .github/scripts/build-cosmoruby.sh` and **both halves pass
+`test_nokogiri.rb` 36/36** — the x86-64 half natively and the aarch64 half via
+`qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com …`. So nokogiri,
+libxml2, libxslt, gumbo and the iconv path all work on ARM as well.
+
+For comparison, sqlite3 cost +928,502. Roughly 1.4 MB of the +1.9 MB is
+libxml2+libxslt themselves and ~0.5 MB is the nokogiri ext plus gumbo;
+`--gc-sections` drops whatever the ext does not reference.
+
+### What is left / known limitations
+
+- **No `Nokogiri::HTML5` streaming or `Nokogiri::XML::Node#write_to` with
+  an IO that is not a plain file** has been exercised beyond what the 36
+  checks cover. The obvious next test is a large real-world document.
+- **`xmlDebug*`, Schematron, XPointer ranges, HTTP/FTP loaders and libxslt
+  plugins are absent by construction** — `Nokogiri::XML::Document#debug_dump`
+  does not exist upstream anyway, but anything that expects libxml2 to
+  fetch a remote DTD will get a parse error instead of a network round
+  trip. That is the intended behaviour for an APE.
+- **libxslt's `--without-profiler`** means
+  `Nokogiri::XSLT::Stylesheet#transform` cannot be profiled. Nothing in
+  nokogiri's Ruby API exposes profiling, so this is invisible.
+- **racc is only half-present**: the two runtime files, not the gem. If
+  something later does `require "racc"` (the *generator*), or Bundler is
+  asked to resolve a `racc` dependency, it will fail. Doing racc properly
+  is separate work, as is puma/nio4r/bigdecimal.
+- **Windows has not been booted by hand** for this branch. CI covers
+  windows-x86_64 and windows-arm64 with the full test script including
+  `test_nokogiri.rb`, but the standing rule from the "Windows
+  verification" section above still applies before any release: run
+  `logs/win_smoke.sh` on the Vagrant VM.
+- **ocran has not been re-run** against a nokogiri-enabled `ruby.com`.
+  The mechanism that made sqlite3 work (default gemspec →
+  `Gem::Specification.map(&:name)` on the payload → the
+  payload-provides-gem short-circuit in `lib/ocran/direction.rb`) is in
+  place and verified at the `Gem::Specification` level, but the end-to-end
+  "package a script that requires nokogiri" check is the obvious next step
+  and the actual point of the exercise.

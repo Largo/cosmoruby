@@ -103,14 +103,18 @@ bash third_party/ruby/package_ruby.sh
 Results:
 
 ```
-o/third_party/ruby/ruby.com        21,224,287 B
-o/third_party/ruby/irb.com         21,224,287 B
-o/third_party/ruby/miniruby.com    18,738,030 B
+o/third_party/ruby/ruby.com        23,257,488 B
+o/third_party/ruby/irb.com         23,257,488 B
+o/third_party/ruby/miniruby.com    18,870,687 B
 ```
 
 Sizes vary by a byte or two between builds (ZIP metadata); the *unpackaged*
-`o/third_party/ruby/ruby` is deterministic at **12,720,749** bytes for x86-64
+`o/third_party/ruby/ruby` is deterministic at **14,621,293** bytes for x86-64
 on this branch. `head -c 6 ruby.com` must print `MZqFpD`.
+
+(On `main`, before libxml2/libxslt/nokogiri were linked in, those numbers were
+21,224,287 / 18,738,030 / 12,720,749. See the `xml-libs` section of
+PORTING-NOTES.md for the breakdown of the +1.9 MB.)
 
 ## Verify
 
@@ -126,6 +130,9 @@ dist/ruby.com third_party/ruby/cosmo_tests/ci_smoke.rb ci-arg-1 ci-arg-2
 
 dist/ruby.com third_party/ruby/cosmo_tests/test_sockets.rb
 # expect: SOCKET-RESULT: pass=19 fail=0 warn=0  (22 on Windows)
+
+dist/ruby.com third_party/ruby/cosmo_tests/test_nokogiri.rb
+# expect: RESULT: pass=36 fail=0
 
 mkdir /tmp/empty && cd /tmp/empty
 env -i /path/to/dist/ruby.com \
@@ -297,7 +304,9 @@ dist/miniruby.com    27,895,317 B
 `main`. Sizes move by a few hundred bytes between builds — ZIP metadata and the
 host `rustc`'s YJIT staticlib — so compare the *unpackaged* products instead:
 `o/third_party/ruby/ruby` is deterministic at **12,720,749** B for x86-64 and
-`o/aarch64/third_party/ruby/ruby` at **11,268,565** B.)
+`o/aarch64/third_party/ruby/ruby` at **11,268,565** B. On the `xml-libs`
+branch, which links libxml2/libxslt/nokogiri in, those become **14,621,293**
+and **13,279,253**.)
 
 ≈2 min on 8 cores with libc already built (55–62 s per architecture, apelink
 0.12 s, packaging ~12 s) — the fat build costs almost exactly one extra `make`.

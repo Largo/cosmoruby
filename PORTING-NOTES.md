@@ -2069,6 +2069,21 @@ escape hatch, and that the *unpacked* `ruby.com` still reads stdin.
 `cosmoruby-release.yml` verifies with `sha256sum -c` against a three-file
 release.
 
+Result — <https://github.com/Largo/cosmoruby/actions/runs/31303640027>, all six
+platforms green, and every one of them really executed the new checks:
+
+| Job | zip-main checks | `RUBY_PLATFORM` of the packed run | exit status |
+| --- | --- | --- | --- |
+| `test-linux-x86_64` | 7/7 (suite 18/18) | `x86_64-cosmo` | 7 |
+| `test-linux-arm64` | 7/7 (suite 18/18) | **`aarch64-cosmo`** | 7 |
+| `test-macos-x86_64` | 7/7 (suite 18/18) | `x86_64-cosmo` | 7 |
+| `test-macos-arm64` | 7/7 (suite 18/18) | **`aarch64-cosmo`** | 7 |
+| `test-windows-x86_64` | 7/7 (suite 17/17) | `x86_64-cosmo` | 1792 |
+| `test-windows-arm64` | 7/7 (suite 17/17) | `x86_64-cosmo` (x64 emulation) | 1792 |
+
+So the auto-run path is exercised on real ARM hardware in two of the six jobs,
+not just under qemu-user locally.
+
 ### Size
 
 Nothing measurable. Fat `ruby.com` went 32,976,823 → 32,976,947 bytes

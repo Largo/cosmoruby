@@ -210,10 +210,21 @@ What is known about it:
   asynchronous register corruption in cosmopolitan's Windows interrupt
   delivery — `vm_check_ints_blocking()` is by construction the code that runs
   immediately after an interrupt was delivered during a blocking region.
-- Frequency: it fired in roughly half of CI runs during the investigation, with
-  21 events in the worst one. It has **never** reproduced locally — ~2100
-  connects on a Win11 VM across eight strategies, plus 10 clean repeats of the
-  full smoke suite against the released binary.
+- **Frequency, measured.** On GitHub's `windows-latest` runner a 200-connect
+  diagnostic loop hit it in **3 of 3** runs on the release commit, at
+  **28–40 events per 200 blocking connects (14–20 %)**. The gating smoke test
+  only does a handful of connects, which is why it shows a warning in about
+  half of runs — the underlying rate is steadier than that suggests. Assume
+  roughly 1 in 6 blocking connects can raise if you do sustained socket work on
+  Windows, and retry.
+- Curiously, `windows-11-arm` — the *same* x86-64 PE half, run through
+  Windows-on-ARM's x64 emulation — is clean: **0/200 in all three runs**. A
+  defect that disappears under emulation but fires on native x64 fits the
+  register-corruption hypothesis, and is a strong argument against any
+  remaining "Ruby logic error" theory.
+- It has **never** reproduced on a local Win11 VM: ~2100 connects across eight
+  strategies, plus 10 consecutive clean runs of the full smoke suite against
+  this release binary.
 - It was deliberately **not** papered over with a `NIL_P` guard. If a register
   really is being corrupted, that guard would hide one symptom of something
   that can corrupt any other register anywhere else.

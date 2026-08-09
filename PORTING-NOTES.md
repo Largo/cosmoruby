@@ -1773,8 +1773,11 @@ proof that the aarch64 half exists and is what ran.
 release `ruby.com`: 10 × `pass=38 fail=0 warn=0`, zero `kernel_sleep`
 occurrences, plus a clean `test_sockets.rb` (22/22). Consistent with every
 previous local campaign (~2100 connects, zero events) and with the standing
-conclusion that this only manifests on the GitHub Windows runners. It remains
-a documented known issue, not a fixed one.
+conclusion that this only manifests on the GitHub `windows-latest` runners. It
+remains a documented known issue, not a fixed one — and note that the same
+commit *does* reproduce it there at 14–20 % of connects (see "Sharper frequency
+data" below), so this local silence is evidence about the environment, not
+evidence that the bug is gone.
 
 ### Real-hardware CI on the release commit
 
@@ -1795,8 +1798,14 @@ The immediately preceding run on `rc-cosmo2` at the same SHA
 (<https://github.com/Largo/cosmoruby/actions/runs/31299566716>) was also green
 but *did* fire the flake: `test-windows-x86_64` reported `pass=36 fail=0
 warn=2`, one absorbed by `tcp_check`'s retry-once path on `Socket.tcp` and one
-on the soft `::1` check. Same commit, same script, different outcome — which is
-the frequency claim ("roughly half of runs") in one pair of runs.
+on the soft `::1` check. Same commit, same script, different *gating* outcome.
+
+That difference is only in the gating checks, though. The non-gating
+`ci_diag_sockets.rb` loop fired in **both** runs — see "Sharper frequency data"
+at the end of this section, which replaces the old "roughly half of runs"
+characterisation with a measured 14–20 % of blocking connects on
+`windows-latest`. A green `SMOKE-RESULT` on Windows does **not** mean the
+underlying event did not occur.
 
 **Important caveat about all CI numbers**: the CI jobs test the artifact built
 by the *CI build job*, not the files published in the release. They are not
@@ -1818,3 +1827,47 @@ verified on *the same source commit*, one build removed.
   updated to the current check counts.
 - `.github/workflows/cosmoruby-ci.yml` — dropped the one-off `rc-cosmo2` push
   trigger; `main`, `ci` and `fat-ape` remain.
+
+### Sharper frequency data for the Windows flake (three runs on the release commit)
+
+The `ci_diag_sockets.rb` diagnostic loop (200 connects, non-gating) turns the
+vague "fires in roughly half of runs" into a measurement. Across the three CI
+runs on `f299e78ce` / `80c4fe0bc`:
+
+| Run | `windows-x86_64` (`windows-latest`) | `windows-arm64` (`windows-11-arm`) |
+|---|---|---|
+| [31299566716](https://github.com/Largo/cosmoruby/actions/runs/31299566716) | ci_smoke 36/0/**2**; diag **40**/200 | 38/0/0; diag **0**/200 |
+| [31299831314](https://github.com/Largo/cosmoruby/actions/runs/31299831314) | ci_smoke 38/0/0; diag **37**/200 | 38/0/0; diag **0**/200 |
+| [31300417775](https://github.com/Largo/cosmoruby/actions/runs/31300417775) | ci_smoke 36/0/**2**; diag **28**/200 | 38/0/0; diag **0**/200 |
+
+Two conclusions, and the first corrects the earlier characterisation:
+
+1. **On `windows-latest` the event fires in 3 of 3 runs, at 14–20 % of blocking
+   connects (28–40 per 200).** What varies run to run is only whether the
+   handful of connects in the *gating* `ci_smoke.rb` happens to land on one —
+   which is what "fires in roughly half of runs" was actually measuring. The
+   underlying rate is much more consistent than the pass/warn line suggested.
+   Anyone doing sustained socket work on Windows should assume ~1 in 6 blocking
+   connects can raise, not "it happens occasionally".
+
+2. **`windows-11-arm` is clean: 0/200 in all three runs.** That runner executes
+   the same x86-64 PE half through Windows-on-ARM's x64 emulation. A defect
+   that vanishes under emulation but fires on native x64 fits the
+   register-corruption / interrupt-delivery hypothesis well — the emulator
+   serialises the guest's architectural state at points the native CPU does
+   not, so an asynchronously clobbered register has nowhere to hide. It is
+   *not* proof, but it is the first cheap discriminator this investigation has
+   had, and it is a strong argument against any remaining "Ruby logic error"
+   theory: identical bytes, identical script, same OS, different CPU execution
+   path, one fires and one does not.
+
+Local Win11 (Vagrant, this box) remains at **0 events**: 10 consecutive full
+`ci_smoke.rb` runs against the release binary plus the historical ~2100
+connects. So the reproducer is still "a GitHub `windows-latest` runner", which
+is what makes this hard to chase interactively.
+
+Next step when someone picks this up: run the `fix-windows-sockets-diag`
+instrumentation (the `volatile` stack-spill snapshot, described above) on
+`windows-latest` specifically — it now has a >99 % chance of firing within one
+200-iteration loop, so a single CI round should settle whether the register
+changed under the compare or the branch was entered without it.

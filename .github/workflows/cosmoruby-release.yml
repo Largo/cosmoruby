@@ -86,9 +86,37 @@ jobs:
           } > notes.md
           cat notes.md
           if [ "${{ inputs.draft || 'false' }}" = "true" ]; then draft="--draft"; else draft=""; fi
-          gh release create "$TAG" dist/ruby.com dist/irb.com dist/miniruby.com dist/SHA256SUMS \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "CosmoRuby $TAG" \
-            --notes-file notes.md \
-            $draft
+          # Idempotent: a release for this tag may already exist (cut by hand,
+          # or a re-run of this workflow).  Creating it again is a hard error,
+          # so fall back to replacing the assets on the existing release --
+          # the point of the job is that the published bytes are the ones this
+          # run just built and verified.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # Do NOT clobber published assets.  These binaries are not
+            # byte-reproducible across hosts (the YJIT staticlib follows the
+            # runner's rustc), and the published release notes quote SHA256s
+            # of the assets that were actually shipped -- replacing them would
+            # silently invalidate those checksums.  Upload only what is
+            # missing, so a re-run repairs an interrupted publish without
+            # rewriting a good one.
+            have=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+                     --json assets --jq '.assets[].name' | tr '\n' ' ')
+            echo "release $TAG already exists; assets present: ${have:-none}"
+            missing=""
+            for f in ruby.com irb.com miniruby.com SHA256SUMS; do
+              case " $have " in *" $f "*) ;; *) missing="$missing dist/$f" ;; esac
+            done
+            if [ -n "$missing" ]; then
+              echo "uploading missing assets:$missing"
+              gh release upload "$TAG" $missing --repo "$GITHUB_REPOSITORY"
+            else
+              echo "nothing to do; leaving the published assets untouched"
+            fi
+          else
+            gh release create "$TAG" dist/ruby.com dist/irb.com dist/miniruby.com dist/SHA256SUMS \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "CosmoRuby $TAG" \
+              --notes-file notes.md \
+              $draft
+          fi

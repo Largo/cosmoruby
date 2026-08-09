@@ -932,6 +932,7 @@ rubygems.org). Anything doing real OpenSSL-API cryptography needs checking.
 | `--yjit` | `RubyVM::YJIT.enabled?` → true | → false, no crash |
 | exit status | 7 | 1792 (7 << 8) |
 | sockets | loopback echo OK | loopback echo OK (fixed, see below) |
+| sockets (macOS x86_64, CI) | fixed by the same change — see "CI round 1" | |
 | native subprocess | backticks OK | fails |
 | APE→APE spawn | OK | OK |
 | broad feature probe (24 items) | all pass except native-subprocess items | same, plus sockets |
@@ -1187,26 +1188,142 @@ The two `getsockopt-nt.c` fixes are cosmopolitan bugs, isolated from anything
 Ruby-specific, with standalone `cosmocc` repros. Packaged for jart/cosmopolitan
 under `/root/workspace/cosmo-upstream/` (patch + README + `repro/*.c`).
 
-### Left unfixed (flagged, not a TCP blocker): POLL* is still hard-coded
+### Left unfixed (flagged, and now shown to be dead code): POLL*
 
 `include/errno_wrapper.h` still does `#define POLLIN 0x0001` and friends, and
 still blocks `libc/sysv/consts/poll.h`. Those *are* syscon constants, and
 cosmopolitan's Windows poll (`libc/calls/poll-nt.c:57-66`) works in Winsock's
 numbering — `POLLIN_ 0x0300`, `POLLOUT_ 0x0010`, `POLLERR_ 0x0001` — so a
-caller passing the Linux `POLLIN` (1) is passing Winsock's `POLLERR`, which
-`poll-nt.c:118` masks away entirely.
+caller passing the Linux `POLLIN` (1) would be passing Winsock's `POLLERR`,
+which `poll-nt.c:118` masks away entirely.
 
-It was deliberately left alone for two reasons:
+It was deliberately left alone, and the reason is stronger than first
+thought: **Ruby never calls `poll()` in this build.** `thread.c:248` only
+defines `USE_POLL` when `__linux__` (or FreeBSD) is defined, and cosmocc
+defines neither (verified with a one-line `cosmocc` probe), so both
+`thread_io_wait()` and `io.c`'s `nogvl_wait_for()` compile to their
+`select()` variants and the `STATIC_ASSERT(pollin_expected, POLLIN ==
+RB_WAITFD_IN)` block is not compiled at all. Empirically confirmed: `IO.select`
+returns `nil` at the timeout when nothing is pending and returns ready
+promptly when data arrives, and `IO#wait_readable` times out correctly, on
+both Linux and Windows.
 
-1. `io.c:12534` is `STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN)`,
-   so making `POLLIN` runtime is a Ruby-wide change (io.c, thread.c,
-   thread_pthread_mn.c), not a socket-layer one.
-2. It is **not observable**: verified on Win11 and Linux with the same
-   binary that `IO.select` returns `nil` at the timeout when no data is
-   pending and returns ready promptly when data arrives, and that
-   `IO#wait_readable` times out correctly. So Ruby's readiness paths on
-   Windows are evidently not reaching cosmopolitan's `poll()` with these
-   flags.
+Fixing it properly would be a Ruby-wide change (io.c, thread.c,
+thread_pthread_mn.c all use `RB_WAITFD_*`/`POLL*` interchangeably), for zero
+present benefit. Revisit only if `USE_POLL` ever becomes defined here.
 
-Worth revisiting if Windows IO ever starts hanging or busy-waiting; the
-constant table is the first place to look.
+## CI round 1 on the socket fix (2026-08-08, run 31281935506, branch `ci`)
+
+The GitHub matrix (`ubuntu`/`windows`/`macos`, x86_64) is the first time this
+port has been exercised on macOS at all. Result of the fix above:
+
+- **Linux x86_64: fully green.**
+- **macOS x86_64: TCP now works.** The `EPFNOSUPPORT`-from-`bind(2)` and
+  `EINVAL`-from-`connect(2)` failures are gone; `ci_smoke.rb` is 36/36 and
+  the TCP loopback checks pass. This is the payoff from fixing the ABI in
+  the right place: the same one-line-per-constant mistake broke Windows *and*
+  macOS, and neither the macOS failure nor its fix was ever observed on a
+  macOS machine — the XNU column of the table above is what repaired it.
+- Two follow-ups fell out, below. The aarch64 jobs fail for an unrelated,
+  already-known reason (the local build is x86_64-only: `error: this ape
+  binary only supports x86_64`) — they need `make ARCH=aarch64` + apelink,
+  see roadmap item 6.
+
+### macOS follow-up 1: `SO_ERROR` is untranslated on the unix path too
+
+`[FAIL] SO_ERROR after refused connect is ECONNREFUSED`
+
+Exactly the bug fixed for Winsock, in the other code path.
+`libc/sock/getsockopt.c` hands everything that is not Windows straight to
+`sys_getsockopt()`, and `SO_ERROR` is the one socket option whose *payload*
+is an errno number — so it escapes the return-value translation cosmopolitan
+applies to syscalls and the caller receives the host kernel's numbering. XNU
+and the BSDs say `ECONNREFUSED == 61`; cosmopolitan says 111. A refused
+non-blocking `connect()` was therefore undiagnosable on macOS.
+
+Fixed by running the value through the existing `__errno_host2linux()` on the
+non-Windows path (identity on Linux, maps 0 → 0 everywhere). Second
+upstreamable cosmopolitan commit.
+
+### macOS follow-up 2: `TCP_NODELAY` reads back as 4 — a test bug, not a port bug
+
+`[FAIL] getsockopt IPPROTO_TCP TCP_NODELAY reports an int`
+
+The assertion was `v.data.bytesize == 4 && v.int == 1`. The 4.4BSD lineage
+returns the internal flag bit rather than the value that was set: XNU's
+`tcp_var.h` defines `TF_NODELAY 0x00004` and `tcp_ctloutput()` answers with
+`tp->t_flags & TF_NODELAY`, so macOS reports **4** where Linux and Windows
+report 1.
+
+Deduction that pins it down without a macOS machine: the neighbouring
+`SO_ERROR` check returned `false` rather than raising `TypeError`, which
+means `Socket::Option#int` succeeded there, which means `getsockopt()`
+reported a proper 4-byte length on macOS. Both options go through the same
+syscall, so the `TCP_NODELAY` length is 4 as well and the failure must be the
+*value*. Hence **no widening fix is needed on the unix path** — adding one
+would be dead code.
+
+Fixed by asserting `v.int` is non-zero (which is all POSIX promises) instead
+of exactly 1. Both checks now raise a message naming the actual value, so a
+future CI failure says what went wrong instead of "returned false".
+
+### Windows follow-up: `kernel_sleep for nil` — OPEN, unreproducible off CI
+
+`ci_smoke.rb` on the `windows-latest` runner fails three connect paths:
+
+```
+[FAIL] tcp loopback echo (localhost) :: NoMethodError: undefined method 'kernel_sleep' for nil
+       ci_smoke.rb:137:in 'TCPSocket#initialize'
+[PASS] tcp loopback echo (127.0.0.1)
+[FAIL] Socket.tcp :: NoMethodError: undefined method 'kernel_sleep' for nil
+       /zip/lib/ruby/4.0.0/socket.rb:69:in 'Socket#connect'
+       /zip/lib/ruby/4.0.0/socket.rb:69:in 'Addrinfo#connect_internal'
+[WARN] tcp loopback echo (::1) :: NoMethodError: undefined method 'kernel_sleep' for nil
+```
+
+**The obvious explanation is wrong.** It is not Happy Eyeballs v2 and not
+IPv6 availability: `cosmo_tests/test_sockets.rb` ran the *same* operations —
+`localhost`, `::1`, `Socket.tcp` — on the *same* runner, from the *same*
+binary, minutes later, and passed 22/22. Two processes on one machine, one
+fails and one does not, so it is a process-state or timing condition, not a
+capability difference.
+
+What the source says: `kernel_sleep` is only reachable from three places
+(`thread_sync.c:601`, `process.c:4966`, and `scheduler.c:568` via
+`rb_fiber_scheduler_yield()`), and **every one of them is already guarded by
+`if (scheduler != Qnil)`**. The only unguarded call is inside
+`rb_fiber_scheduler_yield()` itself, whose sole C caller
+(`thread.c:231`, in `vm_check_ints_blocking()` — which *is* on the connect
+path, via `rb_nogvl` → `RUBY_VM_CHECK_INTS_BLOCKING`) is guarded too.
+`Qnil` is `0x04` and `Qfalse` is `0x00` in this build, so the receiver really
+is `nil` and not a zeroed field. That combination should be impossible in
+straight-line C, which points at either a stale `rb_thread_t` or a
+pending-exception delivery rather than a plain logic error — i.e. it wants
+observation, not more reading.
+
+Not reproducible on the local Win11 Vagrant VM (4 vCPU, IPv6 present,
+`localhost` → `["::1", "127.0.0.1"]`), across roughly 500 connects:
+
+| attempt | result |
+|---|---|
+| `ci_smoke.rb` × 6 back to back | 38/38 every time |
+| thread churn + 4 CPU burners, ~130 connects | clean |
+| 3 allocation/GC-pressure threads, 320 connects | clean |
+| 25 *refused* connects through `Socket#connect`/`wait_connectable` | clean |
+| server bound v4-only, connect by name (v6 attempt refused) × 10 | clean |
+| server bound v6-only, connect by name (v4 attempt refused) × 10 | clean |
+| `ci_diag_sockets.rb` 8 paths × cold/warm/again | 24/24 |
+
+`cosmo_tests/ci_diag_sockets.rb` was added for this: it prints the runner's
+`getaddrinfo`/`ip_address_list`, then runs eight connect paths three times
+(cold, after the thread/mutex/queue churn `ci_smoke.rb` does before its
+socket checks, and again), reporting for every failure the `NoMethodError`
+receiver and name, `Fiber.scheduler`, `Thread.current` and the full
+backtrace. It always exits 0 and is wired into both CI drivers as
+informational. **Next step is one CI round to read its output**; the fix
+should follow from that. Delete the file once it has served its purpose.
+
+Deliberately *not* done: adding a defensive `if (NIL_P(scheduler)) return
+Qnil;` to `rb_fiber_scheduler_yield()`. It would make the symptom disappear,
+but if the real cause is a stale `rb_thread_t` that would be hiding memory
+corruption rather than fixing it, and this gates a release.

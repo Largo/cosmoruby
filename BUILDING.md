@@ -4,11 +4,15 @@ This builds `ruby.com`, `irb.com` and `miniruby.com` — the single-file Ruby
 APEs described in [`README.md`](README.md) — from a clean checkout of this
 repository's `main` branch.
 
-The recipe below was executed start to finish on 2026-08-08 on Debian 13
-(trixie) amd64, from an emptied `o/` tree with the bootstrap products deleted.
-It took **≈2 minutes wall on 8 cores** in that state. The very first build on a
-brand-new clone is longer, because it also downloads the ~390 MB cosmocc
-toolchain.
+The recipe below was executed start to finish on 2026-08-09 on Debian 13
+(trixie) amd64, from an emptied `o/` tree with the bootstrap products deleted
+(`rm -rf o/ releases/ dist/ build/bootstrap/{mtdeps,automate_mkdeps}`) — that
+is how the `v4.0.6-cosmo2` release artifacts were produced. A **fat**
+(x86-64 + aarch64) build from that state takes **≈10 minutes wall on 8 cores**,
+most of it the bootstrap and the two full libc compiles; the x86-64 `make` is
+72 s and the aarch64 `make` 111 s once the bootstrap is done. Both converged on
+the *first* pass. The very first build on a brand-new clone is longer, because
+it also downloads the ~390 MB cosmocc toolchain.
 
 `PORTING-NOTES.md` is the long-form engineering log behind this file: it
 records every breakage that had to be fixed to make a clean checkout buildable
@@ -99,9 +103,9 @@ bash third_party/ruby/package_ruby.sh
 Results:
 
 ```
-o/third_party/ruby/ruby.com        21,225,070 B
-o/third_party/ruby/irb.com         21,225,070 B
-o/third_party/ruby/miniruby.com    18,738,813 B
+o/third_party/ruby/ruby.com        21,224,287 B
+o/third_party/ruby/irb.com         21,224,287 B
+o/third_party/ruby/miniruby.com    18,738,030 B
 ```
 
 Sizes vary by a byte or two between builds (ZIP metadata); the *unpackaged*
@@ -113,17 +117,28 @@ on this branch. `head -c 6 ruby.com` must print `MZqFpD`.
 Do not skip this, and in particular do not skip Windows.
 
 ```sh
-sh third_party/ruby/cosmo_tests/smoke_test.sh o/third_party/ruby/ruby.com
-# expect: == RESULT: pass=14 fail=0 ==
+sh third_party/ruby/cosmo_tests/smoke_test.sh dist/ruby.com
+# expect: == RESULT: pass=15 fail=0 ==
+
+dist/ruby.com third_party/ruby/cosmo_tests/ci_smoke.rb ci-arg-1 ci-arg-2
+# expect: SMOKE-RESULT: pass=36 fail=0 warn=0   (38 on Windows: two extra
+#         Winsock ABI assertions)
+
+dist/ruby.com third_party/ruby/cosmo_tests/test_sockets.rb
+# expect: SOCKET-RESULT: pass=19 fail=0 warn=0  (22 on Windows)
 
 mkdir /tmp/empty && cd /tmp/empty
-env -i /path/to/o/third_party/ruby/ruby.com \
+env -i /path/to/dist/ruby.com \
        /path/to/third_party/ruby/cosmo_tests/test_sqlite3.rb
 # expect: RESULT: failures=0
 
-sh third_party/ruby/cosmo_tests/win_smoke.sh o/third_party/ruby/ruby.com
+sh third_party/ruby/cosmo_tests/win_smoke.sh dist/ruby.com
 # expect: the banner, JSON, Gem.default_dir, ... 42, RC=1792
 ```
+
+`.github/scripts/test-cosmoruby.sh dist` runs all of the above plus `irb.com`,
+`miniruby.com`, exit-status propagation and the `--yjit` check in one go; it is
+literally what CI runs on Linux and macOS (`test-cosmoruby.ps1` on Windows).
 
 `RC=1792` is `7 << 8`: Windows reports an APE's exit status shifted left by 8
 bits. That is expected — see README.
@@ -273,10 +288,16 @@ and `ape-m1.c`, then lets `package_ruby.sh` append the shared `/zip` stdlib.
 Final artifacts land in `dist/` (and `releases/`) with a `SHA256SUMS`.
 
 ```
-dist/ruby.com        32,975,939 B   (x86-64 only: 21,224,287 B)
-dist/irb.com         32,975,907 B
-dist/miniruby.com    27,895,330 B
+dist/ruby.com        32,976,823 B   (x86-64 only: 21,224,287 B)
+dist/irb.com         32,976,770 B
+dist/miniruby.com    27,895,317 B
 ```
+
+(Those are the `v4.0.6-cosmo2` release numbers, from a `rm -rf o/` rebuild on
+`main`. Sizes move by a few hundred bytes between builds — ZIP metadata and the
+host `rustc`'s YJIT staticlib — so compare the *unpackaged* products instead:
+`o/third_party/ruby/ruby` is deterministic at **12,720,749** B for x86-64 and
+`o/aarch64/third_party/ruby/ruby` at **11,268,565** B.)
 
 ≈2 min on 8 cores with libc already built (55–62 s per architecture, apelink
 0.12 s, packaging ~12 s) — the fat build costs almost exactly one extra `make`.
@@ -306,7 +327,7 @@ This proves the *code* is correct. It does not prove the *platform*: for that,
 `.github/workflows/cosmoruby-test.yml` runs the same acceptance script on
 GitHub's `ubuntu-24.04-arm` and `macos-latest` (Apple Silicon) runners, which
 are blocking jobs precisely because the artifact is fat. Both pass; the
-`ubuntu-24.04-arm` job reports `aarch64-cosmo` and 30/30 on `ci_smoke.rb`.
+`ubuntu-24.04-arm` job reports `aarch64-cosmo` and 36/36 on `ci_smoke.rb`.
 
 ### Gotcha: weak YJIT stubs are the real implementation on aarch64
 

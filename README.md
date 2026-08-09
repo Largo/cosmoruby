@@ -18,27 +18,30 @@ system. All of the heavy lifting is theirs.
 ## Download
 
 Latest release assets — <https://github.com/Largo/cosmoruby/releases/latest>
-(tag `v4.0.6-cosmo1`):
+(tag `v4.0.6-cosmo2`):
 
 | File | What it is | Size |
 | --- | --- | ---: |
-| [`ruby.com`](https://github.com/Largo/cosmoruby/releases/latest/download/ruby.com) | the Ruby interpreter | 21,225,070 B (20.2 MiB) |
-| [`irb.com`](https://github.com/Largo/cosmoruby/releases/latest/download/irb.com) | the same binary, starting IRB | 21,225,070 B (20.2 MiB) |
-| [`miniruby.com`](https://github.com/Largo/cosmoruby/releases/latest/download/miniruby.com) | minimal interpreter, no C extensions | 18,738,813 B (17.9 MiB) |
+| [`ruby.com`](https://github.com/Largo/cosmoruby/releases/latest/download/ruby.com) | the Ruby interpreter | 32,976,823 B (31.4 MiB) |
+| [`irb.com`](https://github.com/Largo/cosmoruby/releases/latest/download/irb.com) | the same binary, starting IRB | 32,976,770 B (31.4 MiB) |
+| [`miniruby.com`](https://github.com/Largo/cosmoruby/releases/latest/download/miniruby.com) | minimal interpreter, no C extensions | 27,895,317 B (26.6 MiB) |
 | [`SHA256SUMS`](https://github.com/Largo/cosmoruby/releases/latest/download/SHA256SUMS) | checksums for the three binaries | — |
 
 Most people only want `ruby.com`.
 
-**Architecture.** The `v4.0.6-cosmo1` assets linked above are **x86-64 only** —
-they will not run natively on Apple Silicon, an ARM Chromebook, a Raspberry Pi
-or Windows-on-ARM. The tree now builds **fat x86-64 + aarch64** APEs again
-(as igravious's older `v1.3.0` release did): `FAT=1
-.github/scripts/build-cosmoruby.sh`, and CI produces them on every push. The
-next tagged release will be fat; until then, build one yourself or take the CI
-artifact. See "Fat (x86-64 + aarch64) binaries" in `BUILDING.md`.
+**Architecture: `v4.0.6-cosmo2` assets are fat — x86-64 *and* aarch64 in one
+file.** The same download runs natively on an Intel/AMD PC, on a Raspberry Pi
+or ARM Chromebook, and on an Apple Silicon Mac (through cosmopolitan's `ape-m1`
+loader). `RUBY_PLATFORM` reports `x86_64-cosmo` or `aarch64-cosmo` accordingly.
+Verified on real hardware in CI on six platforms — see [Platform support,
+honestly](#platform-support-honestly).
 
-A fat `ruby.com` is about 33 MB instead of 21 MB — the aarch64 half is an
-entire second copy of the interpreter.
+That is what makes the file ~31 MB rather than ~20 MB: the aarch64 half is an
+entire second copy of the interpreter. The single shared `/zip` stdlib is
+appended once and read by both halves.
+
+The **older `v4.0.6-cosmo1` assets were x86-64 only** and will not run natively
+on any ARM machine. If you have those, upgrade.
 
 ## 30-second quickstart
 
@@ -54,6 +57,9 @@ chmod +x ruby.com
 ```
 hello from ruby 4.0.6 (2026-07-14) +PRISM +MIMALLOC [x86_64-cosmo]
 ```
+
+The same file on an aarch64 machine (Raspberry Pi, ARM Chromebook, Apple
+Silicon) prints `[aarch64-cosmo]` — one download, both architectures.
 
 If your shell refuses to run it (`zsh` before 5.9, old `fish`, Python's
 `subprocess`), use `sh ./ruby.com ...`, or register the APE format with
@@ -124,13 +130,15 @@ ruby 4.0.6 (2026-07-14) +PRISM +MIMALLOC [x86_64-cosmo]
   `io/console`, `io/nonblock`, `io/wait`, `ripper`, `objspace`, `monitor`,
   `continuation`, `coverage`, `rbconfig/sizeof`, and cosmopolitan's `mbedtls`.
 - **`sqlite3` (gem 2.9.5)** is built in — `require "sqlite3"` just works, on
-  Linux *and* on Windows, with no `.so` anywhere. See the limitations below.
+  Linux, Windows and macOS, on both architectures, with no `.so` anywhere. See
+  the limitations below.
 - **YJIT** — pass `--yjit`. **Linux x86-64 only**; see below.
 
 ### `openssl` is an MbedTLS-backed shim, not Ruby's OpenSSL extension
 
 `require "openssl"` succeeds, and `net/http` talks HTTPS over it — a plain
-`Net::HTTP.get_response(URI("https://…"))` returns 200 on Linux. But the
+`Net::HTTP.get_response(URI("https://rubygems.org/"))` returns 200 on Linux
+*and on Windows* (verified since the socket fix). But the
 implementation is a ~400-line compatibility shim (`/zip/lib/ruby/4.0.0/openssl.rb`)
 over cosmopolitan's MbedTLS, not the real `openssl` C extension. It provides
 only `OpenSSL::Digest`, `OpenSSL::PKey`, `OpenSSL::X509`, `OpenSSL::SSL` and
@@ -143,15 +151,19 @@ API will need checking.
 The YJIT compiler is Rust code built for `x86_64-unknown-linux-gnu` and is only
 initialised when the APE is running on Linux.
 
-| | Linux x86-64 | Windows x86-64 | any aarch64 |
-| --- | --- | --- | --- |
-| `RubyVM::YJIT.enabled?` | `true` | `false` | `false` |
-| `RUBY_DESCRIPTION` | `+YJIT` | `+YJIT` (misleading) | `+YJIT` (misleading) |
+| | Linux x86-64 | Windows x86-64 | macOS x86-64 | any aarch64 |
+| --- | --- | --- | --- | --- |
+| `RubyVM::YJIT.enabled?` | `true` | `false` | `false` | `false` |
+| `RUBY_DESCRIPTION` | `+YJIT` | `+YJIT` (misleading) | `+YJIT` (misleading) | `+YJIT` (misleading) |
 
 Passing `--yjit` anywhere else is harmless — it is accepted and does nothing.
 Do not trust `RUBY_DESCRIPTION`; trust `RubyVM::YJIT.enabled?`. On the aarch64
 half the Rust staticlib is not even linked in (`yjit/BUILD.mk` disables it for
-`ARCH=aarch64`).
+`ARCH=aarch64`), so the weak stubs in `yjit.c` *are* the implementation there.
+One of them used to return `false` from `rb_yjit_parse_option()`, which
+`ruby.c` turns into `invalid YJIT option ''` — so `ruby.com --yjit` was a hard
+startup error on the ARM half until `v4.0.6-cosmo2`. It is now accepted and
+inert, exactly as on Windows.
 
 ## What is *not* supported
 
@@ -165,18 +177,51 @@ half the Rust staticlib is not even linked in (`yjit/BUILD.mk` disables it for
   `""`). Launching *another APE* from an APE does work
   (`Process.spawn("C:/ruby.com","-e","exit 5")` → 5). Subprocesses work
   normally on Linux.
-- **TCP sockets do not work on Windows *or macOS*.** `require "socket"` loads, socket
-  creation and DNS work, but `bind()` and `connect()` fail:
-  `TCPServer.new("127.0.0.1", 0)` raises `Errno::EAFNOSUPPORT` and
-  `TCPSocket`/`Net::HTTP` raise `Errno::EINVAL`. Sockets work correctly on
-  Linux. This is pre-existing — igravious's Ruby 4.0.0 release binary fails the
-  same way — and is a cosmopolitan/port-level bug, not something introduced
-  here. macOS fails the same way with a slightly different errno pair
-  (`Errno::EPFNOSUPPORT` from `bind`, `Errno::EINVAL` from `connect`),
-  identically on Intel and Apple Silicon; that only came to light once CI grew
-  macOS runners. UDP works on both. No TCP network client or server code will
-  run on Windows or macOS.
 - **32-bit anything, BIOS/metal.** Not tested, not claimed.
+
+### Sockets: fixed everywhere, with one intermittent Windows rough edge
+
+Up to and including `v4.0.6-cosmo1`, **TCP was completely broken on Windows and
+on macOS** and worked only on Linux. That is fixed. Loopback in both
+directions, `::1`, outbound connections, `Net::HTTP` and HTTPS to
+rubygems.org all work on Windows, macOS (Intel and Apple Silicon) and Linux
+(x86-64 and aarch64).
+
+The cause was not cosmopolitan. Two headers in this port `#undef`'d
+cosmopolitan's *runtime* socket constants and hard-coded the **Linux** numbers,
+so `AF_INET6` was 10 where the host wanted 23 (Winsock) or 30 (XNU) and
+`SOL_SOCKET` was 1 where the host wanted `0xffff`. `PORTING-NOTES.md` has the
+full table and the reason a wrong `AF_INET6` corrupted plain **IPv4** addresses.
+
+**Known issue — intermittent, Windows only.** A blocking socket operation can
+occasionally raise:
+
+```
+NoMethodError: undefined method 'kernel_sleep' for nil
+```
+
+What is known about it:
+
+- It **raises cleanly and a retry succeeds**; it does not corrupt data or hang.
+- It is **not** a Ruby bug and not a bug in this port's socket code. Six CI
+  rounds plus disassembly of the actual failing CI artifact show `%rax`
+  comparing *unequal* to `Qnil` (4) and then reading back as 4 four
+  instructions later, with nothing in between writing it. That points at
+  asynchronous register corruption in cosmopolitan's Windows interrupt
+  delivery — `vm_check_ints_blocking()` is by construction the code that runs
+  immediately after an interrupt was delivered during a blocking region.
+- Frequency: it fired in roughly half of CI runs during the investigation, with
+  21 events in the worst one. It has **never** reproduced locally — ~2100
+  connects on a Win11 VM across eight strategies, plus 10 clean repeats of the
+  full smoke suite against the released binary.
+- It was deliberately **not** papered over with a `NIL_P` guard. If a register
+  really is being corrupted, that guard would hide one symptom of something
+  that can corrupt any other register anywhere else.
+- CI treats exactly this signature as a warning on Windows (retrying once) and
+  keeps every other socket failure hard, so a real regression still goes red.
+
+If your Windows code does heavy socket work, wrap connects in a retry. See
+"Windows follow-up: `kernel_sleep` for nil" in `PORTING-NOTES.md`.
 
 ### `sqlite3` limitations
 
@@ -204,16 +249,20 @@ UTF-8 round-trips, read-only handles, custom SQL functions and aggregates,
 
 ## Platform support, honestly
 
-| Platform | Status |
-| --- | --- |
-| Linux x86-64 | **Verified.** 14/14 smoke checks, sqlite3 5/5, `env -i` from an empty dir, YJIT on. |
-| Windows 11 x86-64 | **Verified.** Smoke script, sqlite3 5/5, `irb.com`, `miniruby.com`. Caveats above (sockets, subprocesses, exit-code shift). |
-| macOS x86-64 | **Verified** on GitHub `macos-15-intel`: everything passes except TCP sockets (see below). |
-| FreeBSD / OpenBSD 7.3+ / NetBSD, x86-64 | **Untested**, same reasoning as macOS. |
-| Linux aarch64 (fat builds) | **Verified on real hardware** (GitHub `ubuntu-24.04-arm`, blocking CI job): 30/30 `ci_smoke.rb` including TCP sockets, sqlite3 5/5, exit-status propagation. `RUBY_PLATFORM` is `aarch64-cosmo`. No YJIT (see above). |
-| macOS aarch64 / Apple Silicon (fat builds) | **Verified** on GitHub `macos-latest`: boots the aarch64 half, `aarch64-cosmo`, sqlite3 5/5. TCP sockets fail (see below) — that is a macOS-wide issue, not an ARM one. |
-| Windows-on-ARM | **Runs, via the OS's x64 emulation.** `windows-11-arm` CI passes, but `RUBY_PLATFORM` there is `x86_64-cosmo`: cosmopolitan's Windows PE half is x86-64 only, so the aarch64 half is not what executes. Non-blocking. |
-| Anything aarch64, using the **x86-64-only** `v4.0.6-cosmo1` assets | **Not supported** — build fat, or wait for the next release. |
+Every row below is a real machine running the **same fat artifact**. Each CI job
+first proves the file contains both an x86-64 and an aarch64 ELF header, so a
+silently-thin build cannot fake an ARM pass.
+
+| Platform | `RUBY_PLATFORM` | Status |
+| --- | --- | --- |
+| Linux x86-64 (Debian 13, GitHub `ubuntu-latest`) | `x86_64-cosmo` | **Verified.** 36/36 `ci_smoke.rb`, 19/19 `test_sockets.rb`, sqlite3 5/5, `env -i` from an empty dir, YJIT on. |
+| Linux aarch64 (GitHub `ubuntu-24.04-arm`, real ARM hardware) | `aarch64-cosmo` | **Verified**, blocking CI job. 36/36, 19/19, sqlite3 5/5, exit status. No YJIT. |
+| Windows 11 x86-64 (Win11 Pro 26200 + GitHub `windows-latest`) | `x86_64-cosmo` | **Verified.** 38/38 `ci_smoke.rb`, 22/22 `test_sockets.rb`, sqlite3 5/5, `irb.com`, `miniruby.com`, HTTPS. Caveats: the intermittent socket flake above, native subprocesses, exit-code shift. |
+| macOS x86-64 (GitHub `macos-15-intel`) | `x86_64-cosmo` | **Verified.** 36/36, 19/19, sqlite3 5/5. TCP now works (it did not in `cosmo1`). |
+| macOS aarch64 / Apple Silicon (GitHub `macos-latest`) | `aarch64-cosmo` | **Verified.** Boots the aarch64 half through the `ape-m1` loader; 36/36, 19/19, sqlite3 5/5. |
+| Windows-on-ARM (GitHub `windows-11-arm`) | `x86_64-cosmo` | **Runs, via the OS's x64 emulation.** Cosmopolitan's Windows PE half is x86-64 only, so the aarch64 half is not what executes. 38/38 anyway. |
+| FreeBSD / OpenBSD 7.3+ / NetBSD | — | **Untested.** No runner was available. Nothing in the build is BSD-hostile and cosmopolitan targets them, but nobody has run it. |
+| Raspberry Pi, ARM Chromebook, other physical ARM devices | — | **Expected to work** (`ubuntu-24.04-arm` is the same aarch64 ELF), but not tried on such a device. |
 
 If you run it somewhere untested, please open an issue either way.
 
@@ -241,12 +290,25 @@ checkout, and [`PORTING-NOTES.md`](PORTING-NOTES.md) for the full engineering
 log: every breakage found in the fork, how it was diagnosed, the Windows
 verification procedure, and a recipe for adding another native-extension gem.
 
+A fat build is one command:
+
+```sh
+FAT=1 COSMO_RUBY=/path/to/bootstrap-ruby.com bash .github/scripts/build-cosmoruby.sh
+# -> dist/{ruby,irb,miniruby}.com + dist/SHA256SUMS
+```
+
 Quick verification of a build you made:
 
 ```sh
-sh third_party/ruby/cosmo_tests/smoke_test.sh o/third_party/ruby/ruby.com
-env -i o/third_party/ruby/ruby.com third_party/ruby/cosmo_tests/test_sqlite3.rb
-sh third_party/ruby/cosmo_tests/win_smoke.sh o/third_party/ruby/ruby.com   # needs a Windows box
+sh third_party/ruby/cosmo_tests/smoke_test.sh dist/ruby.com     # 15 checks
+dist/ruby.com third_party/ruby/cosmo_tests/ci_smoke.rb a b      # 36 checks
+dist/ruby.com third_party/ruby/cosmo_tests/test_sockets.rb      # 19 checks (22 on Windows)
+env -i dist/ruby.com third_party/ruby/cosmo_tests/test_sqlite3.rb
+sh third_party/ruby/cosmo_tests/win_smoke.sh dist/ruby.com      # needs a Windows box
+
+# the aarch64 half, without ARM hardware (needs qemu-user-static)
+qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com -e 'puts RUBY_PLATFORM'
+# => aarch64-cosmo
 ```
 
 ## Credits and licence
@@ -258,8 +320,14 @@ sh third_party/ruby/cosmo_tests/win_smoke.sh o/third_party/ruby/ruby.com   # nee
   vendoring Ruby into the cosmopolitan monorepo, the static-extension build
   mode, the `/zip` stdlib packaging, YJIT, and releases up to v1.3.0.
 - This fork adds an upstream sync, Ruby 4.0.6, the built-in `sqlite3`
-  extension, a Windows crash fix, and the fixes needed to build from a clean
-  checkout.
+  extension, a Windows crash fix, the socket-ABI fix that made TCP work on
+  Windows and macOS, fat x86-64 + aarch64 release binaries with six-platform
+  CI, and the fixes needed to build from a clean checkout.
+
+Two cosmopolitan `getsockopt` bugs were found while verifying the socket work
+(Windows `SO_ERROR` falling through untranslated, and a 1-byte→int widening
+gated on `optlen == 4`; plus `SO_ERROR` untranslated on the unix path). Patches
+and standalone `cosmocc` reproducers are prepared for jart/cosmopolitan.
 
 Cosmopolitan is ISC-licensed (see [`LICENSE`](LICENSE)); Ruby is under the Ruby
 licence / BSD-2-Clause; bundled gems carry their own licences.

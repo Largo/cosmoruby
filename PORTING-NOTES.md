@@ -1686,3 +1686,135 @@ to `ci` and re-read whenever it next fires.**
 If the next firing confirms the register hypothesis, this is a **cosmopolitan
 Windows bug** in signal/interrupt delivery and belongs upstream with the
 disassembly above — not a Ruby bug and not a port bug.
+
+## Release verification for v4.0.6-cosmo2 (2026-08-09, branch `main`)
+
+`main` at `f299e78ce` is the release commit: the fat-APE work, the socket-ABI
+fix and the two cosmopolitan `getsockopt` fixes, all merged. This section
+records the clean rebuild and the verification the artifacts actually went
+through, so the release notes can be checked against something.
+
+### Clean rebuild
+
+```sh
+rm -rf o/ releases/ dist/ build/bootstrap/{mtdeps,automate_mkdeps}
+FAT=1 JOBS=8 COSMO_RUBY=/root/tools/cosmoruby-release/ruby.com \
+  bash .github/scripts/build-cosmoruby.sh
+```
+
+Ran end to end with **no manual intervention** and **exit 0**. Both
+architectures converged on `make` attempt 1/4 (72 s x86-64, 111 s aarch64);
+whole run ≈10 min on 8 cores from a fully cold `o/` (the ≈2 min figure in the
+fat-APE section above is with libc already built). `git status` was clean
+before and after, so the artifacts provably correspond to the committed tree.
+
+Unpackaged products hit their expected deterministic sizes:
+`o/third_party/ruby/ruby` = **12,720,749** B (same as `sqlite3-ext` and
+`fix-windows-sockets`), `o/aarch64/third_party/ruby/ruby` = **11,268,565** B.
+
+### Artifacts
+
+| File | Bytes | SHA256 |
+|---|---:|---|
+| `ruby.com` | 32,976,823 | `bafd6a73a451d732ff90c8fa80e89559d573a49c66bb5e3f6bdaddfc0111e3b0` |
+| `irb.com` | 32,976,770 | `2f4caf4573af0d56dd303550a40f87368e42d63c0e304fc1cf34fce83289b61d` |
+| `miniruby.com` | 27,895,317 | `0c45f3df41af9770def5e51d4edf4e10c13770963e8c0e6f58411182fa2fb8b7` |
+
+`check_ape.sh --verify` on `ruby.com`: APE magic OK, x86_64 ELF @ `0x11000`,
+aarch64 ELF @ `0xc1c000`, Mach-O header (x86_64) @ `0xc98`, gzip-compressed
+`ape-m1.c` present. All three files carry ELF machine types `0x3e` **and**
+`0xb7`.
+
+(Note when scanning for `\x7fELF` naively: a 33 MB binary contains several
+incidental matches in data, which report nonsense machine types such as
+`0x2a84`. The two real program headers are the ones at `0x11000` and
+`0xc1c000`; `check_ape.sh` locates them properly.)
+
+### Local verification of these exact artifacts
+
+Nothing below was inferred from CI — each row is the staged file being run.
+
+| Check | Linux x86-64 (native) | aarch64 (qemu-user) | Windows 11 Pro 26200 |
+|---|---|---|---|
+| `smoke_test.sh` | **15/15** | **15/15** | — |
+| `ci_smoke.rb` | **36/36**, 0 warn | **36/36**, 0 warn | **38/38**, 0 warn |
+| `test_sockets.rb` | **19/19** | **19/19** | **22/22** |
+| `test_sqlite3.rb` | **5/5** (`env -i`, empty dir) | **5/5** | **5/5** (`C:\Users\vagrant`) |
+| `win_smoke.rb` | — | — | pass, `RC=1792` |
+| `ci_exit7.rb` | 7 | 7 | 1792 (= 7 << 8) |
+| `irb.com` pipe mode | `42` | `42` | `42` |
+| `miniruby.com` | 4.0.6, `Gem` defined | 4.0.6, `aarch64-cosmo` | 4.0.6, `Gem` defined |
+| `env -i` from an empty dir | OK | OK | n/a |
+| `RUBY_PLATFORM` | `x86_64-cosmo` | `aarch64-cosmo` | `x86_64-cosmo` |
+| `RbConfig::CONFIG["arch"]` | `x86_64-cosmo` | `aarch64-cosmo` | — |
+| `--yjit` | accepted, `enabled? == true` | accepted, `enabled? == false` | accepted, `enabled? == false` |
+| `Net::HTTP` HTTP / HTTPS | — | — | `example.com` 200, `rubygems.org` **200** |
+| outbound TCP `1.1.1.1:80` | — | — | OK |
+| native subprocess | — | — | fails (`exitstatus nil`, `system` false, backticks `""`) — pre-existing |
+| APE → APE spawn | — | — | OK (exit 5) |
+
+**Negative control for the qemu-user column**, so the aarch64 rows are not
+self-congratulatory:
+
+```
+$ qemu-aarch64 build/bootstrap/ape.aarch64 o/third_party/ruby/ruby.com -e 'puts RUBY_PLATFORM'
+ape error: .../o/third_party/ruby/ruby.com: couldn't find ELF header with AARCH64 machine type   (rc 127)
+$ qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com          -e 'puts RUBY_PLATFORM'
+aarch64-cosmo
+```
+
+The x86-64-only sibling from the *same build* fails under an emulator that
+cannot decode a single x86 instruction, while the fat file boots. That is the
+proof that the aarch64 half exists and is what ran.
+
+### The Windows flake did not reproduce
+
+`ci_smoke.rb` was run **10 consecutive times** on the Win11 VM against the
+release `ruby.com`: 10 × `pass=38 fail=0 warn=0`, zero `kernel_sleep`
+occurrences, plus a clean `test_sockets.rb` (22/22). Consistent with every
+previous local campaign (~2100 connects, zero events) and with the standing
+conclusion that this only manifests on the GitHub Windows runners. It remains
+a documented known issue, not a fixed one.
+
+### Real-hardware CI on the release commit
+
+Run <https://github.com/Largo/cosmoruby/actions/runs/31299831314> (`main`,
+`f299e78ce`) — **all six platform jobs green**, and each one asserts the
+artifact contains both ELF headers before running anything:
+
+| Job | `RUBY_PLATFORM` | `ci_smoke.rb` | `test_sockets.rb` | sqlite3 | suite |
+|---|---|---|---|---|---|
+| `test-linux-x86_64` | `x86_64-cosmo` | 36/0/0 | 19/0/0 | failures=0 | 11/11 |
+| `test-linux-arm64` | `aarch64-cosmo` | 36/0/0 | 19/0/0 | failures=0 | 11/11 |
+| `test-macos-x86_64` | `x86_64-cosmo` | 36/0/0 | 19/0/0 | failures=0 | 11/11 |
+| `test-macos-arm64` | `aarch64-cosmo` | 36/0/0 | 19/0/0 | failures=0 | 11/11 |
+| `test-windows-x86_64` | `x86_64-cosmo` | 38/0/0 | 22/0/0 | failures=0 | 10/10 |
+| `test-windows-arm64` | `x86_64-cosmo` | 38/0/0 | 22/0/0 | failures=0 | 10/10 |
+
+The immediately preceding run on `rc-cosmo2` at the same SHA
+(<https://github.com/Largo/cosmoruby/actions/runs/31299566716>) was also green
+but *did* fire the flake: `test-windows-x86_64` reported `pass=36 fail=0
+warn=2`, one absorbed by `tcp_check`'s retry-once path on `Socket.tcp` and one
+on the soft `::1` check. Same commit, same script, different outcome — which is
+the frequency claim ("roughly half of runs") in one pair of runs.
+
+**Important caveat about all CI numbers**: the CI jobs test the artifact built
+by the *CI build job*, not the files published in the release. They are not
+byte-identical (the YJIT Rust staticlib differs with the runner's `rustc`; see
+"Numbers" above). The release artifacts are the locally built ones in the table
+before this, and every platform in that table was exercised with the actual
+published file. Linux x86-64, aarch64-under-qemu and Windows x86-64 are
+therefore verified on *the shipped bytes*; macOS and real ARM hardware are
+verified on *the same source commit*, one build removed.
+
+### Docs updated for the release
+
+- `README.md` — fat architecture story and new sizes/tag, socket section
+  rewritten from "TCP does not work on Windows or macOS" to the narrow
+  intermittent Windows issue, platform table redone as six verified real
+  platforms, YJIT table extended with macOS and the aarch64 `--yjit` fix,
+  quickstart/verification commands pointed at `dist/`.
+- `BUILDING.md` — fat sizes and timings from this rebuild, verification block
+  updated to the current check counts.
+- `.github/workflows/cosmoruby-ci.yml` — dropped the one-off `rc-cosmo2` push
+  trigger; `main`, `ci` and `fat-ape` remain.

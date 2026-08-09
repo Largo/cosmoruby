@@ -240,6 +240,13 @@ rb_main_run(int argc, char **argv)
     return ruby_run_node(node);
 }
 
+/* Defined in ruby.c.  Both are no-ops on every platform except Windows, where
+ * they replace cosmopolitan's wait-status-encoded process exit code
+ * (status << 8) with the plain status every other Windows program reports.
+ * See the comment next to rb_cosmo_exit_process() in ruby.c. */
+void rb_cosmo_note_main_pid(void);
+void rb_cosmo_exit_process(int status, int flush);
+
 /**
  * Standard main() entry point for Ruby binaries on Cosmopolitan.
  * Calls rb_main_run with properly initialized arguments.
@@ -253,8 +260,13 @@ rb_cosmo_main(int argc, char **argv, int (*rb_main)(int, char **))
      * defined in loadpath.c via -DRUBY_COSMO_LOADPATH_PREFIX. Adding them
      * via RUBYLIB and -I flags would create duplicates.
      * The extensions path is added separately by rb_cosmo_configure_load_path(). */
+    rb_cosmo_note_main_pid();
     ruby_sysinit(&argc, &argv);
-    return rb_main(argc, argv);
+    int status = rb_main(argc, argv);
+    /* ruby_run_node() has already run at_exit handlers, object finalizers and
+     * flushed Ruby's own IO objects by the time it returns a status. */
+    rb_cosmo_exit_process(status, 1);
+    return status;
 }
 
 #endif /* RUBY_COSMO_MAIN_H */

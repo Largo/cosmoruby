@@ -4354,6 +4354,16 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
     else {
         istatus = EXIT_FAILURE;
     }
+#ifdef __COSMOPOLITAN__
+    /* Report the plain status on Windows instead of cosmopolitan's
+     * wait-status encoding (status << 8); see ruby.c.  No flush: exit! must
+     * not run any teardown, and cosmo's _exit() does not flush either.  A
+     * no-op on every other platform, and in forked children. */
+    {
+        void rb_cosmo_exit_process(int status, int flush);
+        rb_cosmo_exit_process(istatus, 0);
+    }
+#endif
     _exit(istatus);
 
     UNREACHABLE_RETURN(Qnil);

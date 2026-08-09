@@ -23,7 +23,8 @@
 #endif
 
 #ifdef __COSMOPOLITAN__
-# include "libc/dce.h"  /* for IsWindows() */
+# include "libc/dce.h"          /* for IsWindows() */
+# include "libc/nt/runtime.h"   /* for TerminateThisProcess() */
 #endif
 
 #if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
@@ -2425,6 +2426,54 @@ cosmo_zip_main_p(void)
     return access(COSMO_ZIP_MAIN, F_OK) == 0;
 }
 
+/* CosmoRuby: honest process exit status on Windows.
+ *
+ * Cosmopolitan Libc encodes a POSIX *wait status* into the Windows process
+ * exit code -- libc/intrin/exit.c does `waitstatus = exitcode << 8` -- so that
+ * a cosmopolitan parent can decode it with WEXITSTATUS().  Native Windows
+ * parents (cmd.exe, PowerShell, make, CI runners) read the number as it is,
+ * which is why `ruby.com -e 'exit 3'` reported 768 there.  Every other program
+ * on Windows reports 3, so ruby.com does too: flush, then terminate with the
+ * honest, POSIX-narrowed status.  TerminateThisProcess() is the same call
+ * _Exit() makes one line after computing the wait status, so the signal-file
+ * cleanup and vfork handling that live in it still happen; only the <<8 is
+ * skipped.
+ *
+ * Only the process that entered main() does this, so a forked child still
+ * reports a wait status to its cosmopolitan parent.  Setting
+ * COSMORUBY_WAIT_STATUS_EXIT to a non-empty value restores the old encoding
+ * for a cosmopolitan parent that decodes with WEXITSTATUS() (ocran's launcher
+ * stub is one).  Everything else -- Linux, macOS, the BSDs, Metal -- is
+ * untouched: rb_cosmo_exit_process() returns immediately and the caller falls
+ * through to the exit path it always used.
+ */
+static int cosmo_main_pid;
+
+void
+rb_cosmo_note_main_pid(void)
+{
+    cosmo_main_pid = (int)getpid();
+}
+
+void
+rb_cosmo_exit_process(int status, int flush)
+{
+    const char *keep;
+
+    if (!IsWindows())
+        return;
+    /* Set by our main(); 0 means Ruby is embedded in someone else's program,
+     * whose exit convention is not ours to change. */
+    if (!cosmo_main_pid || (int)getpid() != cosmo_main_pid)
+        return;
+    if ((keep = getenv("COSMORUBY_WAIT_STATUS_EXIT")) != NULL && *keep)
+        return;
+    if (flush)
+        fflush(NULL);
+    /* POSIX narrows exit codes to eight bits and so does Linux; narrow here
+     * too, so a status means the same thing on every platform. */
+    TerminateThisProcess((uint32_t)(status & 0xff));
+}
 #endif
 
 static VALUE

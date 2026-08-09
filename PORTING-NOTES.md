@@ -2371,3 +2371,488 @@ libxml2+libxslt themselves and ~0.5 MB is the nokogiri ext plus gumbo;
   place and verified at the `Gem::Specification` level, but the end-to-end
   "package a script that requires nokogiri" check is the obvious next step
   and the actual point of the exercise.
+
+## bigdecimal, racc, nio4r and puma — the Rails set (branch `rails-exts`, 2026-08-09)
+
+The four native-extension gems that OCRAN's
+`Direction.cosmo_gem_disposition` flagged as incompatible for a minimal
+Rails app once nokogiri was done (Largo/ocran#53). All four are in, all
+four are exercised by acceptance tests on all six CI platforms, and a
+Rails 8.1.3.1 application now boots inside `ruby.com` and serves HTTP —
+with one documented gap that is **not** about gems at all (see "The
+OpenSSL shim is the remaining blocker" below).
+
+### Versions and provenance
+
+| gem | version | sha256 of the `.gem` |
+|---|---|---|
+| bigdecimal | 4.0.1 | `8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7` |
+| racc | 1.8.1 | `4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f` |
+| nio4r | 2.7.5 | `6c90168e48fb5f8e768419c93abb94ba2b892a1d0602cb06eef16d8b7df1dca1` |
+| puma | 8.0.2 | `c8ed871dfbbe66448ea9ffd46692342d9804d4071522b52b5331b7b6e7b686fb` |
+
+All from `https://rubygems.org/downloads/<gem>-<version>.gem`. Each
+`ext/<gem>/README.cosmo` repeats the URL and hash next to the sources.
+
+`bigdecimal` and `racc` are **bundled gems that Ruby 4.0.6 already ships**
+under `third_party/ruby/.bundle/gems/`; `diff -r` says the vendored copies
+are byte-identical to the published gems, so the version choice made
+itself. Their gemspecs were never installed by this build precisely
+because they declare C extensions — which is the whole problem.
+
+`nio4r` and `puma` are the current releases and are also exactly what
+`bundle install` picks for a `rails new` app on this box (Rails 8.1.3.1,
+`gem "puma", ">= 5.0"`).
+
+### Zero source patches, again
+
+No `.c` or `.h` file of any of the four gems was modified — the standard
+nokogiri set. Two changes were needed *outside* the gems, and one
+packaging bug turned up:
+
+1. **`include/errno_wrapper.h`: guard `SIG_BLOCK` / `SIG_UNBLOCK` /
+   `SIG_SETMASK`.** That header hardcodes Linux constants and is included
+   from `ruby/config.h`, i.e. from `ruby.h`. `nio4r.h` includes libev's
+   `ev.h` (and therefore `<signal.h>`) **before** `ruby.h`, so
+   cosmopolitan's `libc/sysv/consts/sig.h` got there first and the
+   unguarded redefinitions were a `-Werror` failure. Every use of the
+   three in the tree is a function argument to `sigprocmask` /
+   `pthread_sigmask`, never a `case` label, so letting cosmopolitan's
+   host-correct `extern const int`s win where they arrived first is both
+   harmless and more correct — the same principle as the "Socket ABI"
+   section above.
+
+2. **`-Wno-error` on exactly one object.** `nio4r_ext.c` is the
+   translation unit that `#include`s libev's `ev.c`; libev is a unity
+   build and that one TU is ~5,700 lines of foreign C. GCC 14 objects to
+   nested `/*` in comments (`ev.c:573`, `5682-3`), `suggest parentheses
+   around arithmetic in operand of '|'` (`ev.c:4417`), and
+   `'ev_default_loop_ptr' initialized and declared 'extern'`
+   (`ev.c:2136`). The last of those is an **unconditional** GCC
+   diagnostic with no `-Wno-` spelling, so `-Wno-error` is the only lever
+   that does not mean patching libev. It is scoped to that single object
+   in `ext/nio4r/BUILD.mk`; nio4r's own four files stay `-Wall -Werror`.
+   Warnings are still printed.
+
+3. **`io-console`'s `size.rb` was installed at the wrong path** —
+   `assemble_stdlib.sh` put `ext/io/console/lib/console/size.rb` at
+   `/zip/lib/ruby/4.0.0/console/size.rb`, but for an extension the ext
+   directory name *is* the namespace and Ruby installs it as
+   `io/console/size.rb`. `require "io/console/size"` therefore raised
+   LoadError. Nothing in the existing tests noticed; actionpack's
+   `ActionDispatch::Routing::RouteWrapper` requires it while the default
+   middleware stack is built, so this alone stopped Rails booting. Fixed;
+   the old path is still installed as well.
+
+### bigdecimal 4.0.1
+
+Vendored: `ext/bigdecimal/*.{c,h}`, `missing/dtoa.c` (which `missing.c`
+`#include`s — it is not its own TU), `lib/**`, `LICENSE`. Not vendored:
+`sample/`, tests.
+
+`extconf.rb` transcription (`ext/bigdecimal/BUILD.mk`):
+
+```
+-DHAVE_BUILTIN___BUILTIN_CLZ  -DHAVE_BUILTIN___BUILTIN_CLZL
+-DHAVE_BUILTIN___BUILTIN_CLZLL
+-DHAVE_FLOAT_H -DHAVE_MATH_H -DHAVE_STDBOOL_H -DHAVE_STDLIB_H
+-DHAVE_RUBY_ATOMIC_H -DHAVE_RUBY_INTERNAL_HAS_BUILTIN_H
+-DHAVE_RUBY_INTERNAL_STATIC_ASSERT_H
+-DHAVE_RB_COMPLEX_REAL -DHAVE_RB_COMPLEX_IMAG
+-DHAVE_RB_OPTS_EXCEPTION_P -DHAVE_RB_CATEGORY_WARN
+-DHAVE_CONST_RB_WARN_CATEGORY_DEPRECATED
+```
+
+Deliberately **not** defined: `HAVE_X86INTRIN_H`, `HAVE__LZCNT_U32/64`,
+`HAVE_INTRIN_H`, `HAVE___LZCNT`, `HAVE__BITSCANREVERSE`. Those are the
+x86-only (and MSVC-only) leading-zero-count paths in `bits.h`, and this
+tree builds the same flag set for aarch64; `__builtin_clz` is what
+upstream falls back to and is correct everywhere.
+`HAVE_RB_OPTS_EXCEPTION_P` is worth a note: `rb_opts_exception_p` is
+declared only in `internal/object.h`, but it is a global symbol out of
+`object.c` and `bigdecimal.c` declares it itself, so `have_func` would
+succeed and so does the link.
+
+`ext/extinit.c`: `init(Init_bigdecimal, "bigdecimal")`. `lib/bigdecimal.rb`
+does `require 'bigdecimal.so'`, which `DLEXT` (`".so"` in static mode)
+makes match exactly.
+
+### racc 1.8.1 — done properly this time
+
+The xml-libs branch copied `racc/parser.rb` and `racc/info.rb` onto the
+plain load path as a stopgap for nokogiri's generated CSS parser, with no
+gemspec and no C engine. That is now replaced by the whole gem:
+`ext/racc/cparse/cparse.c`, all of `lib/**`, `bin/racc`, a default
+gemspec, and the extension linked in.
+
+Only one `-D`: `-DRACC_INFO_VERSION=1.8.1`, which `cparse.c` stringizes
+into `Racc::Parser::Racc_Runtime_Core_Version_C`. **It has to match
+`Racc::VERSION` in `lib/racc/info.rb`**, or `racc/parser.rb` decides the
+extension is stale (`raise LoadError, 'old cparse.so'`) and silently
+downgrades to the pure-Ruby engine — a performance bug that no `require`
+would ever report. `test_racc.rb` asserts both versions and
+`Racc_Runtime_Type == "c"` for exactly that reason.
+
+`ext/extinit.c`: `init(Init_cparse, "racc/cparse")`.
+
+`assemble_stdlib.sh` also now deletes `gems/bigdecimal-*` and `gems/racc-*`
+from the copied `.bundle` tree: those are gemspec-less second copies of
+Ruby files that `ext/` now installs properly, and dropping them is why the
+`ruby.com` deltas for these two gems come out *negative* (below).
+
+### nio4r 2.7.5 — the backend question, answered
+
+The gem's own `ext/nio4r/` + `ext/libev/` layout is preserved verbatim
+under `third_party/ruby/ext/nio4r/`, because `nio4r_ext.c` does
+`#include "../libev/ev.c"`. That redundant-looking path is what makes the
+vendoring patch-free.
+
+**Cosmopolitan has poll() and select() on every host it supports and has
+neither epoll nor kqueue.** There is no `<sys/epoll.h>` and no
+`<sys/event.h>` anywhere in the tree — only bare `sys_epoll_*.S` /
+`sys_kqueue.S` syscall stubs with no libc wrapper and no non-Linux
+fallback — while `libc/sock/` carries `poll.c` plus `poll-nt.c`,
+`poll-sysv.c` and `poll-metal.c`. So the choice was made for us, and it
+happens to be the portable one the brief asked for:
+
+```
+-DEV_STANDALONE=1
+-DEV_USE_POLL=1        -DEV_USE_SELECT=1
+-DEV_USE_EPOLL=0       -DEV_USE_KQUEUE=0      -DEV_USE_PORT=0
+-DEV_USE_LINUXAIO=0    -DEV_USE_IOURING=0
+-DEV_USE_INOTIFY=0     -DEV_USE_SIGNALFD=0    -DEV_USE_EVENTFD=0
+-DEV_USE_TIMERFD=0     -DEV_USE_CLOCK_SYSCALL=0
+-DEV_USE_MONOTONIC=1   -DEV_USE_REALTIME=1    -DEV_USE_NANOSLEEP=1
+-DHAVE_UNISTD_H -DHAVE_POLL_H -DHAVE_SYS_SELECT_H -DHAVE_SYS_RESOURCE_H
+-DHAVE_RB_IO_DESCRIPTOR
+-fno-strict-aliasing
+```
+
+Notes on the ones that are not simply "the header is missing":
+
+- **the Linux notification helpers are off on purpose.** `eventfd`,
+  `signalfd`, `inotify` and `timerfd` would compile (cosmopolitan has the
+  syscall stubs) and then return `ENOSYS` on a Mac or on Windows. With
+  `EV_USE_EVENTFD=0` libev falls back to an ordinary pipe for its async
+  wakeup, which is what `NIO::Selector#wakeup` rides on.
+- **`EV_USE_CLOCK_SYSCALL=0`** — that is a glibc-specific raw-syscall
+  shortcut. Cosmopolitan is not glibc, so go through `clock_gettime`.
+- **`-fno-strict-aliasing`** mirrors what `extconf.rb` appends to
+  `CONFIG["optflags"]`; libev type-puns its watchers.
+- upstream's `extconf.rb` gates `EV_USE_POLL` on
+  `have_type("port_event_t", "poll.h")`, which is a Solaris check and a
+  bug — on Linux nio4r therefore ships with epoll and *without* poll. Do
+  not copy that line.
+
+Verified at runtime, not just at compile time:
+`NIO::Selector.new.backend` → `:poll`, `NIO::Selector.backends` →
+`[:poll, :select]`, `NIO::ENGINE` → `"libev"`.
+
+`ext/extinit.c`: `init(Init_nio4r_ext, "nio4r_ext")`. Note that
+`lib/nio.rb` decides between the C and pure-Ruby engines with
+`Gem.win_platform?`, which is false under CosmoRuby (`RUBY_PLATFORM` is
+`x86_64-cosmo`), so the C extension is used on Windows too. If that ever
+misbehaves on some host, `NIO4R_PURE=true` in the environment selects the
+pure-Ruby `Kernel.select` engine, which is shipped alongside.
+
+### Two bugs the new tests found, both pre-existing and neither about gems
+
+CI on this branch turned up two failures that had nothing to do with the
+four gems and everything to do with the port. Both were invisible before
+because nothing in the tree exercised the code path.
+
+#### 1. `poll()` used the Linux numbering on Windows
+
+`test_nio4r.rb` failed six checks on **windows-x86_64 and windows-arm64
+only** — `readable socket is selected`, `a writable socket is selected for
+:w`, `several sockets, only the ready ones come back`, and friends. Every
+socket readiness check timed out; registration, `wakeup`, `ByteBuffer` and
+everything that does not depend on a socket becoming ready passed. Puma
+then failed exactly the requests that go through its Reactor (keep-alive,
+concurrency, a POST large enough to be read in two goes) with
+`Net::ReadTimeout`, and served the rest.
+
+The cause is the `POLL*` block in `include/errno_wrapper.h`, which the
+"Left unfixed (flagged, and now shown to be dead code): POLL*" section
+above describes exactly:
+
+> cosmopolitan's Windows poll (`libc/calls/poll-nt.c:57-66`) works in
+> Winsock's numbering — `POLLIN_ 0x0300`, `POLLOUT_ 0x0010`, `POLLERR_
+> 0x0001` — so a caller passing the Linux `POLLIN` (1) would be passing
+> Winsock's `POLLERR`, which `poll-nt.c:118` masks away entirely.
+
+and which ends "Revisit only if `USE_POLL` ever becomes defined here."
+`USE_POLL` is still not defined — but a poll() caller appeared anyway:
+libev's poll backend, i.e. `ext/nio4r`. It is compiled with
+`RUBY_COSMOPOLITAN`, so it inherited the Linux numbering and asked Windows
+for POLLERR on every socket.
+
+The fix keeps the blast radius at one extension.
+`errno_wrapper.h`'s POLL block and its four `#define`d cosmopolitan header
+guards are now inside `#ifndef COSMO_RUBY_HOST_POLL`, and
+`ext/nio4r/BUILD.mk` passes `-DCOSMO_RUBY_HOST_POLL`, so those four
+translation units — and only those — get cosmopolitan's real `<poll.h>`
+with its host-correct `extern const int16_t POLL*` values and its real
+`struct pollfd`. Nothing else in the tree changes.
+
+The general fix is to delete the block outright, which as far as anyone
+can tell is safe (`io.c`'s `STATIC_ASSERT(pollin_expected, …)` is inside
+`#if USE_POLL` and is not compiled; `ruby/io.h` already has an
+`#if defined(HAVE_POLL) && !defined(__COSMOPOLITAN__)` branch that keeps
+`RB_WAITFD_*` as plain numbers). That has a much larger blast radius and
+is left for a branch of its own.
+
+**Standing rule, restated:** a constant that cosmopolitan exports as
+`extern const` is exported that way because it differs per host. Any
+CosmoRuby header that redefines one as a compile-time Linux number is a
+bug waiting for its first caller. `POLL*` has now had its first caller;
+`SIG_BLOCK`/`SIG_UNBLOCK`/`SIG_SETMASK` in the same header are now
+`#ifndef`-guarded for the same reason.
+
+#### 2. Fibers were broken on the aarch64 half of every fat APE
+
+`test_racc.rb` **segfaulted** on linux-arm64 and **hung until the 30
+minute job timeout** on macos-arm64, while passing everywhere else.
+Bisecting under `qemu-aarch64 build/bootstrap/ape.aarch64` narrowed it to
+one line of racc's own grammar parser:
+
+```
+call  Racc::GrammarFileParser#_add_rule_block  racc/grammarfileparser.rb:244
+c_call Enumerator#next                         racc/grammarfileparser.rb:248
+qemu: uncaught target signal 11 (Segmentation fault)
+```
+
+`Enumerator#next` is a Fiber. And a Fiber, on the aarch64 half, is
+instant death:
+
+```
+$ qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com \
+    -e 'f = Fiber.new { Fiber.yield 1 }; p f.resume'
+qemu: uncaught target signal 11 (Segmentation fault) - core dumped
+```
+
+`third_party/ruby/include/ruby/config.h` had
+
+```c
+#define COROUTINE_H "coroutine/amd64/Context.h"
+```
+
+flat, with no arch condition — configure ran on an x86_64 host and could
+not know any better. `ruby.deps.mk` *does* pick the right assembly
+(`ifeq ($(ARCH),aarch64)` → `coroutine/arm64/Context.S`), so the aarch64
+build assembled the ARM context switcher and then compiled `cont.c`
+against the **amd64** struct: `COROUTINE_REGISTERS` is 6 on amd64 and
+`(0xa0 + TEB_OFFSET) / 8` = 20 on arm64, so `coroutine_transfer` wrote
+160 bytes into a 48-byte structure on its first use.
+
+Fixed by making the include arch-conditional in `config.h`
+(`#if defined(__aarch64__)`), which is the only place that can decide it,
+since `config.h` is generated once and shared by both halves of a fat
+build.
+
+This was **pre-existing** — it is not specific to this branch, it affected
+the `fat-ape`, `xml-libs` and `main` builds identically, and it means
+every previously released fat APE segfaults on `Enumerator#next`,
+`Enumerator::Lazy`, `Enumerator#peek`, `Enumerator#size` on a lazy chain,
+`String#each_char.next`, and every `Fiber` a user writes, on ARM. Nothing
+in `smoke_test.sh`, `ci_smoke.rb`, `test_sockets.rb`, `test_sqlite3.rb` or
+`test_nokogiri.rb` used a Fiber, so six-platform CI had been green over it
+the whole time. `test_racc.rb` is the first test that does.
+
+### puma 8.0.2 — no SSL, and that is upstream's own configuration
+
+Vendored: `ext/puma_http11/*.{c,h}` (`http11_parser.c` ships
+pre-generated, so no Ragel at build time), the `.rl` files for reference,
+all of `lib/**` including `lib/rack/handler/puma.rb`, `LICENSE`.
+
+The only `-D` is `-DHAVE_RB_EXT_RACTOR_SAFE`, plus
+`-Wno-implicit-fallthrough` for the Ragel state machine (upstream passes
+the same when it turns warnings into errors).
+
+**SSL is compiled out.** `mini_ssl.c` is compiled with
+`HAVE_OPENSSL_BIO_H` *undefined*, which is exactly what upstream's
+`extconf.rb` produces when it cannot find OpenSSL or when
+`PUMA_DISABLE_SSL` is set: the entire file is inside
+`#ifdef HAVE_OPENSSL_BIO_H`, so it becomes an empty translation unit, and
+`puma_http11.c` skips its `Init_mini_ssl()` call under the same guard.
+The Ruby side handles it natively —
+
+```ruby
+HAS_SSL = const_defined?(:MiniSSL, false) && MiniSSL.const_defined?(:Engine, false)
+```
+
+— becomes `false`. What you lose: `bind "ssl://…"`, the `ssl_bind` DSL,
+and `Puma::MiniSSL::Context`. What you keep: everything else, including
+`Puma::Server#run` over plain HTTP, which is all a packaged app behind a
+reverse proxy needs. The reason it had to go is that this build's
+`openssl` is a 413-line MbedTLS shim (`third_party/ruby/lib/openssl.rb`
+over `ext/mbedtls`), *not* Ruby's OpenSSL extension — `ext/openssl/` is
+vendored in the tree but has never been added to `ruby.deps.mk` — and it
+exposes none of the `BIO_*` / `SSL_CTX_*` / `X509_*` / `DH_*` C API
+`mini_ssl.c` uses.
+
+`mini_ssl.c` is still listed as a source so the vendored tree and the
+build stay in one-to-one correspondence and a future MbedTLS-backed port
+is a flag flip. It contributes zero bytes today.
+
+`ext/extinit.c`: `init(Init_puma_http11, "puma/puma_http11")`.
+
+### Tests
+
+Four new files, wired into `.github/scripts/test-cosmoruby.{sh,ps1}` next
+to `test_nokogiri.rb`, so they run on all six CI platforms:
+
+| test | checks | what it covers |
+|---|---|---|
+| `test_bigdecimal.rb` | 44 | construction from String/Integer/Float/Rational/BigDecimal/Complex, 100-digit division, 40! exactly, `sqrt`, every rounding mode, `mode()` for exceptions, NaN/Infinity, all of `BigMath` (PI, E, sqrt, log/exp round trip, sin), `to_d`/`to_r` interop, `split`, `precision`/`scale`, Marshal, sorting |
+| `test_racc.rb` | 21 | `Racc_Runtime_Type == "c"` and the cparse/info version agreement; then **generates a parser from a grammar at runtime** with `GrammarFileParser` + `States` + `ParserFileGenerator`, evals it and drives it: precedence, associativity, 200-deep nesting, a 2000-term expression, `Racc::ParseError`, the `yyparse` push entry point; and nokogiri's CSS parser on the same runtime |
+| `test_nio4r.rb` | 24 | backend is `:poll`; register/deregister/`registered?`; timeout, `select(0)`, readable, writable, interest changes, `Monitor#value` (how puma finds its client), 8 sockets with only 3 ready, cross-thread `wakeup`, GVL release during a blocking select, `ByteBuffer` including `read_from`/`write_to` a socket |
+| `test_puma.rb` | 25 | `Puma::HAS_SSL == false`; the Ragel parser directly (request line, query string, fragment, header folding, partial requests, malformed input, a 200 KB header, reset/reuse); then a **real `Puma::Server` on loopback** — GET, POST with a body, multi-part Rack bodies, 404, keep-alive, a 512 KB response, four concurrent requests across the thread pool, HTTP/1.0, garbage on the wire answered with 400, clean shutdown |
+
+Each also asserts the gem is registered as a **default gem**, which is
+the mechanism ocran's payload-provides-gem check relies on; `test_puma.rb`
+additionally resolves puma's `nio4r ~> 2.0` dependency out of the payload.
+
+Local results (Debian 13 amd64, `o/third_party/ruby/ruby.com`):
+
+```
+test_bigdecimal  pass=44 fail=0
+test_racc        pass=21 fail=0
+test_nio4r       pass=24 fail=0
+test_puma        pass=25 fail=0
+```
+
+No regressions: `smoke_test.sh` 15/15, `ci_smoke.rb` 36/36,
+`test_sockets.rb` 19/19 SOCKET-OK, `test_sqlite3.rb` failures=0,
+`test_nokogiri.rb` 36/36.
+
+### Size impact — under 1 % for all four
+
+Measured by rebuilding the same tree five times with the extensions
+enabled cumulatively, forcing a relink each time (a stale `ruby` binary
+is exactly the failure mode the recipe warns about; the first attempt at
+this table produced a "baseline" that was silently the full build).
+
+| step | `ruby` (zipless) | Δ | `ruby.com` | Δ |
+|---|---|---|---|---|
+| xml-libs baseline | 14,625,389 | — | 23,265,232 | — |
+| + bigdecimal | 14,695,021 | **+69,632** | 23,252,801 | **−12,431** |
+| + racc | 14,707,309 | **+12,288** | 23,215,430 | **−37,371** |
+| + nio4r | 14,760,557 | **+53,248** | 23,275,973 | **+60,543** |
+| + puma | 14,776,941 | **+16,384** | 23,408,593 | **+132,620** |
+| **total** | | **+151,552 (+1.04 %)** | | **+143,361 (+0.62 %)** |
+
+The two negative `ruby.com` deltas are real: bigdecimal and racc were
+already in the zip twice over as gemspec-less `.bundle/gems` copies, and
+`assemble_stdlib.sh` now drops those in favour of the single `ext/` copy.
+So bigdecimal and racc cost 82 KB of native code and *save* 50 KB of zip.
+puma is the opposite shape — 16 KB of C, 133 KB of compressed Ruby (its
+`lib/` is ~450 KB of source).
+
+For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri cost
++2,033 KB (+9.6 %). All four of these together are +0.62 %.
+
+(The reproduced baseline is 4,096 / 7,744 bytes off the numbers recorded
+for `xml-libs` HEAD — link padding plus the `errno_wrapper.h` comment.
+The last row reproduces the committed build byte for byte.)
+
+### Rails 8.1.3.1 boots inside `ruby.com` and serves HTTP
+
+Using the application that OCRAN's own test generates
+(`ocran/rails/test/rails_app_generator.rb` from Largo/ocran#53:
+`rails new --minimal --database=sqlite3`, a `bin/rails generate scaffold
+Widget`, two hand-written controllers, an ERB view added on the fly, and
+`server.rb` which runs `Puma::Server.new(Rails.application)` directly),
+with `GEM_PATH` pointing at a curated tree of the *pure-Ruby* halves of
+Rails 8.1.3.1 and `/zip/lib/ruby/gems/4.0.0`:
+
+```
+$ ruby.com -e 'require "rails"; puts Rails::VERSION::STRING'
+8.1.3.1
+
+$ ruby.com server.rb
+== 20260809175359 CreateWidgets: migrated (0.0022s) ===========================
+OCRAN-RAILS-READY port=3124
+
+$ curl -s http://127.0.0.1:3124/status
+{"ok":true,"rails":"8.1.3.1","env":"production","ruby":"4.0.6",
+ "platform":"x86_64-cosmo","packaged":false,"script":"server.rb",
+ "database":".../demo.sqlite3","adapter":"SQLite",
+ "sqlite_version":"3.40.0","widget_count":0}
+```
+
+`GET /` (the scaffold index), `GET /report` (the ERB template written by
+the test rather than by a generator) and `GET /status` all return 200, and
+ActiveRecord round-trips real rows:
+
+```
+AR-COUNT=3   AR-SUM=30   AR-WHERE=["w1", "w2"]
+AR-JSON={"id":1,"name":"w0","qty":0,"created_at":"2026-08-09T18:10:28.432Z",…}
+AR-SQLITE=3.40.0
+```
+
+So: railties, activesupport, activemodel, activerecord, actionpack,
+actionview, zeitwerk, rack 3.2, tzinfo, i18n, concurrent-ruby, erubi and
+the rest load and run unmodified on CosmoRuby, over the sqlite3, nokogiri,
+bigdecimal, nio4r, puma and racc extensions this port provides.
+
+### The OpenSSL shim is the remaining blocker — and it is not a gem
+
+The boot above needed **one** shim file preloaded (`-r openssl_gap_probe.rb`,
+kept out of the repo because none of it is cryptographically real). Every
+missing piece is in `third_party/ruby/lib/openssl.rb`, the MbedTLS shim —
+no gem is missing, and nothing else about Rails needed help. Precisely:
+
+1. **`OpenSSL::Cipher` does not exist.** `ActiveSupport::MessageEncryptor`
+   does `OpenSSLCipherError = OpenSSL::Cipher::CipherError` at class-body
+   time, so merely `require "rails"` raises `NameError` without it. Needs
+   at least AES-256-GCM and AES-256-CBC with `#encrypt`, `#decrypt`,
+   `#key=`, `#iv=`, `#auth_data=`, `#auth_tag`, `#authenticated?`,
+   `#update`, `#final`, `#random_iv`, `#key_len`, `#iv_len`.
+2. **`OpenSSL::Digest` is a module of aliases, not a class hierarchy.**
+   `ActiveSupport::KeyGenerator.hash_digest_class=` explicitly rejects
+   anything that is not an `OpenSSL::Digest` subclass, so
+   `OpenSSL::Digest::SHA256 = ::Digest::SHA256` is not good enough. It has
+   to be `class OpenSSL::Digest < ::Digest::Class` with real subclasses.
+3. **`OpenSSL::HMAC`, `OpenSSL::KDF.pbkdf2_hmac` and
+   `OpenSSL::PKCS5.pbkdf2_hmac` are absent**, and
+   `ActiveSupport::KeyGenerator` uses PBKDF2 to derive every key Rails
+   signs or encrypts with.
+4. **`OpenSSL.fixed_length_secure_compare` is absent** — and the shim's
+   own `OpenSSL.secure_compare` *calls* it, so that method is dead code
+   as shipped.
+
+There is also a deployment consequence worth writing down: Rails 8's
+ActiveRecord railtie reads `Rails.application.credentials` during boot
+whenever ActiveRecord is loaded, which decrypts `config/credentials.yml.enc`
+with AES-256-GCM. Until (1) is real, **a packaged Rails app must not ship
+`config/credentials.yml.enc`** (delete it and use `SECRET_KEY_BASE`); with
+the file present the boot dies inside `ActiveSupport::EncryptedFile` no
+matter what else works.
+
+Fixing this means giving `ext/mbedtls` a cipher/HMAC/PBKDF2 surface —
+mbedtls has AES, GCM, MD and PKCS5 — and rewriting the shim on top. It is
+a bounded job, but it is an openssl job, not a gem-vendoring job, so it
+was deliberately left out of this branch.
+
+### What is left before OCRAN can package a Rails app as an APE
+
+- **the OpenSSL shim work above.** This is the only functional blocker.
+- **ocran has still not been run end to end** against this `ruby.com`
+  (the same caveat the nokogiri section ends on). All six gems now appear
+  in `Gem::Specification` as default gems, which is what the
+  payload-provides-gem short-circuit in `lib/ocran/direction.rb` keys on,
+  but nobody has yet asked ocran to build a Rails `.com`.
+- **the curated `GEM_PATH` is a stand-in for what ocran will do.** The
+  boot above pointed `GEM_PATH` at a tree of pure-Ruby Rails gems with the
+  six natively-provided ones removed. ocran packs the gems it observes
+  being loaded, so it should arrive at the same set, but that is an
+  assumption until it is run.
+- **Windows has not been booted by hand** for this branch; the standing
+  rule in the "Windows verification" section still applies before a
+  release. CI covers windows-x86_64 and windows-arm64 with all four new
+  tests.
+- **nio4r on Windows is the thing to watch.** libev's poll backend and its
+  pipe-based wakeup both go through cosmopolitan's `poll-nt.c`. It passes
+  in CI; if it ever does not, `NIO4R_PURE=true` is the escape hatch and
+  puma will still work.

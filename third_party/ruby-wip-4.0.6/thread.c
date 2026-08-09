@@ -206,7 +206,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
  */
 #ifdef COSMO_DIAG_SCHEDULER
 void cosmo_diag_scheduler_report(const char *, unsigned long, unsigned long,
-                                 unsigned long);
+                                 unsigned long, unsigned long, unsigned long);
 #endif
 
 #define RUBY_VM_CHECK_INTS_BLOCKING(ec) vm_check_ints_blocking(ec)
@@ -233,10 +233,16 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
     if (result || RUBY_VM_INTERRUPTED(ec)) {
         VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
 #ifdef COSMO_DIAG_SCHEDULER
+        /* snap is volatile so the returned value is spilled to the stack
+         * immediately, before the comparison.  If the guard is entered while
+         * `scheduler` reads back as Qnil, comparing snap against scheduler
+         * says whether the register changed under us. */
+        volatile unsigned long cosmo_snap = (unsigned long)scheduler;
         if (scheduler != Qnil)
             cosmo_diag_scheduler_report("check_ints", (unsigned long)th,
                                         (unsigned long)th->blocking,
-                                        (unsigned long)scheduler);
+                                        (unsigned long)scheduler,
+                                        cosmo_snap, (unsigned long)Qnil);
 #endif
         if (scheduler != Qnil) {
             rb_fiber_scheduler_yield(scheduler);

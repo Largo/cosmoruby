@@ -30,19 +30,18 @@
 static int cosmo_diag_sched_budget = 12;
 void
 cosmo_diag_scheduler_report(const char *where, unsigned long thread,
-                            unsigned long blocking, unsigned long scheduler)
+                            unsigned long blocking, unsigned long scheduler,
+                            unsigned long snap, unsigned long qnil_caller)
 {
     if (cosmo_diag_sched_budget-- <= 0)
         return;
     char buf[256];
     int n = snprintf(buf, sizeof buf,
-                     "DIAG[%s] th=%#lx blocking=%lu scheduler=%#lx "
-                     "Qnil=%#lx Qfalse=%#lx Qundef=%#lx nilp=%d special=%d\n",
-                     where, thread, blocking, scheduler,
-                     (unsigned long)RUBY_Qnil, (unsigned long)RUBY_Qfalse,
-                     (unsigned long)RUBY_Qundef,
-                     (int)NIL_P((VALUE)scheduler),
-                     (int)RB_SPECIAL_CONST_P((VALUE)scheduler));
+                     "DIAG[%s] th=%#lx blocking=%lu scheduler=%#lx snap=%#lx "
+                     "qnil_caller=%#lx Qnil=%#lx nilp=%d\n",
+                     where, thread, blocking, scheduler, snap, qnil_caller,
+                     (unsigned long)RUBY_Qnil,
+                     (int)NIL_P((VALUE)scheduler));
     /* fd 1, not fd 2: PORTING-NOTES records that native stderr gets mangled
      * when an APE runs under the Windows harness, and stdout is demonstrably
      * captured (every other line of the diagnostic arrives). */
@@ -575,7 +574,7 @@ VALUE
 rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE timeout)
 {
 #ifdef COSMO_DIAG_SCHEDULER
-    cosmo_diag_scheduler_report("kernel_sleep", 0, 0, (unsigned long)scheduler);
+    cosmo_diag_scheduler_report("kernel_sleep", 0, 0, (unsigned long)scheduler, (unsigned long)scheduler, (unsigned long)Qnil);
 #endif
     return rb_funcall(scheduler, id_kernel_sleep, 1, timeout);
 }
@@ -584,7 +583,7 @@ VALUE
 rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
 {
 #ifdef COSMO_DIAG_SCHEDULER
-    cosmo_diag_scheduler_report("kernel_sleepv", 0, 0, (unsigned long)scheduler);
+    cosmo_diag_scheduler_report("kernel_sleepv", 0, 0, (unsigned long)scheduler, (unsigned long)scheduler, (unsigned long)Qnil);
 #endif
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
 }
@@ -600,7 +599,7 @@ VALUE
 rb_fiber_scheduler_yield(VALUE scheduler)
 {
 #ifdef COSMO_DIAG_SCHEDULER
-    cosmo_diag_scheduler_report("yield", 0, 0, (unsigned long)scheduler);
+    cosmo_diag_scheduler_report("yield", 0, 0, (unsigned long)scheduler, (unsigned long)scheduler, (unsigned long)Qnil);
 #endif
     // First try to call the scheduler's yield method, if it exists:
     VALUE result = rb_check_funcall(scheduler, id_yield, 0, NULL);

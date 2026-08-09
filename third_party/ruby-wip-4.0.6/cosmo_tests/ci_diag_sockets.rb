@@ -13,6 +13,40 @@
 
 require "socket"
 
+# ---------------------------------------------------------------- nil probes
+#
+# `kernel_sleep` on nil is reachable from exactly three C call sites.  Verified
+# at link level with nm: the only objects referencing the symbols are
+# thread.o (rb_fiber_scheduler_yield from vm_check_ints_blocking, and
+# rb_fiber_scheduler_kernel_sleep from mutex_sleep_begin) and process.o
+# (rb_fiber_scheduler_kernel_sleepv from rb_f_sleep).  All three are guarded by
+# `if (scheduler != Qnil)` in the source, so observing the call at all is the
+# finding.
+#
+# rb_fiber_scheduler_yield() tries `scheduler.yield` first and only falls back
+# to `scheduler.kernel_sleep(0)`.  So defining both on NilClass tells us which
+# site fired, and the argument disambiguates further:
+#
+#   :yield        with []      -> rb_fiber_scheduler_yield(nil), i.e. thread.c
+#   :kernel_sleep with [0]     -> same, if #yield somehow did not take
+#   :kernel_sleep with [nil|f] -> mutex_sleep_begin (ConditionVariable#wait)
+#   :kernel_sleep with 0 args  -> rb_f_sleep (Kernel#sleep)
+#
+# The probes return nil rather than raising, so the operation continues and we
+# also learn whether anything else breaks behind the NoMethodError.
+$nil_hits = []
+class NilClass
+  def yield(*args)
+    $nil_hits << [:yield, args, Thread.current == Thread.main, caller.first(4)]
+    nil
+  end
+
+  def kernel_sleep(*args)
+    $nil_hits << [:kernel_sleep, args, Thread.current == Thread.main, caller.first(4)]
+    nil
+  end
+end
+
 def hr(title)
   puts
   puts "-" * 70
@@ -160,6 +194,55 @@ scenarios.each_key do |name|
     results_warm[name] ? "ok" : "FAIL",
     results_again[name] ? "ok" : "FAIL",
   ]
+end
+
+# --------------------------------------------------- tight HEv2 churn loop
+# The matrix above showed the failure is specifically the *first*
+# TCPSocket.new(<hostname>) after Ruby thread churn -- i.e. the C Happy
+# Eyeballs v2 path in ext/socket/ipsocket.c, not the generic connect path.
+# Hammer exactly that shape.
+hr "pass 4: churn -> first HEv2 connect, repeated"
+def churn_once
+  q = Queue.new
+  m = Mutex.new
+  n = 0
+  ts = 4.times.map { Thread.new { 25.times { m.synchronize { n += 1 } }; q << :done } }
+  ts.each(&:join)
+end
+
+loop_errors = Hash.new(0)
+loop_n = 200
+loop_n.times do |i|
+  churn_once
+  begin
+    with_server("localhost") do |_, port|
+      s = TCPSocket.new("localhost", port)
+      s.read(2)
+      s.close
+    end
+  rescue Exception => e
+    loop_errors["#{e.class}: #{e.message}"] += 1
+    if loop_errors.values.sum <= 3
+      puts "  iter #{i}: #{e.class}: #{e.message}"
+      Array(e.backtrace).first(3).each { |l| puts "      bt: #{l}" }
+    end
+  end
+end
+puts "  iterations=#{loop_n} errors=#{loop_errors.inspect}"
+
+# ------------------------------------------------------------------- verdict
+hr "nil-receiver probe verdict"
+puts "  NilClass hook hits = #{$nil_hits.size}"
+if $nil_hits.empty?
+  puts "  VERDICT: no C call reached nil.yield / nil.kernel_sleep in this run."
+else
+  tally = Hash.new(0)
+  $nil_hits.each { |m, args, main, _| tally[[m, args.inspect, main]] += 1 }
+  tally.each { |(m, args, main), n| puts "  HIT #{m} args=#{args} main_thread=#{main} x#{n}" }
+  puts "  first hit ruby frames:"
+  Array($nil_hits.first[3]).each { |l| puts "      #{l}" }
+  puts "  VERDICT: rb_fiber_scheduler_* was invoked with a nil scheduler" \
+       " -- the `scheduler != Qnil` guard was bypassed."
 end
 
 puts

@@ -57,12 +57,26 @@ def tcp_check(name, windows)
   attempts = 0
   begin
     attempts += 1
-    check(name) { yield }
+    ok = yield
+    if ok
+      $pass += 1
+      puts "  [PASS] #{name}"
+    else
+      $fail += 1
+      puts "  [FAIL] #{name} :: returned #{ok.inspect}"
+    end
   rescue Exception => e
-    raise unless windows && known_nil_scheduler?(e)
-    retry if attempts < 2
-    $warn += 1
-    puts "  [WARN] #{name} :: known Windows nil-scheduler flake (#{e.class}: #{e.message})"
+    # Note: this cannot delegate to check(), which rescues internally -- the
+    # exception would never reach here.
+    if windows && known_nil_scheduler?(e)
+      retry if attempts < 2
+      $warn += 1
+      puts "  [WARN] #{name} :: known Windows nil-scheduler flake (#{e.class}: #{e.message})"
+    else
+      $fail += 1
+      puts "  [FAIL] #{name} :: #{e.class}: #{e.message}"
+      Array(e.backtrace).first(3).each { |l| puts "         #{l}" }
+    end
   end
 end
 

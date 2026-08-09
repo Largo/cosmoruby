@@ -29,6 +29,7 @@ $(THIRD_PARTY_RUBY_A_OBJS): private				\
             -Ithird_party/zlib					\
             -DRUBY_EXPORT					\
             -DRUBY_COSMOPOLITAN					\
+            -DCOSMO_DIAG_SCHEDULER				\
             -include third_party/ruby/include/ruby/cosmo.h	\
             -UHAVE_DLADDR					\
             $(LIBC_MEM_ALLOCATOR_FLAGS)				\

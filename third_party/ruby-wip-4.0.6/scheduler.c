@@ -557,9 +557,41 @@ rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
  *
  *  Yield to the scheduler, to be resumed on the next scheduling cycle.
  */
+#ifdef COSMO_DIAG_SCHEDULER
+/* TEMPORARY.  Remove before release.  See PORTING-NOTES.md, "kernel_sleep for
+ * nil".  vm_check_ints_blocking() guards this call with `scheduler != Qnil`
+ * and the guard is present in the emitted code (verified by disassembly), yet
+ * on the GitHub windows runner the call lands on NilClass#yield.  Print the
+ * raw values so we can see what is actually being passed. */
+#include <stdio.h>
+#include <unistd.h>
+static int cosmo_diag_sched_budget = 12;
+void
+cosmo_diag_scheduler_report(const char *where, unsigned long thread,
+                            unsigned long blocking, unsigned long scheduler)
+{
+    if (cosmo_diag_sched_budget-- <= 0)
+        return;
+    char buf[256];
+    int n = snprintf(buf, sizeof buf,
+                     "DIAG[%s] th=%#lx blocking=%lu scheduler=%#lx "
+                     "Qnil=%#lx Qfalse=%#lx Qundef=%#lx nilp=%d special=%d\n",
+                     where, thread, blocking, scheduler,
+                     (unsigned long)RUBY_Qnil, (unsigned long)RUBY_Qfalse,
+                     (unsigned long)RUBY_Qundef,
+                     (int)NIL_P((VALUE)scheduler),
+                     (int)RB_SPECIAL_CONST_P((VALUE)scheduler));
+    if (n > 0)
+        write(2, buf, (size_t)n);
+}
+#endif
+
 VALUE
 rb_fiber_scheduler_yield(VALUE scheduler)
 {
+#ifdef COSMO_DIAG_SCHEDULER
+    cosmo_diag_scheduler_report("yield", 0, 0, (unsigned long)scheduler);
+#endif
     // First try to call the scheduler's yield method, if it exists:
     VALUE result = rb_check_funcall(scheduler, id_yield, 0, NULL);
     if (!UNDEF_P(result)) return result;

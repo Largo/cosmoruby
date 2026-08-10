@@ -3835,6 +3835,31 @@ the numbers recorded for the `rails-exts` head.)
 For scale: sqlite3 cost +928 KB and libxml2+libxslt+nokogiri +2,033 KB.
 The whole OpenSSL surface is +45 KB on the fat APE.
 
+### CI
+
+`openssl-cipher` is on the push triggers in `cosmoruby-ci.yml`, so every
+push builds a fat APE and runs the full driver on all six platforms.
+
+| run | head | result |
+|---|---|---|
+| [31337439372](https://github.com/Largo/cosmoruby/actions/runs/31337439372) | `4efbdb7ae` | 6/6 green |
+| [31338062092](https://github.com/Largo/cosmoruby/actions/runs/31338062092) | `0468b5b39` | 6/6 green |
+| [31339044620](https://github.com/Largo/cosmoruby/actions/runs/31339044620) | `b4f73d603` | 6/6 green (after re-running one job, see below) |
+
+`test_openssl.rb` has passed on every platform in every run, including
+both Windows runners and both aarch64 runners, first time.
+
+The one red job in the three runs was **the known `windows-latest` socket
+flake**, not this work: `test_sockets.rb` failed with
+`NoMethodError: undefined method 'kernel_sleep' for nil` on
+`getsockopt IPPROTO_TCP TCP_NODELAY`, which is the open issue documented
+under "Windows follow-up: `kernel_sleep for nil`" above. In the same job
+`test_openssl.rb` reported `failures=0`, this branch touches no socket,
+thread or fiber code, and re-running the job passed. Consistent with the
+measured rate (14–20 % of blocking connects on `windows-latest`, 0 % on
+`windows-11-arm`), so it is a fourth `windows-latest` sample for whoever
+picks that investigation up.
+
 ### What is still not there
 
 Deliberately, and loudly — every one of these raises rather than

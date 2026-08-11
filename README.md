@@ -245,8 +245,13 @@ the Rust staticlib goes through one predicate, `cosmo_yjit_usable()` in
 off Linux/x86-64 even though `RubyVM::YJIT.enabled?` was `false`, because the
 `+YJIT` came from option parsing rather than from YJIT actually starting. It
 now tracks `RubyVM::YJIT.enabled?` on every platform. `RubyVM::YJIT.enabled?`
-remains the answer to trust — but the two no longer disagree. (`--help` also no
-longer prints an empty "YJIT options" heading where YJIT cannot run.)
+remains the answer to trust — but the two no longer disagree.
+
+Two smaller changes came with it, off Linux/x86-64 only: `--help` no longer
+prints a "YJIT options" section there, and a *misspelled* `--yjit-*` option is
+now accepted and ignored instead of raising `invalid YJIT option`. Valid options
+behave exactly as before (accepted, inert). This is what the aarch64 half has
+always done; Windows and macOS now match it.
 
 Two earlier bugs came from calling into that Rust staticlib unguarded, and both
 were invisible on Linux: `rb_yjit_init_builtin_cmes()` segfaulted every 4.0.6

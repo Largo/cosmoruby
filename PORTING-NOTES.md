@@ -4176,8 +4176,23 @@ CRUD-OK
 
 - **`v4.0.6-cosmo5` contains this bug**; a follow-up release is needed. Nothing
   is tagged on this branch.
-- `--help` no longer prints a "YJIT options" heading off Linux/x86-64. Cosmetic
-  and arguably more correct, but it is a user-visible change.
+- Two user-visible changes off Linux/x86-64 beyond the banner, both verified
+  against the `v4.0.6-cosmo5` binary on the same VM. Neither affects a
+  *valid* option, and both make Windows/macOS behave the way aarch64 already
+  did:
+
+  | | v4.0.6-cosmo5 (Windows) | this branch (Windows) | aarch64, before and after |
+  | --- | --- | --- | --- |
+  | `--yjit-nonsense-option` | `invalid YJIT option 'nonsense-option'`, exit 1 | accepted and ignored, exit 0 | accepted and ignored |
+  | `--help` | prints the "YJIT options" section | section omitted | section omitted |
+
+  The option *validation* was already cosmetic there — parsed options had no
+  effect, because YJIT never initialised — and it came from calling
+  `rb_yjit_parse_option()` (Rust, string parsing plus writes to the `OPTIONS`
+  static) unguarded, which is precisely what the rule forbids. Uniform
+  "accepted and inert everywhere YJIT cannot run" beats "Windows validates,
+  ARM does not". If the diagnostics turn out to be wanted, the honest fix is a
+  C-side allow-list, not calling into Rust.
 - Roadmap item 4c is done, including the `rb_yjit_free_at_exit()` hazard it
   called out.
 - The remaining honest gap is unchanged: YJIT is x86-64-Linux-only until the

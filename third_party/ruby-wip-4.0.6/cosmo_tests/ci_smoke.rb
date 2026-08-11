@@ -303,6 +303,75 @@ check("ARGV passthrough") { ARGV == ["ci-arg-1", "ci-arg-2"] }
 check("Process.pid")      { Process.pid.to_i > 0 }
 soft("ENV readable")      { !ENV["PATH"].to_s.empty? }
 
+# --- YJIT (kept last: a successful enable JITs everything after it) --------
+#
+# `RubyVM::YJIT.enable` used to segfault at <internal:yjit>:67 on Windows -- it
+# calls straight into the YJIT Rust staticlib, which is built for
+# x86_64-unknown-linux-gnu and whose globals are never initialised off Linux.
+# Rails 8 turns YJIT on at boot (`config.yjit`, default true outside
+# development/test), so *every* packaged Rails app died before serving a byte.
+# That was the third bug of this family; see cosmo_yjit_usable() in yjit.h.
+#
+# YJIT really runs only on the Linux/x86-64 half of the APE.  Compute that from
+# inside the interpreter -- RUBY_PLATFORM plus Etc.uname -- so the expectation
+# is also right when the aarch64 half is driven through qemu-user on an x86-64
+# host.  Everywhere else the answer must be an honest "no", never a crash.
+yjit_can_run =
+  begin
+    require "etc"
+    RUBY_PLATFORM.start_with?("x86_64") && Etc.uname[:sysname] == "Linux"
+  rescue Exception
+    false
+  end
+
+check("RubyVM::YJIT.enabled? is false before enabling") { RubyVM::YJIT.enabled? == false }
+
+# Every entry point <internal:yjit> exposes, called on a build where YJIT is
+# not running.  None of these may crash, raise, or answer something untrue.
+check("RubyVM::YJIT introspection is safe before enabling") do
+  RubyVM::YJIT.stats_enabled?               == false &&
+    RubyVM::YJIT.log_enabled?               == false &&
+    RubyVM::YJIT.trace_exit_locations_enabled? == false &&
+    RubyVM::YJIT.runtime_stats.nil?         &&
+    RubyVM::YJIT.log.nil?                   &&
+    RubyVM::YJIT.exit_locations.nil?        &&
+    RubyVM::YJIT.reset_stats!.nil?          &&
+    RubyVM::YJIT.code_gc.nil?               &&
+    RubyVM::YJIT.stats_string               == ""
+end
+
+check("RubyVM::YJIT.dump_exit_locations raises rather than crashing") do
+  begin
+    RubyVM::YJIT.dump_exit_locations(File.join(Dir.tmpdir, "cosmoruby-yjit.dump"))
+    false
+  rescue ArgumentError
+    true
+  end
+end
+
+# The two lines that matter: this is literally what Rails' :enable_yjit
+# initializer runs.
+check("RubyVM::YJIT.enable does not crash") { RubyVM::YJIT.enable == yjit_can_run }
+check("RubyVM::YJIT.enabled? agrees with enable") { RubyVM::YJIT.enabled? == yjit_can_run }
+
+# RUBY_DESCRIPTION used to advertise +YJIT where YJIT could not run, which is
+# what lets feature detection be fooled into the crash in the first place.
+check("RUBY_DESCRIPTION +YJIT agrees with enabled?") do
+  RUBY_DESCRIPTION.include?("+YJIT") == RubyVM::YJIT.enabled?
+end
+
+# ... and once more with YJIT on where it can be on, so the enabled path is
+# covered too.
+check("RubyVM::YJIT introspection is safe after enabling") do
+  # insns_compiled is nil while YJIT is off and an Array once it is on; either
+  # is a valid answer, a segfault is not.
+  insns = RubyVM::YJIT.insns_compiled(method(:known_nil_scheduler?))
+  RubyVM::YJIT.stats_enabled? == false &&
+    RubyVM::YJIT.code_gc.nil? &&
+    RubyVM::YJIT.reset_stats!.nil? &&
+    (insns.nil? || insns.is_a?(Array))
+end
+
 puts "-" * 64
 puts "SMOKE-RESULT: pass=#{$pass} fail=#{$fail} warn=#{$warn}"
 puts($fail.zero? ? "SMOKE-OK" : "SMOKE-FAILED")

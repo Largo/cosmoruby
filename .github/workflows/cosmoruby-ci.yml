@@ -16,7 +16,7 @@ name: CosmoRuby CI
 
 on:
   push:
-    branches: [main, ci, openssl-cipher]
+    branches: [main, ci, yjit-guards]
   pull_request:
   workflow_dispatch:
 

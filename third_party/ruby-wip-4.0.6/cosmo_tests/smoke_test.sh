@@ -39,9 +39,11 @@ t "threads" "$RUBY" -e 'puts 4.times.map{|i| Thread.new{i*i}}.map(&:value).sum'
 # "invalid YJIT option ''" on the aarch64 half of a fat APE, where the YJIT
 # Rust staticlib is not linked at all and the weak C stub answered "no such
 # option".  Whether YJIT actually *runs* is a separate question -- only on
-# Linux/x86_64 -- so assert RubyVM::YJIT.enabled?, not the +YJIT string in
-# RUBY_DESCRIPTION, which is set by option parsing and is inert on Windows
-# and on aarch64.
+# Linux/x86_64 -- so the source of truth is RubyVM::YJIT.enabled?.
+# RUBY_DESCRIPTION's +YJIT used to be driven by option parsing alone and so
+# contradicted enabled? on Windows and aarch64; it now tracks it, and that
+# agreement is asserted here.  RubyVM::YJIT.enable (what Rails 8 runs at boot)
+# is called too: it segfaulted on Windows in every release up to v4.0.6-cosmo5.
 # The expectation is computed *inside* the interpreter (RUBY_PLATFORM plus
 # Etc.uname) rather than from the shell's `uname`, so it is also right when
 # the aarch64 half is being exercised through qemu-user on an x86-64 host.
@@ -51,6 +53,10 @@ t "yjit" "$RUBY" --yjit -e '
          (Etc.uname[:sysname] rescue "") == "Linux"
   got  = RubyVM::YJIT.enabled?
   raise "RubyVM::YJIT.enabled? expected #{want}, got #{got}" if want != got
+  desc = RUBY_DESCRIPTION.include?("+YJIT")
+  raise "RUBY_DESCRIPTION +YJIT=#{desc} but enabled?=#{got}" if desc != got
+  again = RubyVM::YJIT.enable
+  raise "RubyVM::YJIT.enable returned #{again.inspect}, expected false" if again != false
   puts "yjit accepted, enabled=#{got} :: #{RUBY_DESCRIPTION}"'
 t "gem" "$RUBY" -S gem --version
 t "gem-preloaded" "$RUBY" -e 'raise "Gem not preloaded" unless defined?(Gem); puts Gem.default_dir'

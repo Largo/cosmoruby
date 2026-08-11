@@ -133,11 +133,14 @@ case "$out" in
 esac
 
 # YJIT is a Rust staticlib built for x86_64-unknown-linux-gnu.  It is linked
-# only into the x86_64 half of the APE and initialised only under IsLinux(),
-# so it genuinely runs on exactly one platform.  Everywhere else `--yjit` must
-# still be *accepted* -- it used to raise "invalid YJIT option ''" on the
-# aarch64 half of a fat build -- and RubyVM::YJIT.enabled? must be false.
-# RUBY_DESCRIPTION's +YJIT is set by option parsing and is not evidence.
+# only into the x86_64 half of the APE and initialised only where
+# cosmo_yjit_usable() is true, so it genuinely runs on exactly one platform.
+# Everywhere else `--yjit` must still be *accepted* -- it used to raise
+# "invalid YJIT option ''" on the aarch64 half of a fat build -- and
+# RubyVM::YJIT.enabled? must be false.  RUBY_DESCRIPTION's +YJIT used to be set
+# by option parsing alone and so contradicted enabled?; it now tracks it, and
+# that agreement is asserted here because feature detection reading the
+# description string is what keeps re-introducing this class of bug.
 # The expectation is computed inside the interpreter (RUBY_PLATFORM + uname),
 # not from the shell, so it is also correct when the aarch64 half is driven
 # through qemu-user on an x86-64 host.
@@ -146,7 +149,12 @@ out=$("$RUBY" --yjit -e '
   require "etc"
   want = RUBY_PLATFORM.start_with?("x86_64") && (Etc.uname[:sysname] rescue "") == "Linux"
   got  = RubyVM::YJIT.enabled?
-  puts(want == got ? "yjit-ok want=#{want} got=#{got}" : "yjit-MISMATCH want=#{want} got=#{got}")' 2>&1)
+  desc = RUBY_DESCRIPTION.include?("+YJIT")
+  # RubyVM::YJIT.enable is what Rails 8 calls at boot; it segfaulted here.
+  again = RubyVM::YJIT.enable
+  ok = (want == got) && (desc == got) && (again == false)
+  puts(ok ? "yjit-ok want=#{want} got=#{got} desc=#{desc} enable=#{again}" :
+            "yjit-MISMATCH want=#{want} got=#{got} desc=#{desc} enable=#{again}")' 2>&1)
 rc=$?
 if [ "$rc" -ne 0 ]; then
   bad "--yjit rejected (exit $rc) :: $out"

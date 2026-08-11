@@ -4222,3 +4222,15 @@ count of 45 is 43 plus the two Winsock ABI assertions.
 
 `.github/scripts/test-cosmoruby.sh` reports 29/29 on Linux and macOS x86-64 and
 28/28 on the aarch64 runners (the self-executing-APE fixture is x86-64 only).
+
+The docs-only follow-up run
+<https://github.com/Largo/cosmoruby/actions/runs/31543314155> — same binary,
+same tests — did hit the documented Windows flake on the first attempt:
+`test_sockets.rb` went `pass=20 fail=1 warn=1` with
+`NoMethodError: undefined method 'kernel_sleep' for nil`, and the diagnostic
+measured it at **39 of 200 blocking connects (19.5%)**, inside the documented
+14–20% band. `ci_smoke.rb` was still 45/45 and
+`[PASS] no [BUG]/segfault blocks` still held. Re-running the failed job alone
+turned it green. That flake is asynchronous register corruption in
+cosmopolitan's Windows interrupt delivery (see "Windows: intermittent nil
+scheduler"), not anything this branch touches.

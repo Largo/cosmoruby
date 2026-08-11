@@ -541,8 +541,112 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 #define yjit_c_builtin_p rb_yjit_c_builtin_p
 #endif
 
+// ============================================================================
+// CosmoRuby: guarded shims for every Ruby-visible YJIT primitive
+//
+// Everything RubyVM::YJIT can call ends up in this table (yjit.rbinc, generated
+// from yjit.rb), and every entry below `builtin_inline_class_*` is implemented
+// in the Rust staticlib.  Reaching Rust when cosmo_yjit_usable() is false is
+// what made `RubyVM::YJIT.enable` -- i.e. every Rails 8 boot -- segfault on
+// Windows; see yjit.h for the rule and PORTING-NOTES.md for the history.
+//
+// So the function pointers that go into the builtin table are these shims, not
+// the Rust functions.  Each shim answers "YJIT is compiled in but is not
+// running here", which is exactly what the same method returns on Linux when
+// YJIT was never enabled:
+//
+//   enable                       -> false   (`RubyVM::YJIT.enable` already
+//                                            returns false when it declines)
+//   stats_enabled? log_enabled?
+//   trace_exit_locations_enabled?
+//   c_builtin_p print_stats_p    -> false
+//   runtime_stats / get_log /
+//   get_exit_locations / disasm  -> nil     (documented as "nil when the option
+//                                            is not passed or unavailable")
+//   insns_compiled               -> nil
+//   reset_stats! / code_gc /
+//   simulate_oom!                -> nil     (no-op)
+//
+// No entry point raises: `RubyVM::YJIT.dump_exit_locations` still raises
+// ArgumentError, but from Ruby, because trace_exit_locations_enabled? is false.
+//
+// The #define block is undone immediately after yjit.rbinc so that the weak
+// stubs further down still define the real symbols.
+// ============================================================================
+
+#define COSMO_YJIT_SHIM0(name, unavailable) \
+    static VALUE cosmo_shim_##name(rb_execution_context_t *ec, VALUE self) { \
+        if (!cosmo_yjit_usable()) return (unavailable); \
+        return name(ec, self); \
+    }
+#define COSMO_YJIT_SHIM1(name, unavailable) \
+    static VALUE cosmo_shim_##name(rb_execution_context_t *ec, VALUE self, VALUE a) { \
+        if (!cosmo_yjit_usable()) return (unavailable); \
+        return name(ec, self, a); \
+    }
+
+COSMO_YJIT_SHIM0(rb_yjit_stats_enabled_p, Qfalse)
+COSMO_YJIT_SHIM0(rb_yjit_print_stats_p, Qfalse)
+COSMO_YJIT_SHIM0(rb_yjit_log_enabled_p, Qfalse)
+COSMO_YJIT_SHIM0(rb_yjit_trace_exit_locations_enabled_p, Qfalse)
+COSMO_YJIT_SHIM0(rb_yjit_reset_stats_bang, Qnil)
+COSMO_YJIT_SHIM0(rb_yjit_get_log, Qnil)
+COSMO_YJIT_SHIM0(rb_yjit_get_exit_locations, Qnil)
+COSMO_YJIT_SHIM0(rb_yjit_code_gc, Qnil)
+COSMO_YJIT_SHIM0(rb_yjit_simulate_oom_bang, Qnil)
+COSMO_YJIT_SHIM0(yjit_c_builtin_p, Qfalse)
+COSMO_YJIT_SHIM1(rb_yjit_get_stats, Qnil)
+COSMO_YJIT_SHIM1(rb_yjit_disasm_iseq, Qnil)
+COSMO_YJIT_SHIM1(rb_yjit_insns_compiled, Qnil)
+
+static VALUE
+cosmo_shim_rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats,
+                          VALUE print_stats, VALUE gen_log, VALUE print_log,
+                          VALUE mem_size, VALUE call_threshold)
+{
+    // Qfalse == "YJIT was not enabled", the same answer RubyVM::YJIT.enable
+    // gives when it is already on or when ZJIT owns the process.  Rails 8's
+    // `config.yjit` initializer calls this unconditionally at boot.
+    if (!cosmo_yjit_usable()) return Qfalse;
+    return rb_yjit_enable(ec, self, gen_stats, print_stats, gen_log, print_log,
+                          mem_size, call_threshold);
+}
+
+#define rb_yjit_stats_enabled_p               cosmo_shim_rb_yjit_stats_enabled_p
+#define rb_yjit_print_stats_p                 cosmo_shim_rb_yjit_print_stats_p
+#define rb_yjit_log_enabled_p                 cosmo_shim_rb_yjit_log_enabled_p
+#define rb_yjit_trace_exit_locations_enabled_p cosmo_shim_rb_yjit_trace_exit_locations_enabled_p
+#define rb_yjit_reset_stats_bang              cosmo_shim_rb_yjit_reset_stats_bang
+#define rb_yjit_get_log                       cosmo_shim_rb_yjit_get_log
+#define rb_yjit_get_exit_locations            cosmo_shim_rb_yjit_get_exit_locations
+#define rb_yjit_code_gc                       cosmo_shim_rb_yjit_code_gc
+#define rb_yjit_simulate_oom_bang             cosmo_shim_rb_yjit_simulate_oom_bang
+#define rb_yjit_get_stats                     cosmo_shim_rb_yjit_get_stats
+#define rb_yjit_disasm_iseq                   cosmo_shim_rb_yjit_disasm_iseq
+#define rb_yjit_insns_compiled                cosmo_shim_rb_yjit_insns_compiled
+#define rb_yjit_enable                        cosmo_shim_rb_yjit_enable
+#undef yjit_c_builtin_p
+#define yjit_c_builtin_p                      cosmo_shim_yjit_c_builtin_p
+
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
+
+#undef rb_yjit_stats_enabled_p
+#undef rb_yjit_print_stats_p
+#undef rb_yjit_log_enabled_p
+#undef rb_yjit_trace_exit_locations_enabled_p
+#undef rb_yjit_reset_stats_bang
+#undef rb_yjit_get_log
+#undef rb_yjit_get_exit_locations
+#undef rb_yjit_code_gc
+#undef rb_yjit_simulate_oom_bang
+#undef rb_yjit_get_stats
+#undef rb_yjit_disasm_iseq
+#undef rb_yjit_insns_compiled
+#undef rb_yjit_enable
+#undef yjit_c_builtin_p
+#undef COSMO_YJIT_SHIM0
+#undef COSMO_YJIT_SHIM1
 
 // ============================================================================
 // Weak stubs for YJIT Rust functions

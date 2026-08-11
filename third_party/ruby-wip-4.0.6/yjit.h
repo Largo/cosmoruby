@@ -9,10 +9,58 @@
 #include "vm_core.h"
 #include "method.h"
 
+#ifdef __COSMOPOLITAN__
+# include "libc/dce.h"   // for IsLinux()
+#endif
+
 // YJIT_STATS controls whether to support runtime counters in the interpreter
 #ifndef YJIT_STATS
 # define YJIT_STATS (USE_YJIT && RUBY_DEBUG)
 #endif
+
+// ===========================================================================
+// CosmoRuby: cosmo_yjit_usable() -- the single predicate that decides whether
+// the YJIT *Rust staticlib* can actually be executed by the process we are.
+//
+// A cosmopolitan APE is one file that runs on several OSes and (when fat) two
+// architectures, but YJIT's Rust half is built exactly once, for
+// x86_64-unknown-linux-gnu:
+//
+//   * on the aarch64 half of a fat APE it is not linked at all
+//     (yjit/BUILD.mk forces RUBY_YJIT_ENABLED=0), so the __attribute__((weak))
+//     stubs at the bottom of yjit.c are the whole implementation;
+//   * on Windows/macOS/BSD the staticlib *is* linked -- it is the same x86-64
+//     image -- but its global state is never initialised, because rb_yjit_init()
+//     is not called there, and several of its entry points then dereference
+//     null.  That is the family of bugs recorded in PORTING-NOTES.md:
+//     rb_yjit_init_builtin_cmes() (every 4.0.6 APE segfaulted at VM init on
+//     Windows) and rb_yjit_enable() (every Rails 8 app segfaulted at boot on
+//     Windows, because Rails enables YJIT from config.yjit).
+//
+// **Rule**: a function implemented in the YJIT Rust staticlib may be called
+// from C only when cosmo_yjit_usable() is true, or from a path that cannot be
+// reached unless rb_yjit_enabled_p is true (which implies rb_yjit_init() ran,
+// which implies cosmo_yjit_usable()).  Every Ruby-visible entry point --
+// everything RubyVM::YJIT exposes -- goes through the guarded shims in yjit.c.
+// When the guard fires the answer must be an honest "YJIT is not running here"
+// (false / nil / no-op), never an exception and never a wrong value.
+//
+// Off cosmopolitan this is a compile-time `true` and everything below folds
+// away, so upstream behaviour is untouched.
+// ===========================================================================
+static inline bool
+cosmo_yjit_usable(void)
+{
+#if !USE_YJIT
+    return false;
+#elif !defined(__COSMOPOLITAN__)
+    return true;
+#elif defined(__x86_64__)
+    return IsLinux();
+#else
+    return false;   // aarch64: the Rust staticlib was never built
+#endif
+}
 
 #if USE_YJIT
 

@@ -3446,7 +3446,14 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (rb_free_at_exit) {
             rb_shape_free_all();
 #if USE_YJIT
-            rb_yjit_free_at_exit();
+            // rb_yjit_free_at_exit() is Rust and, unlike the other shutdown
+            // hooks, does not check yjit_enabled_p() itself -- it walks the
+            // codegen table unconditionally.  Under RUBY_FREE_AT_EXIT=1 that
+            // was a latent crash wherever the staticlib is not functional.
+            // See cosmo_yjit_usable() in yjit.h.
+            if (cosmo_yjit_usable()) {
+                rb_yjit_free_at_exit();
+            }
 #endif
         }
     }

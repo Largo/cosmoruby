@@ -66,6 +66,7 @@
 #include "ruby/util.h"
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
+#include "yjit.h"               /* for cosmo_yjit_usable() */
 
 #define singlebit_only_p(x) !((x) & ((x)-1))
 STATIC_ASSERT(Qnil_1bit_from_Qfalse, singlebit_only_p(Qnil^Qfalse));
@@ -439,8 +440,14 @@ usage(const char *name, int help, int highlight, int columns)
     for (i = 0; i < numberof(warn_categories); ++i)
         SHOW(warn_categories[i]);
 #if USE_YJIT
-    printf("%s""YJIT options:%s\n", sb, se);
-    rb_yjit_show_usage(help, highlight, w, columns);
+    /* rb_yjit_show_usage() is implemented in the YJIT Rust staticlib; see
+     * cosmo_yjit_usable() in yjit.h.  Where it cannot run there are no YJIT
+     * options to describe either, so drop the whole section rather than print
+     * an empty heading. */
+    if (cosmo_yjit_usable()) {
+        printf("%s""YJIT options:%s\n", sb, se);
+        rb_yjit_show_usage(help, highlight, w, columns);
+    }
 #endif
 #if USE_ZJIT
     printf("%s""ZJIT options:%s\n", sb, se);
@@ -1218,6 +1225,15 @@ setup_yjit_options(const char *s)
 {
     // The option parsing is done in yjit/src/options.rs
     bool rb_yjit_parse_option(const char* s);
+
+    // Where the Rust half cannot run (see cosmo_yjit_usable() in yjit.h) accept
+    // the option and ignore it.  Returning false here would make the rb_raise
+    // below turn any --yjit* flag into a hard startup error, which is exactly
+    // how the first fat build broke `ruby.com --yjit` on aarch64.
+    if (!cosmo_yjit_usable()) {
+        return true;
+    }
+
     bool success = rb_yjit_parse_option(s);
 
     if (success) {
@@ -1850,17 +1866,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     // Register JIT-optimized builtin CMEs before the prelude, which may
     // redefine core methods (e.g. Kernel.prepend via bundler/setup).
 #if USE_YJIT
-#ifdef __COSMOPOLITAN__
-    // YJIT Rust code is built targeting x86_64-unknown-linux-gnu, so it
-    // only works on Linux within Cosmopolitan's multi-platform binary
-    // (same guard as rb_yjit_init below). Calling into the Rust staticlib
-    // on Windows segfaults during VM init.
-    if (IsLinux()) {
+    // rb_yjit_init_builtin_cmes() is Rust; calling it where the staticlib is
+    // not functional segfaulted every 4.0.6 APE during VM init on Windows.
+    // See cosmo_yjit_usable() in yjit.h.
+    if (cosmo_yjit_usable()) {
         rb_yjit_init_builtin_cmes();
     }
-#else
-    rb_yjit_init_builtin_cmes();
-#endif
 #endif
 #if USE_ZJIT
     extern void rb_zjit_init_builtin_cmes(void);
@@ -1904,15 +1915,10 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     // Enable JITs after ruby_init_prelude() to avoid JITing prelude code.
 #if USE_YJIT
-#ifdef __COSMOPOLITAN__
-    // YJIT Rust code is built targeting x86_64-unknown-linux-gnu,
-    // so it only works on Linux within Cosmopolitan's multi-platform binary
-    if (IsLinux()) {
+    // rb_yjit_init() is Rust. See cosmo_yjit_usable() in yjit.h.
+    if (cosmo_yjit_usable()) {
         rb_yjit_init(opt->yjit);
     }
-#else
-    rb_yjit_init(opt->yjit);
-#endif
 #endif
 #if USE_ZJIT
     extern void rb_zjit_init(bool);
@@ -2575,7 +2581,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_YJIT
     if (FEATURE_SET_P(opt->features, yjit)) {
         bool rb_yjit_option_disable(void);
-        opt->yjit = !rb_yjit_option_disable(); // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
+        // rb_yjit_option_disable() is Rust; see cosmo_yjit_usable() in yjit.h.
+        // Where it cannot run, keep the pre-existing answer (the weak stub
+        // returned false, so opt->yjit stayed true).
+        opt->yjit = !cosmo_yjit_usable() || !rb_yjit_option_disable(); // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
     }
 #endif
 #if USE_ZJIT

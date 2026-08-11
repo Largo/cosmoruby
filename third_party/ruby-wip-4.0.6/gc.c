@@ -2252,7 +2252,11 @@ void
 rb_gc_before_updating_jit_code(void)
 {
 #if USE_YJIT
-    rb_yjit_mark_all_writeable();
+    /* Rust; not reached via rb_yjit_enabled_p, so gate it explicitly.
+     * See cosmo_yjit_usable() in yjit.h. */
+    if (cosmo_yjit_usable()) {
+        rb_yjit_mark_all_writeable();
+    }
 #endif
 }
 
@@ -2265,7 +2269,11 @@ void
 rb_gc_after_updating_jit_code(void)
 {
 #if USE_YJIT
-    rb_yjit_mark_all_executable();
+    /* Rust; not reached via rb_yjit_enabled_p, so gate it explicitly.
+     * See cosmo_yjit_usable() in yjit.h. */
+    if (cosmo_yjit_usable()) {
+        rb_yjit_mark_all_executable();
+    }
 #endif
 }
 

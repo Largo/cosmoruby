@@ -4198,3 +4198,27 @@ CRUD-OK
 - The remaining honest gap is unchanged: YJIT is x86-64-Linux-only until the
   Rust half is cross-compiled. The predicate is where that would be relaxed —
   one function, one place.
+
+### Six-platform CI for `yjit-guards`
+
+Run <https://github.com/Largo/cosmoruby/actions/runs/31542578925> — **all seven
+jobs green**, including the normally-experimental `windows-11-arm`. The
+documented intermittent Windows `kernel_sleep for nil` flake did not appear;
+`warn=0` on both Windows jobs.
+
+| job | `ci_smoke.rb` | `test_sockets.rb` | `--yjit` assertion |
+| --- | --- | --- | --- |
+| `test-linux-x86_64` | 43/43 | 19/19 | `want=true got=true desc=true enable=false` |
+| `test-windows-x86_64` | 45/45 | 22/22 | (PowerShell driver) |
+| `test-macos-x86_64` | 43/43 | 19/19 | `want=false got=false desc=false enable=false` |
+| `test-linux-arm64` | 43/43 | 19/19 | `want=false got=false desc=false enable=false` |
+| `test-macos-arm64` | 43/43 | 19/19 | `want=false got=false desc=false enable=false` |
+| `test-windows-arm64` | 45/45 | 22/22 | (PowerShell driver) |
+
+`desc` is `RUBY_DESCRIPTION.include?("+YJIT")` and `enable` is
+`RubyVM::YJIT.enable`'s return value; `desc == got` on every platform is the
+`RUBY_DESCRIPTION` fix, asserted rather than merely documented. The Windows
+count of 45 is 43 plus the two Winsock ABI assertions.
+
+`.github/scripts/test-cosmoruby.sh` reports 29/29 on Linux and macOS x86-64 and
+28/28 on the aarch64 runners (the self-executing-APE fixture is x86-64 only).

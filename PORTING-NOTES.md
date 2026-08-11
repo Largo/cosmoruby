@@ -1110,12 +1110,14 @@ the binary fat costs nothing on the platform that already worked.
    caught the minute it was introduced; instead it shipped through a
    Linux-green build, a Linux-green ocran integration and a release
    candidate. See "Windows verification" above.
-4c. Consider gating **all** YJIT Rust entry points behind one C helper
+4c. ~~Consider gating **all** YJIT Rust entry points behind one C helper
    (`static inline bool cosmo_yjit_usable(void) { return IsLinux(); }`)
-   instead of open-coding `if (IsLinux())` at each call site, so the next
-   upstream-added Rust call is a compile-time-visible omission rather
-   than a Windows-only null deref. Also fixes the remaining
-   `rb_yjit_free_at_exit()` hazard under `RUBY_FREE_AT_EXIT=1`.
+   instead of open-coding `if (IsLinux())` at each call site~~ — **done on
+   `yjit-guards`**, see "The third YJIT-on-Windows crash" below. It took a
+   third bug of the same family (`RubyVM::YJIT.enable` segfaulting every
+   Rails 8 boot on Windows) to force it. The `rb_yjit_free_at_exit()`
+   hazard under `RUBY_FREE_AT_EXIT=1` is closed too, and
+   `RUBY_DESCRIPTION` no longer advertises `+YJIT` where YJIT cannot run.
 5. Consider pinning/documenting the cosmocc version story: repo builds
    with .cosmocc/3.9.2 (auto-downloaded), while modern standalone cosmocc
    (GCC 14.1, e.g. /root/tools/cosmocc) is unused by this build system.
@@ -3900,3 +3902,284 @@ returning something plausible:
   `pbkdf2_hmac` with a large iteration count blocks the VM for its
   duration (the RFC 7914 80 000-iteration vector takes a few hundred ms).
   Releasing it around the mbedtls call is a straightforward follow-up.
+
+## The third YJIT-on-Windows crash: `RubyVM::YJIT.enable`, and the funnel that ends the family (branch `yjit-guards`, 2026-08-12)
+
+### Symptom
+
+Every Rails 8 application built into an APE died at boot on Windows, before
+serving a byte, with the same `[BUG]` block the port has now produced three
+times. Reduced to two lines — the whole script is `RubyVM::YJIT.enable`:
+
+```
+C:\> rbold.com C:\yj.rb            (rbold.com == the v4.0.6-cosmo5 release)
+<internal:yjit>:67: [BUG] Segmentation fault at 0x0000000000000000
+ruby 4.0.6 (2026-07-14) +PRISM +MIMALLOC [x86_64-cosmo]
+
+-- Control frame information -----------------------------------------------
+c:0003 p:0125 s:0021 e:000014 l:y b:0001 METHOD <internal:yjit>:67
+c:0002 p:0004 s:0006 e:000005 l:n b:---- EVAL   /C/yj.rb:1 [FINISH]
+c:0001 p:0000 s:0003 E:000330 l:y b:---- DUMMY  [FINISH]
+
+-- Ruby level backtrace information ----------------------------------------
+/C/yj.rb:1:in '<main>'
+<internal:yjit>:67:in 'enable'
+EXITCODE=11
+```
+
+`<internal:yjit>:67` is `Primitive.rb_yjit_enable(...)` in `yjit.rb`, which is
+implemented in Rust (`yjit/src/yjit.rs`) and calls `yjit_init()` →
+`CodegenGlobals::init()`. Rails reaches it because **Rails 8 turns YJIT on by
+default**: `railties/lib/rails/application/configuration.rb` sets
+`self.yjit = !Rails.env.local?` under `load_defaults 8.1`, and the
+`:enable_yjit` initializer in `finisher.rb` then runs
+
+```ruby
+RubyVM::YJIT.enable(**options) if config.yjit && defined?(RubyVM::YJIT.enable)
+```
+
+`defined?` is true — the module exists, YJIT is compiled in — so the call
+happens, and on Windows it faults. Note `RubyVM::YJIT.enabled?` was correctly
+`false` the whole time; the crash is in the *enable* path, which nothing had
+ever exercised off Linux.
+
+This is the **third** bug of one family, after `rb_yjit_init_builtin_cmes()`
+(4.0.6 segfaulted at VM init on every Windows run) and
+`rb_yjit_parse_option()` returning `false` (`ruby.com --yjit` was a hard
+startup error on the aarch64 half). Roadmap item 4c proposed the cure; this is
+it.
+
+### The fix: one predicate, `cosmo_yjit_usable()`
+
+`third_party/ruby/yjit.h`:
+
+```c
+static inline bool
+cosmo_yjit_usable(void)
+{
+#if !USE_YJIT
+    return false;
+#elif !defined(__COSMOPOLITAN__)
+    return true;
+#elif defined(__x86_64__)
+    return IsLinux();
+#else
+    return false;   // aarch64: the Rust staticlib was never built
+#endif
+}
+```
+
+Off cosmopolitan it is a compile-time `true`, so upstream code paths are
+untouched. `IsLinux()` is one load and test of `__hostos`, which is why it is
+affordable even in `rb_gc_before_updating_jit_code()`.
+
+**The rule it encodes** (now stated in the header, not just in this file): a
+function implemented in the YJIT Rust staticlib may be called from C only when
+`cosmo_yjit_usable()` is true, *or* from a path that cannot be reached unless
+`rb_yjit_enabled_p` is true — which implies `rb_yjit_init()` ran, which implies
+`cosmo_yjit_usable()`. When the guard fires the answer must be an honest "YJIT
+is not running here" (`false` / `nil` / no-op), never an exception and never a
+wrong value.
+
+### Getting the guard in front of the Ruby-visible primitives
+
+`RubyVM::YJIT`'s methods do not call C by name; `yjit.rbinc` (generated from
+`yjit.rb` by `tool/mk_builtin_loader.rb`, and committed) builds a table of
+function pointers straight to the Rust exports. Editing `yjit.rb` would mean
+regenerating `yjit.rbinc` *and* `miniprelude.c`.
+
+Instead `yjit.c` defines a `cosmo_shim_*` wrapper per primitive and, in the few
+lines around `#include "yjit.rbinc"`, `#define`s each primitive name to its
+shim, `#undef`ing them all immediately afterwards so the `__attribute__((weak))`
+stubs further down still define the real symbols. This works because
+`RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity)` stringifies `_name` with `#`
+(so the *name* the builtin loader matches on is unaffected) and uses `_fname`
+as a plain identifier (so the *pointer* becomes the shim). No generated file
+changes, and the whole redirection is fifteen greppable lines in one file.
+
+### The audit — every entry point, and what it does when the Rust half is inert
+
+**Ruby-visible (`RubyVM::YJIT`, via the shims in `yjit.c`).** Behaviour off
+Linux/x86-64, verified on Windows and on aarch64 under qemu-user, and identical
+to what the same call returns on Linux when YJIT was never enabled:
+
+| method | primitive | when unusable | why that answer |
+| --- | --- | --- | --- |
+| `enabled?` | `cexpr! RBOOL(rb_yjit_enabled_p)` | `false` | C variable, no Rust call — was already honest |
+| `enable` | `rb_yjit_enable` | **`false`** | `enable` already returns `false` when it declines (already on / ZJIT owns the process). Rails ignores the value; the point is not crashing |
+| `stats_enabled?` | `rb_yjit_stats_enabled_p` | `false` | |
+| `log_enabled?` | `rb_yjit_log_enabled_p` | `false` | |
+| `trace_exit_locations_enabled?` | `rb_yjit_trace_exit_locations_enabled_p` | `false` | |
+| `runtime_stats` | `rb_yjit_get_stats` | `nil` | documented as "nil when option not passed or unavailable" |
+| `stats_string` | (Ruby) | `""` | falls out of `stats_enabled? == false` |
+| `log` | `rb_yjit_get_log` | `nil` | documented likewise |
+| `exit_locations` | `rb_yjit_get_exit_locations` | `nil` | |
+| `dump_exit_locations` | (Ruby) | **raises `ArgumentError`** | unchanged: `--yjit-trace-exits must be enabled…`, the same exception Linux raises without the flag. A clear Ruby-level error is the right answer for an explicit request that cannot be served |
+| `reset_stats!` | `rb_yjit_reset_stats_bang` | `nil` (no-op) | the Rust version zeroes statics with no `yjit_enabled_p()` check |
+| `code_gc` | `rb_yjit_code_gc` | `nil` (no-op) | |
+| `simulate_oom!` | `rb_yjit_simulate_oom_bang` | `nil` (no-op) | |
+| `disasm` | `rb_yjit_disasm_iseq` | `nil` + the stock warning | never reaches Rust anyway (`return nil unless enabled?`), shimmed for uniformity |
+| `insns_compiled` | `rb_yjit_insns_compiled` | `nil` | ditto |
+| `print_and_dump_stats` (private) | `rb_yjit_print_stats_p` | `false` → no-op | runs from `at_exit` when `--yjit-stats` |
+| `call_jit_hooks` (private) | `yjit_c_builtin_p` | `false` | so `with_jit` hooks still run |
+
+`runtime_stats(1)` still raises `TypeError: non-symbol given` everywhere — that
+check is in Ruby and is not platform-dependent.
+
+**C call sites.** Explicitly guarded on `cosmo_yjit_usable()`:
+
+| call site | why it needs the guard |
+| --- | --- |
+| `ruby.c ruby_opt_init()` → `rb_yjit_init_builtin_cmes()` | was `if (IsLinux())`; now the predicate |
+| `ruby.c ruby_opt_init()` → `rb_yjit_init()` | was `if (IsLinux())`; now the predicate |
+| `ruby.c setup_yjit_options()` → `rb_yjit_parse_option()` | returns `true` (accept and ignore) when unusable, so `--yjit*` is never a startup error — the aarch64 regression |
+| `ruby.c proc_options()` → `rb_yjit_option_disable()` | short-circuited by the description fix below |
+| `ruby.c usage()` → `rb_yjit_show_usage()` | unguarded before; `--help` now omits the "YJIT options" heading where there are none to show (it was already empty on aarch64) |
+| `vm.c ruby_vm_destruct()` → `rb_yjit_free_at_exit()` | the documented latent `RUBY_FREE_AT_EXIT=1` hazard: the Rust side walks the codegen table with no `yjit_enabled_p()` check. Now closed |
+| `gc.c rb_gc_{before,after}_updating_jit_code()` → `rb_yjit_mark_all_{writeable,executable}()` | reached on every compacting GC regardless of `rb_yjit_enabled_p`. Self-guarded in Rust by `CodegenGlobals::has_instance()`, but W^X plus GC plus Windows is not where you want to rely on that |
+
+**Left unguarded, deliberately, with the reason.** These are per-object /
+per-method hot paths, and every one of them returns from Rust before touching
+uninitialised state — on `yjit_enabled_p()`, `INVARIANTS.is_none()`, or a null
+payload. They are therefore covered by the second half of the rule
+(unreachable-into-real-work unless `rb_yjit_enabled_p`), and they are the
+reason a Windows `ruby.com` boots at all today:
+
+`rb_yjit_cme_invalidate`, `rb_yjit_constant_state_changed`,
+`rb_yjit_bop_redefined`, `rb_yjit_tracing_invalidate_all`,
+`rb_yjit_before_ractor_spawn` (`yjit_enabled_p()`);
+`rb_yjit_invalidate_no_singleton_class`, `rb_yjit_invalidate_ep_is_bp`,
+`rb_yjit_constant_ic_update`, `rb_yjit_root_update_references`
+(`INVARIANTS.is_none()`); `rb_yjit_iseq_mark`,
+`rb_yjit_iseq_update_references`, `rb_yjit_iseq_free` (null payload);
+`rb_yjit_incr_counter`, `rb_yjit_collect_binding_*`,
+`rb_yjit_count_side_exit_op`, `rb_yjit_record_exit_stack` (static counters
+only); `rb_yjit_lazy_push_frame`, `rb_yjit_compile_iseq` /
+`rb_yjit_iseq_gen_entry_point`, `rb_yjit_root_mark` (reached only under
+`rb_yjit_enabled_p`).
+
+If a future upstream sync makes one of those do work before its guard, it moves
+into the first table. The regression net for that is
+`cosmo_tests/ci_smoke.rb`, which now calls **every** public `RubyVM::YJIT`
+method on every CI platform.
+
+### `RUBY_DESCRIPTION` no longer lies
+
+Documented since `v4.0.6-cosmo1` and finally fixed. `+YJIT` came from
+`opt->yjit`, which `proc_options()` set from option parsing alone:
+
+```c
+opt->yjit = !rb_yjit_option_disable();
+```
+
+so `ruby.com --yjit` on Windows reported
+`ruby 4.0.6 … +YJIT +PRISM +MIMALLOC [x86_64-cosmo]` while
+`RubyVM::YJIT.enabled?` was `false`. That contradiction is what keeps feeding
+this bug family: it invites feature detection to read the banner. It is now
+
+```c
+opt->yjit = cosmo_yjit_usable() && !rb_yjit_option_disable();
+```
+
+`opt->yjit` already had exactly two consumers — `Init_ruby_description()` and
+the `rb_yjit_init(opt->yjit)` call, which is guarded by the same predicate — so
+this changes the banner and nothing else. **Option parsing is untouched**:
+`--yjit`, `--yjit-stats`, `--yjit-call-threshold=1`, `--jit` and
+`RUBY_YJIT_ENABLE=1` are all still accepted everywhere and still inert
+everywhere they were inert before. Both `smoke_test.sh` and
+`.github/scripts/test-cosmoruby.sh` now assert
+`RUBY_DESCRIPTION.include?("+YJIT") == RubyVM::YJIT.enabled?` on all six CI
+platforms, so the two cannot drift apart again.
+
+Before / after on the same Windows VM, same command:
+
+| | v4.0.6-cosmo5 | this branch |
+| --- | --- | --- |
+| `ruby.com yj.rb` (`RubyVM::YJIT.enable`) | `[BUG] Segmentation fault at 0x0`, exit 11 | no output, exit 0 |
+| `ruby.com -e 'p RubyVM::YJIT.enable'` | segfault | `false` |
+| `ruby.com --yjit -e 'p [RubyVM::YJIT.enabled?, RUBY_DESCRIPTION]'` | `[false, "… +YJIT +PRISM +MIMALLOC …"]` | `[false, "… +PRISM +MIMALLOC …"]` |
+
+### Verification
+
+**Linux x86-64** — YJIT still genuinely works, which is the thing a guard like
+this can quietly destroy:
+
+```
+ruby.com -e 'p RubyVM::YJIT.enable'                     -> true
+ruby.com -e 'RubyVM::YJIT.enable; p RubyVM::YJIT.enabled?' -> true
+ruby.com --yjit -e 'p RubyVM::YJIT.enabled?'            -> true
+RUBY_YJIT_ENABLE=1 ruby.com -e 'p RubyVM::YJIT.enabled?' -> true
+ruby.com --yjit --yjit-stats -e '…'                      -> stats printed at exit
+ruby.com --help                                          -> full YJIT options section
+```
+
+Suites, all against the fat `dist/ruby.com`: `smoke_test.sh` **15/15**,
+`ci_smoke.rb` **43/43**, `test_sockets.rb` **19/19**, `test_sqlite3.rb`
+failures=0, `test_nokogiri.rb` **36/36**, `test_openssl.rb` failures=0,
+`test_bigdecimal.rb` 44/44, `test_racc.rb` 21/21, `test_nio4r.rb` 24/24,
+`test_puma.rb` 25/25.
+
+**aarch64** (`qemu-aarch64 build/bootstrap/ape.aarch64 dist/ruby.com`) —
+`ci_smoke.rb` 43/43, `test_sockets.rb` 19/19; the full entry-point sweep is
+safe before and after `enable`; `--yjit`, `--yjit-stats`,
+`--yjit-call-threshold=1` accepted; `RUBY_FREE_AT_EXIT=1` clean;
+`RUBY_DESCRIPTION` has no `+YJIT`.
+
+**Windows 11 (Vagrant, 10.0.26200.8875)** — `ci_smoke.rb` **45/45** (43 plus
+the two Winsock ABI assertions), the full sweep safe before and after `enable`,
+`--yjit` / `RUBY_YJIT_ENABLE=1` / `RUBY_FREE_AT_EXIT=1` / `--help` all exit 0.
+
+### The acceptance test: a packaged Rails 8 APE serving HTTP on Windows
+
+`/root/workspace/rails-demo/demo` packaged with
+
+```sh
+ruby /root/workspace/ocran/exe/ocran server.rb app config db public \
+  --cosmo-ruby dist/ruby.com --no-lzma --no-autoload --gem-all \
+  --output railsdemo.com          # 41,574,508 bytes
+```
+
+copied to the VM and driven from a `.cmd` (the VM's PowerShell execution
+policy is Restricted and stays that way). `GET /status`:
+
+```json
+{"ok":true,"rails":"8.1.3.1","env":"production","ruby":"4.0.6",
+ "platform":"x86_64-cosmo","packaged":true,
+ "executable":"/railsrun/railsdemo.com","script":"/zip/ocran/src/server.rb",
+ "database":"/railsrun/railsdemo-data/demo.sqlite3","adapter":"SQLite",
+ "sqlite_version":"3.40.0","widget_count":0}
+```
+
+and a full scaffold CRUD round-trip through the HTML form flow (so Rails' CSRF
+protection is satisfied the way a browser satisfies it — a bare JSON `POST`
+gets a correct 422, and `GET /widgets.json` a correct 406, because the scaffold
+ships HTML views only; neither is a port problem):
+
+```
+  [PASS] GET /status is 200 200
+  [PASS] status JSON ok
+  [PASS] GET /widgets/new is 200 200
+  [PASS] CSRF token present
+  [PASS] POST /widgets -> show page 200
+  [PASS] created widget is rendered "win-widget"
+  [PASS] GET /widgets lists it 200
+  [PASS] widget_count incremented 0 -> 1
+CRUD-RESULT: fail=0
+CRUD-OK
+```
+
+`find /c /i "[BUG]"` and `find /c /i "Segmentation fault"` over the server log:
+0 and 0. `GET /` returns 200 and Rails logs
+`Completed 200 OK … (Views: 8.9ms | ActiveRecord: 0.6ms)`.
+
+### Consequences and follow-ups
+
+- **`v4.0.6-cosmo5` contains this bug**; a follow-up release is needed. Nothing
+  is tagged on this branch.
+- `--help` no longer prints a "YJIT options" heading off Linux/x86-64. Cosmetic
+  and arguably more correct, but it is a user-visible change.
+- Roadmap item 4c is done, including the `rb_yjit_free_at_exit()` hazard it
+  called out.
+- The remaining honest gap is unchanged: YJIT is x86-64-Linux-only until the
+  Rust half is cross-compiled. The predicate is where that would be relaxed —
+  one function, one place.

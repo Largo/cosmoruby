@@ -219,24 +219,45 @@ return a wrong-but-plausible answer:
 - **TLS server sockets, client certificates, session resumption, ALPN,
   `OpenSSL::VERSION` and the `OPENSSL_VERSION*` constants.**
 
-### YJIT is Linux-only, and the banner does not admit it
+### YJIT runs on Linux x86-64 only, and now says so
 
-The YJIT compiler is Rust code built for `x86_64-unknown-linux-gnu` and is only
-initialised when the APE is running on Linux.
+The YJIT compiler is Rust code built for `x86_64-unknown-linux-gnu`. It is
+linked only into the x86-64 half of the APE and initialised only when that half
+is running on Linux.
 
 | | Linux x86-64 | Windows x86-64 | macOS x86-64 | any aarch64 |
 | --- | --- | --- | --- | --- |
+| `--yjit` accepted | yes | yes | yes | yes |
 | `RubyVM::YJIT.enabled?` | `true` | `false` | `false` | `false` |
-| `RUBY_DESCRIPTION` | `+YJIT` | `+YJIT` (misleading) | `+YJIT` (misleading) | `+YJIT` (misleading) |
+| `RubyVM::YJIT.enable` | `true` | `false` | `false` | `false` |
+| `RUBY_DESCRIPTION` | `+YJIT` | no `+YJIT` | no `+YJIT` | no `+YJIT` |
 
 Passing `--yjit` anywhere else is harmless — it is accepted and does nothing.
-Do not trust `RUBY_DESCRIPTION`; trust `RubyVM::YJIT.enabled?`. On the aarch64
-half the Rust staticlib is not even linked in (`yjit/BUILD.mk` disables it for
-`ARCH=aarch64`), so the weak stubs in `yjit.c` *are* the implementation there.
-One of them used to return `false` from `rb_yjit_parse_option()`, which
+Every other `RubyVM::YJIT` method is equally inert there: `runtime_stats`,
+`log`, `exit_locations`, `disasm` and `insns_compiled` return `nil`,
+`stats_enabled?` / `log_enabled?` return `false`, `reset_stats!` and `code_gc`
+are no-ops, and `dump_exit_locations` raises the same `ArgumentError` it raises
+on Linux without `--yjit-trace-exits`. None of them can crash: every call into
+the Rust staticlib goes through one predicate, `cosmo_yjit_usable()` in
+`third_party/ruby/yjit.h`.
+
+**Changed in `v4.0.6-cosmo6`:** `RUBY_DESCRIPTION` used to advertise `+YJIT`
+off Linux/x86-64 even though `RubyVM::YJIT.enabled?` was `false`, because the
+`+YJIT` came from option parsing rather than from YJIT actually starting. It
+now tracks `RubyVM::YJIT.enabled?` on every platform. `RubyVM::YJIT.enabled?`
+remains the answer to trust — but the two no longer disagree. (`--help` also no
+longer prints an empty "YJIT options" heading where YJIT cannot run.)
+
+Two earlier bugs came from calling into that Rust staticlib unguarded, and both
+were invisible on Linux: `rb_yjit_init_builtin_cmes()` segfaulted every 4.0.6
+APE during VM init on Windows, and `RubyVM::YJIT.enable` segfaulted every
+**Rails 8** app at boot on Windows (Rails turns YJIT on by default via
+`config.yjit`) in every release up to and including `v4.0.6-cosmo5`. On the
+aarch64 half the Rust staticlib is not even linked in (`yjit/BUILD.mk` disables
+it for `ARCH=aarch64`), so the weak stubs in `yjit.c` *are* the implementation
+there; one of them used to return `false` from `rb_yjit_parse_option()`, which
 `ruby.c` turns into `invalid YJIT option ''` — so `ruby.com --yjit` was a hard
-startup error on the ARM half until `v4.0.6-cosmo2`. It is now accepted and
-inert, exactly as on Windows.
+startup error on the ARM half until `v4.0.6-cosmo2`.
 
 ## What is *not* supported
 

@@ -125,7 +125,7 @@ sh third_party/ruby/cosmo_tests/smoke_test.sh dist/ruby.com
 # expect: == RESULT: pass=15 fail=0 ==
 
 dist/ruby.com third_party/ruby/cosmo_tests/ci_smoke.rb ci-arg-1 ci-arg-2
-# expect: SMOKE-RESULT: pass=36 fail=0 warn=0   (38 on Windows: two extra
+# expect: SMOKE-RESULT: pass=43 fail=0 warn=0   (45 on Windows: two extra
 #         Winsock ABI assertions)
 
 dist/ruby.com third_party/ruby/cosmo_tests/test_sockets.rb
@@ -263,25 +263,39 @@ empty under this repo's `SHELL = build/bootstrap/cocmd`. Pass
 `CARGO=/usr/bin/cargo` on the make command line. You cannot work around it by
 disabling YJIT: the committed `config.h` hard-codes `USE_YJIT 1`.
 
-### 6. Any new YJIT Rust symbol must be gated on `IsLinux()`
+### 6. Any new YJIT Rust symbol must go through `cosmo_yjit_usable()`
 
 The YJIT staticlib is built for `x86_64-unknown-linux-gnu` and only works on
-Linux inside the APE. C code that calls into it must be guarded:
+Linux/x86-64 inside the APE. There is exactly one predicate for that, in
+`third_party/ruby/yjit.h`:
 
 ```c
-#ifdef __COSMOPOLITAN__
-    if (IsLinux())
-#endif
-        rb_yjit_init_builtin_cmes();
+if (cosmo_yjit_usable()) {
+    rb_yjit_init_builtin_cmes();
+}
 ```
 
-Upstream Ruby 4.0.6 added exactly such a call in `ruby_opt_init()` without a
-guard, and every APE built from it segfaulted at VM init on Windows while
-running perfectly on Linux. If you vendor a newer Ruby, audit new
-`rb_yjit_*` call sites. Also note the `.pkg` symbol check: a Rust-implemented
-function referenced from C needs a `__attribute__((weak))` no-op stub in
-`yjit.c` (overridden at final link by `--whole-archive`), or the build fails
-with `package.ape: undefined symbol`.
+C code that calls into the Rust staticlib must be guarded by it, unless the
+call is unreachable while `rb_yjit_enabled_p` is false (which implies
+`rb_yjit_init()` ran, which implies the predicate). Ruby-visible primitives —
+anything `RubyVM::YJIT` exposes — are covered automatically by the
+`cosmo_shim_*` wrappers in `yjit.c`; if you add a `Primitive.rb_yjit_*` to
+`yjit.rb`, add a shim next to the others.
+
+This has bitten three times, each time invisibly on Linux: upstream 4.0.6 added
+an unguarded `rb_yjit_init_builtin_cmes()` in `ruby_opt_init()` and every APE
+segfaulted at VM init on Windows; a weak stub returned `false` from
+`rb_yjit_parse_option()` and `ruby.com --yjit` became a startup error on
+aarch64; and `RubyVM::YJIT.enable` reached Rust unguarded, so every **Rails 8**
+app (Rails enables YJIT at boot via `config.yjit`) segfaulted on Windows
+through the whole v4.0.6-cosmo1…5 series. If you vendor a newer Ruby, audit new
+`rb_yjit_*` call sites; `cosmo_tests/ci_smoke.rb` exercises every public
+`RubyVM::YJIT` method on every CI platform and is the net that catches the rest.
+
+Also note the `.pkg` symbol check: a Rust-implemented function referenced from
+C needs a `__attribute__((weak))` no-op stub in `yjit.c` (overridden at final
+link by `--whole-archive`), or the build fails with
+`package.ape: undefined symbol`.
 
 ## Fat (x86-64 + aarch64) binaries
 
@@ -376,7 +390,9 @@ dies with an unhelpful `.pkg: open failed with ENOENT`.
 - **cosmocc is pinned to 3.9.2** and auto-downloaded. Newer standalone cosmocc
   releases are not used by this build system.
 - **YJIT is x86-64/Linux only** and always will be until the Rust half is
-  cross-compiled: `yjit/BUILD.mk` disables it for `ARCH=aarch64`, and the C
-  call sites are gated on `IsLinux()`. `--yjit` is accepted everywhere and is
-  simply inert where YJIT cannot run; check `RubyVM::YJIT.enabled?`, never the
-  `+YJIT` in `RUBY_DESCRIPTION`.
+  cross-compiled: `yjit/BUILD.mk` disables it for `ARCH=aarch64`, and every C
+  call site goes through `cosmo_yjit_usable()` (gotcha 6). `--yjit` is accepted
+  everywhere and is simply inert where YJIT cannot run, as is
+  `RubyVM::YJIT.enable`, which returns `false` there. Since `v4.0.6-cosmo6`
+  `RUBY_DESCRIPTION`'s `+YJIT` tracks `RubyVM::YJIT.enabled?` rather than
+  option parsing, so the two agree on every platform.

@@ -2581,10 +2581,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_YJIT
     if (FEATURE_SET_P(opt->features, yjit)) {
         bool rb_yjit_option_disable(void);
-        // rb_yjit_option_disable() is Rust; see cosmo_yjit_usable() in yjit.h.
-        // Where it cannot run, keep the pre-existing answer (the weak stub
-        // returned false, so opt->yjit stayed true).
-        opt->yjit = !cosmo_yjit_usable() || !rb_yjit_option_disable(); // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
+        // opt->yjit drives both rb_yjit_init() and the "+YJIT" in
+        // RUBY_DESCRIPTION.  Where the Rust half cannot run (see
+        // cosmo_yjit_usable() in yjit.h) rb_yjit_init() is skipped, so
+        // rb_yjit_enabled_p -- and hence RubyVM::YJIT.enabled? -- stays false;
+        // leaving opt->yjit true made the banner advertise +YJIT anyway, and
+        // feature detection that trusts RUBY_DESCRIPTION instead of
+        // RubyVM::YJIT.enabled? was fooled by it.  The option is still parsed
+        // and accepted, so nothing about option handling changes.
+        opt->yjit = cosmo_yjit_usable() && !rb_yjit_option_disable();
     }
 #endif
 #if USE_ZJIT
